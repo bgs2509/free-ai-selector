@@ -1,0 +1,13 @@
+# =============================================================================
+# AI Manager Platform - Health Worker Service
+# Python Dependencies (Level 2: Development Ready)
+# =============================================================================
+
+# Scheduling
+apscheduler==3.10.4
+
+# HTTP client
+httpx==0.27.2
+
+# Utilities
+python-dotenv==1.0.1

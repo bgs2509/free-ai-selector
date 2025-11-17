@@ -1,0 +1,176 @@
+version: '3.8'
+
+# =============================================================================
+# AI Manager Platform - Docker Compose Configuration
+# =============================================================================
+# Level 2 (Development Ready) - 4 microservices + PostgreSQL
+# Architecture: Improved Hybrid Approach with HTTP-only data access
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: aimanager_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - aimanager_network
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Data API Service (PostgreSQL Data Layer)
+  # ---------------------------------------------------------------------------
+  aimanager_data_postgres_api:
+    build:
+      context: ./services/aimanager_data_postgres_api
+      dockerfile: Dockerfile
+    container_name: aimanager_data_postgres_api
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DATA_API_HOST: ${DATA_API_HOST}
+      DATA_API_PORT: ${DATA_API_PORT}
+      DATA_API_LOG_LEVEL: ${DATA_API_LOG_LEVEL}
+      ENVIRONMENT: ${ENVIRONMENT}
+      REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - aimanager_network
+    restart: unless-stopped
+    volumes:
+      - ./services/aimanager_data_postgres_api:/app
+      - /app/__pycache__
+
+  # ---------------------------------------------------------------------------
+  # Business API Service (Business Logic Layer)
+  # ---------------------------------------------------------------------------
+  aimanager_business_api:
+    build:
+      context: ./services/aimanager_business_api
+      dockerfile: Dockerfile
+    container_name: aimanager_business_api
+    environment:
+      BUSINESS_API_HOST: ${BUSINESS_API_HOST}
+      BUSINESS_API_PORT: ${BUSINESS_API_PORT}
+      BUSINESS_API_LOG_LEVEL: ${BUSINESS_API_LOG_LEVEL}
+      DATA_API_URL: ${DATA_API_URL}
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY}
+      REPLICATE_API_KEY: ${REPLICATE_API_KEY}
+      TOGETHER_AI_API_KEY: ${TOGETHER_AI_API_KEY}
+      RATE_LIMIT_REQUESTS: ${RATE_LIMIT_REQUESTS}
+      RATE_LIMIT_PERIOD: ${RATE_LIMIT_PERIOD}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      ENVIRONMENT: ${ENVIRONMENT}
+      REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
+    ports:
+      - "8000:8000"
+    depends_on:
+      aimanager_data_postgres_api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - aimanager_network
+    restart: unless-stopped
+    volumes:
+      - ./services/aimanager_business_api:/app
+      - /app/__pycache__
+
+  # ---------------------------------------------------------------------------
+  # Telegram Bot Service (User Interface Layer)
+  # ---------------------------------------------------------------------------
+  aimanager_telegram_bot:
+    build:
+      context: ./services/aimanager_telegram_bot
+      dockerfile: Dockerfile
+    container_name: aimanager_telegram_bot
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_BOT_LOG_LEVEL: ${TELEGRAM_BOT_LOG_LEVEL}
+      BUSINESS_API_URL: ${BUSINESS_API_URL_BOT}
+      BOT_ADMIN_IDS: ${BOT_ADMIN_IDS}
+      BOT_MAX_MESSAGE_LENGTH: ${BOT_MAX_MESSAGE_LENGTH}
+      ENVIRONMENT: ${ENVIRONMENT}
+      REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
+    depends_on:
+      aimanager_business_api:
+        condition: service_healthy
+    networks:
+      - aimanager_network
+    restart: unless-stopped
+    volumes:
+      - ./services/aimanager_telegram_bot:/app
+      - /app/__pycache__
+
+  # ---------------------------------------------------------------------------
+  # Health Worker Service (Background Monitoring)
+  # ---------------------------------------------------------------------------
+  aimanager_health_worker:
+    build:
+      context: ./services/aimanager_health_worker
+      dockerfile: Dockerfile
+    container_name: aimanager_health_worker
+    environment:
+      WORKER_LOG_LEVEL: ${WORKER_LOG_LEVEL}
+      HEALTH_CHECK_INTERVAL: ${HEALTH_CHECK_INTERVAL}
+      DATA_API_URL: ${DATA_API_URL_WORKER}
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY}
+      REPLICATE_API_KEY: ${REPLICATE_API_KEY}
+      TOGETHER_AI_API_KEY: ${TOGETHER_AI_API_KEY}
+      SYNTHETIC_TEST_PROMPT: ${SYNTHETIC_TEST_PROMPT}
+      ENVIRONMENT: ${ENVIRONMENT}
+      REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
+    depends_on:
+      aimanager_data_postgres_api:
+        condition: service_healthy
+    networks:
+      - aimanager_network
+    restart: unless-stopped
+    volumes:
+      - ./services/aimanager_health_worker:/app
+      - /app/__pycache__
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  aimanager_network:
+    driver: bridge
+    name: aimanager_network
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+    name: aimanager_postgres_data

@@ -1,0 +1,31 @@
+# =============================================================================
+# AI Manager Platform - Business API Service
+# Python Dependencies (Level 2: Development Ready)
+# =============================================================================
+
+# FastAPI and ASGI server
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# HTTP client for Data API communication
+httpx==0.27.2
+
+# Rate limiting (Level 2 requirement)
+slowapi==0.1.9
+
+# Data validation and serialization
+pydantic==2.9.2
+pydantic-settings==2.5.2
+
+# Testing (Level 2 requirement: ≥75% coverage)
+pytest==8.3.3
+pytest-asyncio==0.24.0
+pytest-cov==5.0.0
+
+# Code quality (Level 2 requirement)
+ruff==0.6.8
+mypy==1.11.2
+bandit==1.7.10
+
+# Utilities
+python-dotenv==1.0.1
