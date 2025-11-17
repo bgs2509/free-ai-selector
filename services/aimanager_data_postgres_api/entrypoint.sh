@@ -66,9 +66,72 @@ run_migrations() {
     fi
 }
 
+# Function to seed database if empty
+seed_if_empty() {
+    echo "🌱 Checking if database needs seeding..."
+
+    # Set PYTHONPATH to include the app directory
+    export PYTHONPATH=/app:$PYTHONPATH
+
+    # Create temporary file for count
+    COUNT_FILE=$(mktemp)
+
+    # Check if database has any AI models (write to file to avoid stdout contamination)
+    python3 << 'PYTHON_SCRIPT' > "$COUNT_FILE" 2>/dev/null
+import asyncio
+import sys
+import os
+
+# Suppress all logging before imports
+os.environ['SQLALCHEMY_SILENCE_UBER_WARNING'] = '1'
+os.environ['PYTHONWARNINGS'] = 'ignore'
+
+import logging
+logging.disable(logging.CRITICAL)
+
+from sqlalchemy import select, func
+from app.infrastructure.database.connection import AsyncSessionLocal
+from app.infrastructure.database.models import AIModelORM
+
+async def check_models():
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(func.count()).select_from(AIModelORM))
+        count = result.scalar()
+        return count
+
+try:
+    count = asyncio.run(check_models())
+    print(count)
+    sys.exit(0)
+except Exception:
+    print(0)
+    sys.exit(1)
+PYTHON_SCRIPT
+
+    MODEL_COUNT=$(cat "$COUNT_FILE" | tr -d ' \n\r')
+    rm -f "$COUNT_FILE"
+
+    # Default to 0 if empty
+    MODEL_COUNT=${MODEL_COUNT:-0}
+
+    if [ "$MODEL_COUNT" = "0" ]; then
+        echo "🌱 Database is empty, running seed script..."
+        python3 -m app.infrastructure.database.seed
+
+        if [ $? -eq 0 ]; then
+            echo "✅ Database seeded successfully!"
+        else
+            echo "⚠️  Seed script failed, but continuing..."
+        fi
+    else
+        echo "✅ Database already has $MODEL_COUNT AI models, skipping seed"
+    fi
+}
+
 # Main execution
 wait_for_postgres
 run_migrations
+seed_if_empty
 
 echo "🎯 Starting FastAPI application..."
 echo ""
