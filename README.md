@@ -89,6 +89,8 @@ cd free-ai-selector
 cp .env.example .env
 ```
 
+**📖 Need help getting API keys?** See detailed step-by-step guide: [API_KEY_SETUP_GUIDE.md](API_KEY_SETUP_GUIDE.md)
+
 Edit `.env` and set your API keys:
 
 ```bash
@@ -359,6 +361,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/free-ai-selector/issues)
+- **API Keys Setup**: [API_KEY_SETUP_GUIDE.md](API_KEY_SETUP_GUIDE.md) - Detailed guide for getting API keys
 - **Documentation**: [.ai-framework/docs](.ai-framework/docs/)
 - **Framework Guide**: [AI Code Generation Master Workflow](.ai-framework/docs/guides/ai-code-generation-master-workflow.md)
 
