@@ -21,7 +21,7 @@ Free AI Selector is a **reliability-based AI routing platform** that automatical
 ✅ **Dual-Channel Access**: REST API + Telegram Bot
 ✅ **Smart Selection**: Automatic model selection based on reliability metrics
 ✅ **Dual Monitoring**: Real-time metrics from actual requests + hourly synthetic checks
-✅ **Free AI Providers**: HuggingFace, Replicate, Together.ai (more coming soon)
+✅ **6 Free AI Providers**: No credit card required - Google Gemini, Groq, Cerebras, SambaNova, HuggingFace, Cloudflare
 ✅ **Production-Ready**: Level 2 maturity with health checks, JSON logging, and integration tests
 
 ---
@@ -92,10 +92,32 @@ cp .env.example .env
 Edit `.env` and set your API keys:
 
 ```bash
-# Required: AI Provider API Keys
+# Required: AI Provider API Keys (all 100% free, no credit card required)
+
+# Google AI Studio - https://aistudio.google.com/apikey
+# Free tier: 10 RPM, 250 RPD
+GOOGLE_AI_STUDIO_API_KEY=your_google_ai_studio_key_here
+
+# Groq - https://console.groq.com/keys
+# Free tier: 20 RPM, 14,400 RPD, 1,800 tokens/sec
+GROQ_API_KEY=your_groq_api_key_here
+
+# Cerebras - https://cloud.cerebras.ai/
+# Free tier: 1M tokens/day, 30 RPM, 2,500+ tokens/sec
+CEREBRAS_API_KEY=your_cerebras_api_key_here
+
+# SambaNova - https://cloud.sambanova.ai/
+# Free tier: 20 RPM, 430 tokens/sec
+SAMBANOVA_API_KEY=your_sambanova_api_key_here
+
+# HuggingFace - https://huggingface.co/settings/tokens
+# Free tier: Rate limited inference API
 HUGGINGFACE_API_KEY=your_huggingface_token_here
-REPLICATE_API_KEY=your_replicate_token_here
-TOGETHER_AI_API_KEY=your_together_ai_token_here
+
+# Cloudflare Workers AI - https://dash.cloudflare.com/
+# Free tier: 10,000 Neurons/day
+CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id_here
+CLOUDFLARE_API_TOKEN=your_cloudflare_api_token_here
 
 # Required: Telegram Bot Token
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
@@ -179,6 +201,32 @@ Where:
    - Health Worker sends test prompts to all providers
    - Updates availability and baseline performance metrics
    - Detects provider outages before users encounter them
+
+---
+
+## 🔌 Free AI Providers
+
+All 6 providers are **100% free with NO credit card required**:
+
+| Provider | Model | Free Tier Limits | Speed | Credit Card |
+|----------|-------|------------------|-------|-------------|
+| **Google Gemini** | Gemini 2.5 Flash | 10 RPM, 250 RPD | Fast | ❌ Not Required |
+| **Groq** | Llama 3.3 70B Versatile | 20 RPM, 14,400 RPD | 1,800 tokens/sec | ❌ Not Required |
+| **Cerebras** | Llama 3.3 70B | 1M tokens/day, 30 RPM | 2,500+ tokens/sec | ❌ Not Required |
+| **SambaNova** | Meta-Llama-3.3-70B-Instruct | 20 RPM | 430 tokens/sec | ❌ Not Required |
+| **HuggingFace** | Meta-Llama-3-8B-Instruct | Rate limited | Moderate | ❌ Not Required |
+| **Cloudflare** | Llama 3.3 70B FP8 Fast | 10,000 Neurons/day | Fast | ❌ Not Required |
+
+### Getting API Keys
+
+1. **Google AI Studio**: Visit https://aistudio.google.com/apikey - instant API key generation
+2. **Groq**: Sign up at https://console.groq.com/keys - instant access to ultra-fast LPU
+3. **Cerebras**: Register at https://cloud.cerebras.ai/ - world's fastest AI inference
+4. **SambaNova**: Create account at https://cloud.sambanova.ai/ - access to Llama 405B
+5. **HuggingFace**: Get token at https://huggingface.co/settings/tokens - free inference API
+6. **Cloudflare**: Dashboard at https://dash.cloudflare.com/ - need Account ID + API Token
+
+**Note**: All providers offer instant API key generation without payment information. Simply sign up with email and start using immediately.
 
 ---
 
@@ -298,7 +346,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - Built with [.ai-framework](https://github.com/yourusername/ai-framework) - Microservices framework for AI applications
-- Free AI providers: [HuggingFace](https://huggingface.co/), [Replicate](https://replicate.com/), [Together.ai](https://together.ai/)
+- Free AI providers (no credit card required):
+  - [Google AI Studio](https://aistudio.google.com/) - Gemini models
+  - [Groq](https://groq.com/) - Ultra-fast LPU inference
+  - [Cerebras](https://cerebras.ai/) - Wafer-Scale Engine, world's fastest AI
+  - [SambaNova](https://sambanova.ai/) - Llama 405B access
+  - [HuggingFace](https://huggingface.co/) - Free inference API
+  - [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) - Serverless GPU inference
 
 ---
 
