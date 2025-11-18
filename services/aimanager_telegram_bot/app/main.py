@@ -87,6 +87,24 @@ async def get_models_stats() -> Optional[dict]:
         return None
 
 
+async def test_all_providers() -> Optional[dict]:
+    """
+    Test all AI providers via Business API.
+
+    Returns:
+        Test results dict with provider statuses, or None if failed
+    """
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(f"{BUSINESS_API_URL}/api/v1/providers/test")
+            response.raise_for_status()
+            return response.json()
+
+    except httpx.HTTPError as e:
+        logger.error(f"Failed to test providers: {str(e)}")
+        return None
+
+
 # =============================================================================
 # Bot Setup
 # =============================================================================
@@ -118,12 +136,16 @@ async def cmd_start(message: Message):
 <b>Как использовать:</b>
 • Просто отправьте мне любой текст — я обработаю его через самую надёжную AI модель
 • Используйте /stats для просмотра статистики моделей
+• Используйте /test для проверки работы всех провайдеров
 • Используйте /help для получения справки
 
-<b>Провайдеры:</b>
-✅ HuggingFace
-✅ Replicate
-✅ Together.ai
+<b>6 бесплатных AI провайдеров (без кредитной карты):</b>
+✅ Google Gemini - Gemini 2.5 Flash
+✅ Groq - Llama 3.3 70B (1,800 токенов/сек)
+✅ Cerebras - Llama 3.3 70B (2,500+ токенов/сек)
+✅ SambaNova - Meta-Llama-3.3-70B-Instruct
+✅ HuggingFace - Meta-Llama-3-8B-Instruct
+✅ Cloudflare - Llama 3.3 70B FP8 Fast
 
 Начните прямо сейчас — просто отправьте мне сообщение!
 """
@@ -145,6 +167,7 @@ async def cmd_help(message: Message):
 /start — Начать работу с ботом
 /help — Показать эту справку
 /stats — Показать статистику моделей
+/test — Проверить работу всех AI провайдеров
 
 <b>Как работает бот:</b>
 1️⃣ Вы отправляете текстовый запрос
@@ -154,6 +177,12 @@ async def cmd_help(message: Message):
 
 <b>Формула надёжности:</b>
 reliability_score = (success_rate × 0.6) + (speed_score × 0.4)
+
+<b>Команда /test:</b>
+Отправляет тестовый запрос ко всем 6 провайдерам и показывает:
+• ✅ Работающие модели и их время ответа
+• ❌ Неработающие модели и причину ошибки
+• 📊 Общую статистику и самый быстрый провайдер
 
 <b>Примеры запросов:</b>
 • "Напиши короткое стихотворение про AI"
@@ -211,6 +240,67 @@ async def cmd_stats(message: Message):
 
     await message.answer(stats_text, parse_mode="HTML")
     logger.info(f"User {message.from_user.id} requested stats")
+
+
+@router.message(Command("test"))
+async def cmd_test(message: Message):
+    """
+    Handle /test command.
+
+    Russian: Проверить работу всех AI провайдеров.
+    Tests all AI providers and returns response time or error details.
+    """
+    await message.answer("🧪 <b>Тестирую AI провайдеры...</b>\n\nОтправляю тестовый запрос ко всем моделям. Это может занять 10-30 секунд.", parse_mode="HTML")
+
+    test_results = await test_all_providers()
+
+    if test_results is None:
+        await message.answer(
+            "❌ <b>Ошибка:</b> Не удалось выполнить тестирование. Попробуйте позже.",
+            parse_mode="HTML",
+        )
+        return
+
+    total = test_results.get("total_providers", 0)
+    successful = test_results.get("successful", 0)
+    failed = test_results.get("failed", 0)
+    results = test_results.get("results", [])
+
+    if total == 0:
+        await message.answer("⚠️ Нет зарегистрированных провайдеров.", parse_mode="HTML")
+        return
+
+    # Build response message
+    test_text = f"🧪 <b>Результаты тестирования AI провайдеров</b>\n\n"
+
+    for result in results:
+        provider = result.get("provider", "Unknown")
+        model = result.get("model", "Unknown Model")
+        status = result.get("status", "unknown")
+        response_time = result.get("response_time")
+        error = result.get("error")
+
+        if status == "success":
+            test_text += f"✅ <b>{provider}</b>\n"
+            test_text += f"   Модель: {model}\n"
+            test_text += f"   ⚡ Время ответа: <b>{response_time:.2f} сек</b>\n\n"
+        else:
+            test_text += f"❌ <b>{provider}</b>\n"
+            test_text += f"   Модель: {model}\n"
+            test_text += f"   ⚠️ Ошибка: <code>{error}</code>\n\n"
+
+    # Add summary
+    test_text += f"━━━━━━━━━━━━━━━\n"
+    test_text += f"📊 <b>Итого:</b> {successful}/{total} работают ({successful/total*100:.1f}%)\n"
+
+    # Find fastest provider
+    successful_results = [r for r in results if r.get("status") == "success"]
+    if successful_results:
+        fastest = min(successful_results, key=lambda r: r.get("response_time", float("inf")))
+        test_text += f"⚡ <b>Самый быстрый:</b> {fastest.get('provider')} ({fastest.get('response_time'):.2f} сек)"
+
+    await message.answer(test_text, parse_mode="HTML")
+    logger.info(f"User {message.from_user.id} tested providers: {successful}/{total} successful")
 
 
 # =============================================================================
