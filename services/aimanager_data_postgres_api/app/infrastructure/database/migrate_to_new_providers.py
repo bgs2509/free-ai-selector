@@ -1,3 +1,5 @@
+from app.utils.security import sanitize_error_message
+
 """
 Migration script to remove obsolete AI providers and prepare for new ones.
 
@@ -87,7 +89,7 @@ async def migrate_to_new_providers() -> None:
 
         except Exception as e:
             await session.rollback()
-            logger.error(f"❌ Migration failed: {str(e)}")
+            logger.error(f"❌ Migration failed: {sanitize_error_message(e)}")
             raise
 
 
@@ -117,7 +119,7 @@ async def check_migration_needed() -> bool:
             return False
 
         except Exception as e:
-            logger.error(f"Error checking migration status: {str(e)}")
+            logger.error(f"Error checking migration status: {sanitize_error_message(e)}")
             return False
 
 

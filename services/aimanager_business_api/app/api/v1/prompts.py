@@ -3,6 +3,7 @@ Prompt Processing API routes for AI Manager Platform - Business API Service
 """
 
 import logging
+from app.utils.security import sanitize_error_message
 
 from fastapi import APIRouter, HTTPException, Request, status
 
@@ -69,10 +70,10 @@ async def process_prompt(
         )
 
     except Exception as e:
-        logger.error(f"Failed to process prompt: {str(e)}")
+        logger.error(f"Failed to process prompt: {sanitize_error_message(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to process prompt: {str(e)}",
+            detail=f"Failed to process prompt: {sanitize_error_message(e)}",
         )
 
     finally:

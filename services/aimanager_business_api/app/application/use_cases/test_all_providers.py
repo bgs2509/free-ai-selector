@@ -1,3 +1,5 @@
+from app.utils.security import sanitize_error_message
+
 """
 Test All Providers Use Case
 
@@ -135,7 +137,7 @@ class TestAllProvidersUseCase:
 
         except Exception as e:
             error_type = type(e).__name__
-            error_message = str(e)
+            error_message = sanitize_error_message(e)
 
             result["status"] = "error"
             result["error"] = f"{error_type}: {error_message}"

@@ -1,3 +1,5 @@
+from app.utils.security import sanitize_error_message
+
 """
 Migration script to rollback HuggingFace API endpoint
 
@@ -65,7 +67,7 @@ async def migrate_huggingface_endpoint() -> None:
 
         except Exception as e:
             await session.rollback()
-            logger.error(f"✗ Error during migration: {str(e)}")
+            logger.error(f"✗ Error during migration: {sanitize_error_message(e)}")
             raise
 
 
@@ -108,7 +110,7 @@ async def verify_migration() -> None:
                 logger.info("  No models found with new endpoint")
 
         except Exception as e:
-            logger.error(f"✗ Error during verification: {str(e)}")
+            logger.error(f"✗ Error during verification: {sanitize_error_message(e)}")
             raise
 
 

@@ -1,3 +1,5 @@
+from app.utils.security import sanitize_error_message
+
 """
 Database seed script for AI Manager Platform - Data API Service
 
@@ -107,7 +109,7 @@ async def seed_database() -> None:
 
         except Exception as e:
             await session.rollback()
-            logger.error(f"Error seeding database: {str(e)}")
+            logger.error(f"Error seeding database: {sanitize_error_message(e)}")
             raise
 
 
@@ -136,7 +138,7 @@ async def clear_seed_data() -> None:
 
         except Exception as e:
             await session.rollback()
-            logger.error(f"Error clearing seed data: {str(e)}")
+            logger.error(f"Error clearing seed data: {sanitize_error_message(e)}")
             raise
 
 

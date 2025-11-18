@@ -24,6 +24,8 @@ import httpx
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
+from app.utils.security import sanitize_error_message
+
 # =============================================================================
 # Configuration
 # =============================================================================
@@ -92,7 +94,7 @@ async def check_google_gemini(endpoint: str) -> tuple[bool, float]:
             # Success if 200 OK
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Google Gemini health check failed: {str(e)}")
+        logger.error(f"Google Gemini health check failed: {sanitize_error_message(e)}")
         return False, time.time() - start_time
 
 
@@ -127,7 +129,7 @@ async def check_groq(endpoint: str) -> tuple[bool, float]:
             # Success if 200 OK
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Groq health check failed: {str(e)}")
+        logger.error(f"Groq health check failed: {sanitize_error_message(e)}")
         return False, time.time() - start_time
 
 
@@ -162,7 +164,7 @@ async def check_cerebras(endpoint: str) -> tuple[bool, float]:
             # Success if 200 OK
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Cerebras health check failed: {str(e)}")
+        logger.error(f"Cerebras health check failed: {sanitize_error_message(e)}")
         return False, time.time() - start_time
 
 
@@ -197,7 +199,7 @@ async def check_sambanova(endpoint: str) -> tuple[bool, float]:
             # Success if 200 OK
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"SambaNova health check failed: {str(e)}")
+        logger.error(f"SambaNova health check failed: {sanitize_error_message(e)}")
         return False, time.time() - start_time
 
 
@@ -227,7 +229,7 @@ async def check_huggingface(endpoint: str) -> tuple[bool, float]:
             # 200 OK or 503 (model loading) both indicate API is responding
             return response.status_code in [200, 503], response_time
     except Exception as e:
-        logger.error(f"HuggingFace health check failed: {str(e)}")
+        logger.error(f"HuggingFace health check failed: {sanitize_error_message(e)}")
         return False, time.time() - start_time
 
 
@@ -267,7 +269,7 @@ async def check_cloudflare(endpoint: str) -> tuple[bool, float]:
             # Success if 200 OK
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Cloudflare health check failed: {str(e)}")
+        logger.error(f"Cloudflare health check failed: {sanitize_error_message(e)}")
         return False, time.time() - start_time
 
 
@@ -343,7 +345,7 @@ async def run_health_checks():
         logger.info("Health checks completed successfully")
 
     except Exception as e:
-        logger.error(f"Health check job failed: {str(e)}")
+        logger.error(f"Health check job failed: {sanitize_error_message(e)}")
 
 
 # =============================================================================
@@ -390,7 +392,7 @@ async def main():
             else:
                 logger.warning(f"Data API health check returned {response.status_code}")
     except Exception as e:
-        logger.error(f"Data API connection failed: {str(e)}")
+        logger.error(f"Data API connection failed: {sanitize_error_message(e)}")
         raise
 
     # Run initial health check

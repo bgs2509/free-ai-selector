@@ -10,6 +10,7 @@ import os
 from typing import Optional
 
 import httpx
+from app.utils.security import sanitize_error_message
 
 from app.infrastructure.ai_providers.base import AIProviderBase
 
@@ -90,7 +91,7 @@ class GoogleGeminiProvider(AIProviderBase):
                 raise ValueError("Invalid response format from Google Gemini")
 
             except httpx.HTTPError as e:
-                logger.error(f"Google Gemini API error: {str(e)}")
+                logger.error(f"Google Gemini API error: {sanitize_error_message(e)}")
                 raise
 
     async def health_check(self) -> bool:
@@ -114,7 +115,7 @@ class GoogleGeminiProvider(AIProviderBase):
                 return response.status_code == 200
 
             except Exception as e:
-                logger.error(f"Google Gemini health check failed: {str(e)}")
+                logger.error(f"Google Gemini health check failed: {sanitize_error_message(e)}")
                 return False
 
     def get_provider_name(self) -> str:

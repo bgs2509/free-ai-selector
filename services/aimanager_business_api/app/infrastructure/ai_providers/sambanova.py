@@ -12,6 +12,7 @@ import os
 from typing import Optional
 
 import httpx
+from app.utils.security import sanitize_error_message
 
 from app.infrastructure.ai_providers.base import AIProviderBase
 
@@ -85,7 +86,7 @@ class SambanovaProvider(AIProviderBase):
                     raise ValueError("Invalid response format from SambaNova")
 
             except httpx.HTTPError as e:
-                logger.error(f"SambaNova API error: {str(e)}")
+                logger.error(f"SambaNova API error: {sanitize_error_message(e)}")
                 raise
 
     async def health_check(self) -> bool:
@@ -110,7 +111,7 @@ class SambanovaProvider(AIProviderBase):
                 return response.status_code == 200
 
             except Exception as e:
-                logger.error(f"SambaNova health check failed: {str(e)}")
+                logger.error(f"SambaNova health check failed: {sanitize_error_message(e)}")
                 return False
 
     def get_provider_name(self) -> str:

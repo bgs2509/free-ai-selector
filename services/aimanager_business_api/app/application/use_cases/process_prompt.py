@@ -1,3 +1,5 @@
+from app.utils.security import sanitize_error_message
+
 """
 Process Prompt Use Case
 
@@ -98,7 +100,7 @@ class ProcessPromptUseCase:
             logger.info(f"Successfully generated response with {best_model.name}")
 
         except Exception as e:
-            error_message = str(e)
+            error_message = sanitize_error_message(e)
             logger.error(f"Failed to generate with {best_model.name}: {error_message}")
 
             # Try fallback to next best model

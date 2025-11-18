@@ -11,6 +11,7 @@ from decimal import Decimal
 from typing import List, Optional
 
 import httpx
+from app.utils.security import sanitize_error_message
 
 from app.domain.models import AIModelInfo
 
@@ -90,7 +91,7 @@ class DataAPIClient:
             ]
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to fetch models from Data API: {str(e)}")
+            logger.error(f"Failed to fetch models from Data API: {sanitize_error_message(e)}")
             raise
 
     async def get_model_by_id(self, model_id: int) -> Optional[AIModelInfo]:
@@ -127,7 +128,7 @@ class DataAPIClient:
             )
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to fetch model {model_id} from Data API: {str(e)}")
+            logger.error(f"Failed to fetch model {model_id} from Data API: {sanitize_error_message(e)}")
             raise
 
     async def increment_success(self, model_id: int, response_time: float) -> None:
@@ -150,7 +151,7 @@ class DataAPIClient:
             response.raise_for_status()
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to increment success for model {model_id}: {str(e)}")
+            logger.error(f"Failed to increment success for model {model_id}: {sanitize_error_message(e)}")
             raise
 
     async def increment_failure(self, model_id: int, response_time: float) -> None:
@@ -173,7 +174,7 @@ class DataAPIClient:
             response.raise_for_status()
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to increment failure for model {model_id}: {str(e)}")
+            logger.error(f"Failed to increment failure for model {model_id}: {sanitize_error_message(e)}")
             raise
 
     async def create_history(
@@ -224,5 +225,5 @@ class DataAPIClient:
             return history_data["id"]
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to create history record: {str(e)}")
+            logger.error(f"Failed to create history record: {sanitize_error_message(e)}")
             raise

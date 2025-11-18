@@ -6,6 +6,7 @@ Level 2 (Development Ready) maturity.
 """
 
 import logging
+from app.utils.security import sanitize_error_message
 import os
 import uuid
 from contextlib import asynccontextmanager
@@ -72,7 +73,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
             await session.execute(text("SELECT 1"))
         logger.info("Database connection verified successfully")
     except Exception as e:
-        logger.error(f"Database connection failed: {str(e)}")
+        logger.error(f"Database connection failed: {sanitize_error_message(e)}")
         raise
 
     yield
@@ -148,7 +149,7 @@ async def error_handling_middleware(request: Request, call_next):
     except Exception as e:
         request_id = getattr(request.state, "request_id", "unknown")
         logger.error(
-            f'{{"request_id": "{request_id}", "error": "{str(e)}", '
+            f'{{"request_id": "{request_id}", "error": "{sanitize_error_message(e)}", '
             f'"error_type": "{type(e).__name__}", "event": "unhandled_exception"}}'
         )
 
@@ -191,8 +192,8 @@ async def health_check() -> HealthCheckResponse:
         async with AsyncSessionLocal() as session:
             await session.execute(text("SELECT 1"))
     except Exception as e:
-        db_status = f"unhealthy: {str(e)}"
-        logger.error(f"Health check failed: database connection error - {str(e)}")
+        db_status = f"unhealthy: {sanitize_error_message(e)}"
+        logger.error(f"Health check failed: database connection error - {sanitize_error_message(e)}")
 
     return HealthCheckResponse(
         status="healthy" if db_status == "healthy" else "unhealthy",

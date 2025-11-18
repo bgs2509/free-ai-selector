@@ -12,6 +12,7 @@ import os
 from typing import Optional
 
 import httpx
+from app.utils.security import sanitize_error_message
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.filters import Command
 from aiogram.types import Message
@@ -65,7 +66,7 @@ async def call_business_api(prompt: str) -> Optional[dict]:
             return response.json()
 
     except httpx.HTTPError as e:
-        logger.error(f"Business API call failed: {str(e)}")
+        logger.error(f"Business API call failed: {sanitize_error_message(e)}")
         return None
 
 
@@ -83,7 +84,7 @@ async def get_models_stats() -> Optional[dict]:
             return response.json()
 
     except httpx.HTTPError as e:
-        logger.error(f"Failed to fetch models stats: {str(e)}")
+        logger.error(f"Failed to fetch models stats: {sanitize_error_message(e)}")
         return None
 
 
@@ -101,7 +102,7 @@ async def test_all_providers() -> Optional[dict]:
             return response.json()
 
     except httpx.HTTPError as e:
-        logger.error(f"Failed to test providers: {str(e)}")
+        logger.error(f"Failed to test providers: {sanitize_error_message(e)}")
         return None
 
 
@@ -395,7 +396,7 @@ async def main():
             else:
                 logger.warning(f"Business API health check returned {response.status_code}")
     except Exception as e:
-        logger.error(f"Business API connection failed: {str(e)}")
+        logger.error(f"Business API connection failed: {sanitize_error_message(e)}")
         logger.warning("Bot will start but may encounter errors")
 
     try:

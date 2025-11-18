@@ -6,6 +6,7 @@ Level 2 (Development Ready) maturity.
 """
 
 import logging
+from app.utils.security import sanitize_error_message
 import os
 import uuid
 from contextlib import asynccontextmanager
@@ -92,7 +93,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
             else:
                 logger.warning(f"Data API health check returned status {response.status_code}")
     except Exception as e:
-        logger.error(f"Data API connection failed: {str(e)}")
+        logger.error(f"Data API connection failed: {sanitize_error_message(e)}")
         logger.warning("Service will start but may encounter errors")
 
     yield
@@ -179,7 +180,7 @@ async def error_handling_middleware(request: Request, call_next):
     except Exception as e:
         request_id = getattr(request.state, "request_id", "unknown")
         logger.error(
-            f'{{"request_id": "{request_id}", "error": "{str(e)}", '
+            f'{{"request_id": "{request_id}", "error": "{sanitize_error_message(e)}", '
             f'"error_type": "{type(e).__name__}", "event": "unhandled_exception"}}'
         )
 
@@ -224,8 +225,8 @@ async def health_check() -> HealthCheckResponse:
             if response.status_code != 200:
                 data_api_status = f"unhealthy: status {response.status_code}"
     except Exception as e:
-        data_api_status = f"unhealthy: {str(e)}"
-        logger.error(f"Health check failed: Data API connection error - {str(e)}")
+        data_api_status = f"unhealthy: {sanitize_error_message(e)}"
+        logger.error(f"Health check failed: Data API connection error - {sanitize_error_message(e)}")
 
     return HealthCheckResponse(
         status="healthy" if data_api_status == "healthy" else "unhealthy",
