@@ -27,11 +27,14 @@ nano .env
 
 ### 2. Required API Keys
 
-Get free API keys from:
+Get free API keys from (all providers require NO credit card):
 
+- **Google AI Studio**: https://aistudio.google.com/apikey
+- **Groq**: https://console.groq.com/keys
+- **Cerebras**: https://cloud.cerebras.ai/
+- **SambaNova**: https://cloud.sambanova.ai/
 - **HuggingFace**: https://huggingface.co/settings/tokens
-- **Replicate**: https://replicate.com/account/api-tokens
-- **Together.ai**: https://api.together.xyz/settings/api-keys
+- **Cloudflare**: https://dash.cloudflare.com/ (need Account ID + API Token)
 - **Telegram Bot**: https://t.me/BotFather
 
 ### 3. Start Development Environment
@@ -227,10 +230,13 @@ from app.infrastructure.ai_providers.newprovider import NewProvider
 class ProcessPromptUseCase:
     def __init__(self, data_api_client: DataAPIClient):
         self.providers = {
+            "GoogleGemini": GoogleGeminiProvider(),
+            "Groq": GroqProvider(),
+            "Cerebras": CerebrasProvider(),
+            "SambaNova": SambanovaProvider(),
             "HuggingFace": HuggingFaceProvider(),
-            "Replicate": ReplicateProvider(),
-            "Together.ai": TogetherProvider(),
-            "NewProvider": NewProvider(),  # Add here
+            "Cloudflare": CloudflareProvider(),
+            "NewProvider": NewProvider(),  # Add your new provider here
         }
 ```
 

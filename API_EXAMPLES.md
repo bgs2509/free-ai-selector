@@ -63,12 +63,12 @@ curl http://localhost:8000/api/v1/models/stats
     },
     {
       "id": 2,
-      "name": "Replicate Meta-Llama-3-8B-Instruct",
-      "provider": "Replicate",
-      "reliability_score": 0.87,
-      "success_rate": 0.90,
-      "average_response_time": 3.2,
-      "total_requests": 120,
+      "name": "Llama 3.3 70B Versatile",
+      "provider": "Groq",
+      "reliability_score": 0.93,
+      "success_rate": 0.95,
+      "average_response_time": 1.2,
+      "total_requests": 180,
       "is_active": true
     }
   ],

@@ -614,9 +614,13 @@ services:
       - "8000:8000"
     environment:
       DATA_API_URL: http://aimanager_data_postgres_api:8001
+      GOOGLE_AI_STUDIO_API_KEY: ${GOOGLE_AI_STUDIO_API_KEY:-mock}
+      GROQ_API_KEY: ${GROQ_API_KEY:-mock}
+      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-mock}
+      SAMBANOVA_API_KEY: ${SAMBANOVA_API_KEY:-mock}
       HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY:-mock}
-      REPLICATE_API_KEY: ${REPLICATE_API_KEY:-mock}
-      TOGETHER_API_KEY: ${TOGETHER_API_KEY:-mock}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:-mock}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-mock}
       API_KEY: ${API_KEY:-default-api-key-change-me}
       LOG_LEVEL: INFO
     depends_on:
@@ -634,9 +638,13 @@ services:
     container_name: aimanager_health_worker
     environment:
       DATA_API_URL: http://aimanager_data_postgres_api:8001
+      GOOGLE_AI_STUDIO_API_KEY: ${GOOGLE_AI_STUDIO_API_KEY:-mock}
+      GROQ_API_KEY: ${GROQ_API_KEY:-mock}
+      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-mock}
+      SAMBANOVA_API_KEY: ${SAMBANOVA_API_KEY:-mock}
       HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY:-mock}
-      REPLICATE_API_KEY: ${REPLICATE_API_KEY:-mock}
-      TOGETHER_API_KEY: ${TOGETHER_API_KEY:-mock}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:-mock}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-mock}
       LOG_LEVEL: INFO
     depends_on:
       aimanager_data_postgres_api:
@@ -662,10 +670,14 @@ volumes:
 
 **`.env.example`:**
 ```env
-# AI Provider API Keys (optional - use "mock" for testing)
+# AI Provider API Keys (6 verified free-tier providers - NO credit card required)
+GOOGLE_AI_STUDIO_API_KEY=your_google_ai_studio_key_here
+GROQ_API_KEY=your_groq_api_key_here
+CEREBRAS_API_KEY=your_cerebras_api_key_here
+SAMBANOVA_API_KEY=your_sambanova_api_key_here
 HUGGINGFACE_API_KEY=hf_xxxxxxxxxxxxxxxxxxxxxx
-REPLICATE_API_KEY=r8_xxxxxxxxxxxxxxxxxxxxxx
-TOGETHER_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id_here
+CLOUDFLARE_API_TOKEN=your_cloudflare_api_token_here
 
 # Telegram Bot
 TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
