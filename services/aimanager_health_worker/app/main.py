@@ -4,6 +4,14 @@ AI Manager Platform - Health Worker Service
 Background worker for synthetic monitoring of AI providers.
 Runs health checks hourly and updates model statistics.
 Level 2 (Development Ready) maturity.
+
+Supports 6 verified free-tier AI providers (no credit card required):
+- Google AI Studio (Gemini 2.5 Flash)
+- Groq (Llama 3.3 70B - 1,800 tokens/sec)
+- Cerebras (Llama 3.3 70B - 2,500+ tokens/sec)
+- SambaNova (Meta-Llama-3.3-70B-Instruct)
+- HuggingFace (Meta-Llama-3-8B-Instruct)
+- Cloudflare Workers AI (10,000 Neurons/day)
 """
 
 import asyncio
@@ -26,10 +34,14 @@ HEALTH_CHECK_INTERVAL = int(os.getenv("HEALTH_CHECK_INTERVAL", "3600"))  # secon
 DATA_API_URL = os.getenv("DATA_API_URL", "http://localhost:8001")
 SYNTHETIC_TEST_PROMPT = os.getenv("SYNTHETIC_TEST_PROMPT", "Generate a simple greeting message")
 
-# AI Provider API Keys
+# AI Provider API Keys - 6 verified free-tier providers
+GOOGLE_AI_STUDIO_API_KEY = os.getenv("GOOGLE_AI_STUDIO_API_KEY", "")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "")
+SAMBANOVA_API_KEY = os.getenv("SAMBANOVA_API_KEY", "")
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "")
-REPLICATE_API_KEY = os.getenv("REPLICATE_API_KEY", "")
-TOGETHER_AI_API_KEY = os.getenv("TOGETHER_AI_API_KEY", "")
+CLOUDFLARE_API_TOKEN = os.getenv("CLOUDFLARE_API_TOKEN", "")
+CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
 
 # =============================================================================
 # Logging Configuration
@@ -50,23 +62,168 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 
-async def check_huggingface(endpoint: str) -> tuple[bool, float]:
-    """Check HuggingFace model health."""
-    if not HUGGINGFACE_API_KEY:
+async def check_google_gemini(endpoint: str) -> tuple[bool, float]:
+    """
+    Check Google AI Studio (Gemini) model health.
+
+    Uses Gemini API format with API key in query params.
+    Free tier: 10 RPM, 250 RPD, no credit card required.
+    """
+    if not GOOGLE_AI_STUDIO_API_KEY:
+        logger.warning("Google AI Studio API key not configured")
         return False, 0.0
 
     start_time = time.time()
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                endpoint,
-                headers={"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"},
-                json={
-                    "inputs": SYNTHETIC_TEST_PROMPT,
-                    "parameters": {"max_new_tokens": 50},
+            # Gemini API format
+            payload = {
+                "contents": [{"parts": [{"text": SYNTHETIC_TEST_PROMPT}]}],
+                "generationConfig": {
+                    "maxOutputTokens": 50,
+                    "temperature": 0.7,
                 },
-            )
+            }
+            params = {"key": GOOGLE_AI_STUDIO_API_KEY}
+
+            response = await client.post(endpoint, json=payload, params=params)
             response_time = time.time() - start_time
+
+            # Success if 200 OK
+            return response.status_code == 200, response_time
+    except Exception as e:
+        logger.error(f"Google Gemini health check failed: {str(e)}")
+        return False, time.time() - start_time
+
+
+async def check_groq(endpoint: str) -> tuple[bool, float]:
+    """
+    Check Groq model health.
+
+    Uses OpenAI-compatible API format.
+    Free tier: 20 RPM, 14,400 RPD, 1,800 tokens/sec, no credit card required.
+    """
+    if not GROQ_API_KEY:
+        logger.warning("Groq API key not configured")
+        return False, 0.0
+
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # OpenAI-compatible format
+            headers = {
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": "llama-3.3-70b-versatile",
+                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
+                "max_tokens": 50,
+            }
+
+            response = await client.post(endpoint, headers=headers, json=payload)
+            response_time = time.time() - start_time
+
+            # Success if 200 OK
+            return response.status_code == 200, response_time
+    except Exception as e:
+        logger.error(f"Groq health check failed: {str(e)}")
+        return False, time.time() - start_time
+
+
+async def check_cerebras(endpoint: str) -> tuple[bool, float]:
+    """
+    Check Cerebras Inference model health.
+
+    Uses OpenAI-compatible API format.
+    Free tier: 1M tokens/day, 30 RPM, 2,500+ tokens/sec, no credit card required.
+    """
+    if not CEREBRAS_API_KEY:
+        logger.warning("Cerebras API key not configured")
+        return False, 0.0
+
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # OpenAI-compatible format
+            headers = {
+                "Authorization": f"Bearer {CEREBRAS_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": "llama-3.3-70b",
+                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
+                "max_tokens": 50,
+            }
+
+            response = await client.post(endpoint, headers=headers, json=payload)
+            response_time = time.time() - start_time
+
+            # Success if 200 OK
+            return response.status_code == 200, response_time
+    except Exception as e:
+        logger.error(f"Cerebras health check failed: {str(e)}")
+        return False, time.time() - start_time
+
+
+async def check_sambanova(endpoint: str) -> tuple[bool, float]:
+    """
+    Check SambaNova Cloud model health.
+
+    Uses OpenAI-compatible API format.
+    Free tier: 20 RPM, 430 tokens/sec, no credit card required.
+    """
+    if not SAMBANOVA_API_KEY:
+        logger.warning("SambaNova API key not configured")
+        return False, 0.0
+
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # OpenAI-compatible format
+            headers = {
+                "Authorization": f"Bearer {SAMBANOVA_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": "Meta-Llama-3.3-70B-Instruct",
+                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
+                "max_tokens": 50,
+            }
+
+            response = await client.post(endpoint, headers=headers, json=payload)
+            response_time = time.time() - start_time
+
+            # Success if 200 OK
+            return response.status_code == 200, response_time
+    except Exception as e:
+        logger.error(f"SambaNova health check failed: {str(e)}")
+        return False, time.time() - start_time
+
+
+async def check_huggingface(endpoint: str) -> tuple[bool, float]:
+    """
+    Check HuggingFace Inference API model health.
+
+    Uses HuggingFace-specific API format.
+    Free tier: Rate limited, no credit card required.
+    """
+    if not HUGGINGFACE_API_KEY:
+        logger.warning("HuggingFace API key not configured")
+        return False, 0.0
+
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
+            payload = {
+                "inputs": SYNTHETIC_TEST_PROMPT,
+                "parameters": {"max_new_tokens": 50},
+            }
+
+            response = await client.post(endpoint, headers=headers, json=payload)
+            response_time = time.time() - start_time
+
             # 200 OK or 503 (model loading) both indicate API is responding
             return response.status_code in [200, 503], response_time
     except Exception as e:
@@ -74,46 +231,43 @@ async def check_huggingface(endpoint: str) -> tuple[bool, float]:
         return False, time.time() - start_time
 
 
-async def check_replicate(endpoint: str) -> tuple[bool, float]:
-    """Check Replicate model health."""
-    if not REPLICATE_API_KEY:
+async def check_cloudflare(endpoint: str) -> tuple[bool, float]:
+    """
+    Check Cloudflare Workers AI model health.
+
+    Uses Cloudflare-specific API format with account ID in URL.
+    Free tier: 10,000 Neurons/day, no credit card required.
+    """
+    if not CLOUDFLARE_API_TOKEN:
+        logger.warning("Cloudflare API token not configured")
         return False, 0.0
-
-    start_time = time.time()
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(
-                "https://api.replicate.com/v1/models",
-                headers={"Authorization": f"Token {REPLICATE_API_KEY}"},
-            )
-            response_time = time.time() - start_time
-            return response.status_code == 200, response_time
-    except Exception as e:
-        logger.error(f"Replicate health check failed: {str(e)}")
-        return False, time.time() - start_time
-
-
-async def check_together(endpoint: str) -> tuple[bool, float]:
-    """Check Together.ai model health."""
-    if not TOGETHER_AI_API_KEY:
+    if not CLOUDFLARE_ACCOUNT_ID:
+        logger.warning("Cloudflare account ID not configured")
         return False, 0.0
 
     start_time = time.time()
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                endpoint,
-                headers={"Authorization": f"Bearer {TOGETHER_AI_API_KEY}"},
-                json={
-                    "model": "meta-llama/Meta-Llama-3-8B-Instruct",
-                    "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
-                    "max_tokens": 50,
-                },
-            )
+            headers = {
+                "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}",
+                "Content-Type": "application/json",
+            }
+
+            # Replace {account_id} placeholder in endpoint URL
+            actual_endpoint = endpoint.replace("{account_id}", CLOUDFLARE_ACCOUNT_ID)
+
+            payload = {
+                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
+                "max_tokens": 50,
+            }
+
+            response = await client.post(actual_endpoint, headers=headers, json=payload)
             response_time = time.time() - start_time
+
+            # Success if 200 OK
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Together.ai health check failed: {str(e)}")
+        logger.error(f"Cloudflare health check failed: {str(e)}")
         return False, time.time() - start_time
 
 
@@ -150,12 +304,18 @@ async def run_health_checks():
             logger.info(f"Checking {model_name} ({provider})...")
 
             # Run provider-specific health check
-            if provider == "HuggingFace":
+            if provider == "GoogleGemini":
+                is_healthy, response_time = await check_google_gemini(endpoint)
+            elif provider == "Groq":
+                is_healthy, response_time = await check_groq(endpoint)
+            elif provider == "Cerebras":
+                is_healthy, response_time = await check_cerebras(endpoint)
+            elif provider == "SambaNova":
+                is_healthy, response_time = await check_sambanova(endpoint)
+            elif provider == "HuggingFace":
                 is_healthy, response_time = await check_huggingface(endpoint)
-            elif provider == "Replicate":
-                is_healthy, response_time = await check_replicate(endpoint)
-            elif provider == "Together.ai":
-                is_healthy, response_time = await check_together(endpoint)
+            elif provider == "Cloudflare":
+                is_healthy, response_time = await check_cloudflare(endpoint)
             else:
                 logger.warning(f"Unknown provider: {provider}")
                 continue
@@ -200,6 +360,26 @@ async def main():
     logger.info(f"Starting {SERVICE_NAME}")
     logger.info(f"Data API URL: {DATA_API_URL}")
     logger.info(f"Health check interval: {HEALTH_CHECK_INTERVAL} seconds")
+
+    # Log configured providers
+    configured_providers = []
+    if GOOGLE_AI_STUDIO_API_KEY:
+        configured_providers.append("GoogleGemini")
+    if GROQ_API_KEY:
+        configured_providers.append("Groq")
+    if CEREBRAS_API_KEY:
+        configured_providers.append("Cerebras")
+    if SAMBANOVA_API_KEY:
+        configured_providers.append("SambaNova")
+    if HUGGINGFACE_API_KEY:
+        configured_providers.append("HuggingFace")
+    if CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID:
+        configured_providers.append("Cloudflare")
+
+    logger.info(f"Configured providers ({len(configured_providers)}/6): {', '.join(configured_providers)}")
+
+    if len(configured_providers) == 0:
+        logger.warning("No AI provider API keys configured! Health checks will fail.")
 
     # Verify Data API connection
     try:
