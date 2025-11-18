@@ -16,9 +16,12 @@ from typing import Optional
 
 from app.domain.models import AIModelInfo, PromptRequest, PromptResponse
 from app.infrastructure.ai_providers.base import AIProviderBase
+from app.infrastructure.ai_providers.cerebras import CerebrasProvider
+from app.infrastructure.ai_providers.cloudflare import CloudflareProvider
+from app.infrastructure.ai_providers.google_gemini import GoogleGeminiProvider
+from app.infrastructure.ai_providers.groq import GroqProvider
 from app.infrastructure.ai_providers.huggingface import HuggingFaceProvider
-from app.infrastructure.ai_providers.replicate import ReplicateProvider
-from app.infrastructure.ai_providers.together import TogetherProvider
+from app.infrastructure.ai_providers.sambanova import SambanovaProvider
 from app.infrastructure.http_clients.data_api_client import DataAPIClient
 
 logger = logging.getLogger(__name__)
@@ -44,11 +47,14 @@ class ProcessPromptUseCase:
         """
         self.data_api_client = data_api_client
 
-        # Initialize AI providers
+        # Initialize AI providers (6 verified free-tier providers, no credit card required)
         self.providers = {
+            "GoogleGemini": GoogleGeminiProvider(),
+            "Groq": GroqProvider(),
+            "Cerebras": CerebrasProvider(),
+            "SambaNova": SambanovaProvider(),
             "HuggingFace": HuggingFaceProvider(),
-            "Replicate": ReplicateProvider(),
-            "Together.ai": TogetherProvider(),
+            "Cloudflare": CloudflareProvider(),
         }
 
     async def execute(self, request: PromptRequest) -> PromptResponse:
