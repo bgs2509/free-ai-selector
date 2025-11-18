@@ -69,6 +69,7 @@ services:
   # ---------------------------------------------------------------------------
   # Business API Service (Business Logic Layer)
   # ---------------------------------------------------------------------------
+  # NOTE: No external port mapping - accessed only through nginx reverse proxy
   aimanager_business_api:
     build:
       context: ./services/aimanager_business_api
@@ -91,8 +92,7 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS}
       ENVIRONMENT: ${ENVIRONMENT}
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
-    ports:
-      - "8000:8000"
+    # Port removed - nginx will proxy to aimanager_business_api:8000 internally
     depends_on:
       aimanager_data_postgres_api:
         condition: service_healthy
@@ -108,6 +108,30 @@ services:
     volumes:
       - ./services/aimanager_business_api:/app
       - /app/__pycache__
+
+  # ---------------------------------------------------------------------------
+  # Nginx Reverse Proxy (API Gateway)
+  # ---------------------------------------------------------------------------
+  # External port 8000 with optimized timeouts for AI requests
+  aimanager_nginx:
+    build:
+      context: ./services/aimanager_nginx
+      dockerfile: Dockerfile
+    container_name: aimanager_nginx
+    ports:
+      - "8000:8000"
+    depends_on:
+      aimanager_business_api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - aimanager_network
+    restart: unless-stopped
 
   # ---------------------------------------------------------------------------
   # Telegram Bot Service (User Interface Layer)
