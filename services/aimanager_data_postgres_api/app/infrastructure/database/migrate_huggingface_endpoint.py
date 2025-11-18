@@ -1,8 +1,8 @@
 """
-Migration script to update HuggingFace API endpoint
+Migration script to rollback HuggingFace API endpoint
 
-Updates the deprecated api-inference.huggingface.co endpoint
-to the new router.huggingface.co/hf-inference endpoint in the database.
+Rolls back the router.huggingface.co/hf-inference endpoint
+to the correct api-inference.huggingface.co endpoint in the database.
 """
 
 import asyncio
@@ -17,8 +17,8 @@ from app.infrastructure.database.models import AIModelORM
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-OLD_ENDPOINT = "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct"
-NEW_ENDPOINT = "https://router.huggingface.co/hf-inference/models/meta-llama/Meta-Llama-3-8B-Instruct"
+OLD_ENDPOINT = "https://router.huggingface.co/hf-inference/models/meta-llama/Meta-Llama-3-8B-Instruct"
+NEW_ENDPOINT = "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct"
 
 
 async def migrate_huggingface_endpoint() -> None:

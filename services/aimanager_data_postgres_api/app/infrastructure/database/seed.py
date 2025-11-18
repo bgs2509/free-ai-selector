@@ -25,7 +25,7 @@ SEED_MODELS = [
     {
         "name": "HuggingFace Meta-Llama-3-8B-Instruct",
         "provider": "HuggingFace",
-        "api_endpoint": "https://router.huggingface.co/hf-inference/models/meta-llama/Meta-Llama-3-8B-Instruct",
+        "api_endpoint": "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
         "is_active": True,
     },
     {

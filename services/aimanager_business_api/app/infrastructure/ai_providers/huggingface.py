@@ -33,7 +33,7 @@ class HuggingFaceProvider(AIProviderBase):
         self.api_key = api_key or os.getenv("HUGGINGFACE_API_KEY", "")
         self.model_endpoint = (
             model_endpoint
-            or "https://router.huggingface.co/hf-inference/models/meta-llama/Meta-Llama-3-8B-Instruct"
+            or "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct"
         )
         self.timeout = 30.0  # seconds
 
