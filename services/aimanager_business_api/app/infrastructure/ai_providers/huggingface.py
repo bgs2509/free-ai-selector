@@ -81,7 +81,7 @@ class HuggingFaceProvider(AIProviderBase):
                     generated_text = result[0].get("generated_text", "")
                     return generated_text.strip()
                 else:
-                    logger.error(f"Unexpected HuggingFace response format: {result}")
+                    logger.error(f"Unexpected HuggingFace response format: {sanitize_error_message(str(result))}")
                     raise ValueError("Invalid response format from HuggingFace")
 
             except httpx.HTTPError as e:

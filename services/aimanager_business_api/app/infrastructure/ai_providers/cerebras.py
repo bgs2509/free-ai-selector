@@ -81,7 +81,7 @@ class CerebrasProvider(AIProviderBase):
                     message = result["choices"][0].get("message", {})
                     return message.get("content", "").strip()
                 else:
-                    logger.error(f"Unexpected Cerebras response format: {result}")
+                    logger.error(f"Unexpected Cerebras response format: {sanitize_error_message(str(result))}")
                     raise ValueError("Invalid response format from Cerebras")
 
             except httpx.HTTPError as e:

@@ -98,7 +98,7 @@ class CloudflareProvider(AIProviderBase):
                         message = result_data["choices"][0].get("message", {})
                         return message.get("content", "").strip()
 
-                logger.error(f"Unexpected Cloudflare response format: {result}")
+                logger.error(f"Unexpected Cloudflare response format: {sanitize_error_message(str(result))}")
                 raise ValueError("Invalid response format from Cloudflare Workers AI")
 
             except httpx.HTTPError as e:

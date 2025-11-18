@@ -340,7 +340,7 @@ async def run_health_checks():
                             params={"response_time": response_time},
                         )
             except Exception as update_error:
-                logger.error(f"Failed to update stats for {model_name}: {str(update_error)}")
+                logger.error(f"Failed to update stats for {model_name}: {sanitize_error_message(update_error)}")
 
         logger.info("Health checks completed successfully")
 

@@ -87,7 +87,7 @@ class GoogleGeminiProvider(AIProviderBase):
                         if len(parts) > 0 and "text" in parts[0]:
                             return parts[0]["text"].strip()
 
-                logger.error(f"Unexpected Google Gemini response format: {result}")
+                logger.error(f"Unexpected Google Gemini response format: {sanitize_error_message(str(result))}")
                 raise ValueError("Invalid response format from Google Gemini")
 
             except httpx.HTTPError as e:
