@@ -66,6 +66,57 @@ run_migrations() {
     fi
 }
 
+# Function to migrate obsolete providers
+migrate_obsolete_providers() {
+    echo "🔄 Checking for obsolete AI providers..."
+
+    # Set PYTHONPATH to include the app directory
+    export PYTHONPATH=/app:$PYTHONPATH
+
+    # Create temporary file for migration check result
+    MIGRATION_FILE=$(mktemp)
+
+    # Check if migration is needed (write to file to avoid stdout contamination)
+    python3 << 'PYTHON_SCRIPT' > "$MIGRATION_FILE" 2>/dev/null
+import asyncio
+import sys
+import os
+
+# Suppress all logging before imports
+os.environ['SQLALCHEMY_SILENCE_UBER_WARNING'] = '1'
+os.environ['PYTHONWARNINGS'] = 'ignore'
+
+import logging
+logging.disable(logging.CRITICAL)
+
+from app.infrastructure.database.migrate_to_new_providers import check_migration_needed
+
+try:
+    needs_migration = asyncio.run(check_migration_needed())
+    print("true" if needs_migration else "false")
+    sys.exit(0)
+except Exception:
+    print("false")
+    sys.exit(1)
+PYTHON_SCRIPT
+
+    NEEDS_MIGRATION=$(cat "$MIGRATION_FILE" | tr -d ' \n\r')
+    rm -f "$MIGRATION_FILE"
+
+    if [ "$NEEDS_MIGRATION" = "true" ]; then
+        echo "🔄 Obsolete providers found, running migration..."
+        python3 -m app.infrastructure.database.migrate_to_new_providers
+
+        if [ $? -eq 0 ]; then
+            echo "✅ Migration completed successfully!"
+        else
+            echo "⚠️  Migration failed, but continuing..."
+        fi
+    else
+        echo "✅ No obsolete providers found, skipping migration"
+    fi
+}
+
 # Function to seed database if empty
 seed_if_empty() {
     echo "🌱 Checking if database needs seeding..."
@@ -131,6 +182,7 @@ PYTHON_SCRIPT
 # Main execution
 wait_for_postgres
 run_migrations
+migrate_obsolete_providers
 seed_if_empty
 
 echo "🎯 Starting FastAPI application..."
