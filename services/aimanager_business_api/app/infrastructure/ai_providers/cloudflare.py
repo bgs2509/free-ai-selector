@@ -1,0 +1,137 @@
+"""
+Cloudflare Workers AI Provider integration
+
+Integrates with Cloudflare Workers AI for serverless GPU-powered inference.
+Free tier: 10,000 Neurons/day, no credit card required.
+Supports multiple models for text, image, and speech tasks.
+"""
+
+import logging
+import os
+from typing import Optional
+
+import httpx
+
+from app.infrastructure.ai_providers.base import AIProviderBase
+
+logger = logging.getLogger(__name__)
+
+
+class CloudflareProvider(AIProviderBase):
+    """
+    Cloudflare Workers AI API provider.
+
+    Uses Cloudflare's serverless GPU infrastructure for AI generation.
+    No credit card required - fully free tier with 10k Neurons/day.
+    """
+
+    def __init__(
+        self,
+        api_token: Optional[str] = None,
+        account_id: Optional[str] = None,
+        model: Optional[str] = None,
+    ):
+        """
+        Initialize Cloudflare provider.
+
+        Args:
+            api_token: Cloudflare API token (defaults to CLOUDFLARE_API_TOKEN env var)
+            account_id: Cloudflare account ID (defaults to CLOUDFLARE_ACCOUNT_ID env var)
+            model: Model name (defaults to @cf/meta/llama-3.3-70b-instruct-fp8-fast)
+        """
+        self.api_token = api_token or os.getenv("CLOUDFLARE_API_TOKEN", "")
+        self.account_id = account_id or os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
+        self.model = model or "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+        self.base_url = "https://api.cloudflare.com/client/v4"
+        self.timeout = 30.0  # seconds
+
+    async def generate(self, prompt: str, **kwargs) -> str:
+        """
+        Generate AI response using Cloudflare Workers AI API.
+
+        Args:
+            prompt: User's prompt text
+            **kwargs: Additional parameters (max_tokens, temperature, etc.)
+
+        Returns:
+            Generated response text
+
+        Raises:
+            httpx.HTTPError: If API request fails
+            ValueError: If API token or account ID is missing
+        """
+        if not self.api_token:
+            raise ValueError("Cloudflare API token is required")
+        if not self.account_id:
+            raise ValueError("Cloudflare account ID is required")
+
+        headers = {"Authorization": f"Bearer {self.api_token}", "Content-Type": "application/json"}
+
+        # Construct endpoint URL with account ID and model
+        endpoint = f"{self.base_url}/accounts/{self.account_id}/ai/run/{self.model}"
+
+        # Cloudflare uses messages format (similar to OpenAI)
+        payload = {
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": kwargs.get("max_tokens", 512),
+            "temperature": kwargs.get("temperature", 0.7),
+        }
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            try:
+                response = await client.post(endpoint, headers=headers, json=payload)
+                response.raise_for_status()
+
+                result = response.json()
+
+                # Cloudflare response format
+                if "result" in result:
+                    result_data = result["result"]
+
+                    # Handle response field (text generation models)
+                    if "response" in result_data:
+                        return result_data["response"].strip()
+
+                    # Handle choices format (OpenAI-compatible)
+                    if "choices" in result_data and len(result_data["choices"]) > 0:
+                        message = result_data["choices"][0].get("message", {})
+                        return message.get("content", "").strip()
+
+                logger.error(f"Unexpected Cloudflare response format: {result}")
+                raise ValueError("Invalid response format from Cloudflare Workers AI")
+
+            except httpx.HTTPError as e:
+                logger.error(f"Cloudflare Workers AI API error: {str(e)}")
+                raise
+
+    async def health_check(self) -> bool:
+        """
+        Check if Cloudflare Workers AI API is responding.
+
+        Returns:
+            True if API is healthy, False otherwise
+        """
+        if not self.api_token:
+            logger.warning("Cloudflare API token not configured")
+            return False
+        if not self.account_id:
+            logger.warning("Cloudflare account ID not configured")
+            return False
+
+        headers = {"Authorization": f"Bearer {self.api_token}"}
+
+        # Use account verification endpoint for health check
+        endpoint = f"{self.base_url}/accounts/{self.account_id}"
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                response = await client.get(endpoint, headers=headers)
+                return response.status_code == 200
+
+            except Exception as e:
+                logger.error(f"Cloudflare Workers AI health check failed: {str(e)}")
+                return False
+
+    def get_provider_name(self) -> str:
+        """Get provider name."""
+        return "Cloudflare"
