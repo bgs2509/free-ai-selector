@@ -1,10 +1,13 @@
 """
 Database seed script for AI Manager Platform - Data API Service
 
-Seeds the database with initial AI models for free providers:
-- HuggingFace (Meta-Llama-3-8B-Instruct)
-- Replicate (Meta-Llama-3-8B-Instruct)
-- Together.ai (Meta-Llama-3-8B-Instruct)
+Seeds the database with initial AI models for verified free-tier providers (no credit card required):
+- Google Gemini (Gemini 2.5 Flash) - 10 RPM, 250 RPD
+- Groq (Llama 3.3 70B) - 20 RPM, 14,400 RPD, 1,800 tokens/sec
+- Cerebras (Llama 3.3 70B) - 1M tokens/day, 30 RPM, 2,500+ tokens/sec
+- SambaNova (Meta-Llama-3.3-70B-Instruct) - 20 RPM, 430 tokens/sec
+- HuggingFace (Meta-Llama-3-8B-Instruct) - Rate limited, free inference API
+- Cloudflare (Llama 3.3 70B FP8 Fast) - 10,000 Neurons/day
 """
 
 import asyncio
@@ -20,24 +23,42 @@ from app.infrastructure.database.models import AIModelORM
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initial AI models configuration
+# Initial AI models configuration - 6 verified free-tier providers (no credit card required)
 SEED_MODELS = [
     {
-        "name": "HuggingFace Meta-Llama-3-8B-Instruct",
+        "name": "Gemini 2.5 Flash",
+        "provider": "GoogleGemini",
+        "api_endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "is_active": True,
+    },
+    {
+        "name": "Llama 3.3 70B Versatile",
+        "provider": "Groq",
+        "api_endpoint": "https://api.groq.com/openai/v1/chat/completions",
+        "is_active": True,
+    },
+    {
+        "name": "Llama 3.3 70B",
+        "provider": "Cerebras",
+        "api_endpoint": "https://api.cerebras.ai/v1/chat/completions",
+        "is_active": True,
+    },
+    {
+        "name": "Meta-Llama-3.3-70B-Instruct",
+        "provider": "SambaNova",
+        "api_endpoint": "https://api.sambanova.ai/v1/chat/completions",
+        "is_active": True,
+    },
+    {
+        "name": "Meta-Llama-3-8B-Instruct",
         "provider": "HuggingFace",
         "api_endpoint": "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
         "is_active": True,
     },
     {
-        "name": "Replicate Meta-Llama-3-8B-Instruct",
-        "provider": "Replicate",
-        "api_endpoint": "https://api.replicate.com/v1/models/meta/meta-llama-3-8b-instruct/predictions",
-        "is_active": True,
-    },
-    {
-        "name": "Together.ai Meta-Llama-3-8B-Instruct",
-        "provider": "Together.ai",
-        "api_endpoint": "https://api.together.xyz/v1/chat/completions",
+        "name": "Llama 3.3 70B Instruct FP8 Fast",
+        "provider": "Cloudflare",
+        "api_endpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
         "is_active": True,
     },
 ]
