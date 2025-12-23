@@ -11,20 +11,20 @@
     ".claude/": "kept_existing",
     ".claude/commands/": "copied_10_commands"
   },
-  "current_stage": 2,
+  "current_stage": 3,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2025-12-23T17:30:00Z",
+  "updated_at": "2025-12-23T18:00:00Z",
 
   "current_feature": {
     "id": "F001",
     "name": "project-cleanup-audit",
     "title": "Аудит и очистка проекта Free AI Selector",
     "created": "2025-12-23",
-    "stage": "RESEARCH_DONE",
+    "stage": "PLAN_APPROVED",
     "artifacts": {
       "prd": "prd/2025-12-23_F001_project-cleanup-audit-prd.md",
       "research": "research/2025-12-23_F001_project-cleanup-audit-research.md",
-      "plan": null
+      "plan": "plans/2025-12-23_F001_project-cleanup-plan.md"
     }
   },
 
@@ -50,8 +50,9 @@
       "artifact": "ai-docs/docs/research/2025-12-23_F001_project-cleanup-audit-research.md"
     },
     "PLAN_APPROVED": {
-      "passed": false,
-      "passed_at": null
+      "passed": true,
+      "passed_at": "2025-12-23T18:00:00Z",
+      "artifact": "ai-docs/docs/plans/2025-12-23_F001_project-cleanup-plan.md"
     },
     "IMPLEMENT_OK": {
       "passed": false,
@@ -77,7 +78,8 @@
 
   "artifacts": {
     "prd": "ai-docs/docs/prd/2025-12-23_F001_project-cleanup-audit-prd.md",
-    "research": "ai-docs/docs/research/2025-12-23_F001_project-cleanup-audit-research.md"
+    "research": "ai-docs/docs/research/2025-12-23_F001_project-cleanup-audit-research.md",
+    "plan": "ai-docs/docs/plans/2025-12-23_F001_project-cleanup-plan.md"
   },
 
   "features_registry": {
@@ -86,7 +88,7 @@
       "title": "Аудит и очистка проекта Free AI Selector",
       "description": "Удаление мёртвого кода, устаревших файлов и исправление документации",
       "created": "2025-12-23",
-      "status": "IN_PROGRESS",
+      "status": "PLAN_APPROVED",
       "services": []
     }
   },
