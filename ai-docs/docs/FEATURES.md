@@ -20,7 +20,7 @@
 
 | FID | Название | Статус | Дата | Сервисы | Артефакты |
 |-----|----------|--------|------|---------|-----------|
-| F001 | Аудит и очистка проекта | IMPLEMENT_OK | 2025-12-23 | — | [PRD](prd/2025-12-23_F001_project-cleanup-audit-prd.md), [Research](research/2025-12-23_F001_project-cleanup-audit-research.md), [Plan](plans/2025-12-23_F001_project-cleanup-plan.md) |
+| F001 | Аудит и очистка проекта | REVIEW_OK | 2025-12-23 | — | [PRD](prd/2025-12-23_F001_project-cleanup-audit-prd.md), [Research](research/2025-12-23_F001_project-cleanup-audit-research.md), [Plan](plans/2025-12-23_F001_project-cleanup-plan.md), [Review](reports/2025-12-23_F001_project-cleanup-review-report.md) |
 
 ---
 
