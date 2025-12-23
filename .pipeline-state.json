@@ -11,16 +11,16 @@
     ".claude/": "kept_existing",
     ".claude/commands/": "copied_10_commands"
   },
-  "current_stage": 6,
+  "current_stage": 7,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2025-12-23T19:00:00Z",
+  "updated_at": "2025-12-23T19:15:00Z",
 
   "current_feature": {
     "id": "F001",
     "name": "project-cleanup-audit",
     "title": "Аудит и очистка проекта Free AI Selector",
     "created": "2025-12-23",
-    "stage": "QA_PASSED",
+    "stage": "VALIDATED",
     "artifacts": {
       "prd": "prd/2025-12-23_F001_project-cleanup-audit-prd.md",
       "research": "research/2025-12-23_F001_project-cleanup-audit-research.md",
@@ -80,8 +80,10 @@
       "pre_existing_issues": ["aiosqlite missing", "test data isolation", "low coverage"]
     },
     "ALL_GATES_PASSED": {
-      "passed": false,
-      "passed_at": null
+      "passed": true,
+      "passed_at": "2025-12-23T19:15:00Z",
+      "artifact": "ai-docs/docs/reports/2025-12-23_F001_project-cleanup-validation-report.md",
+      "rtm": "ai-docs/docs/rtm.md"
     },
     "DEPLOYED": {
       "passed": false,
@@ -101,7 +103,7 @@
       "title": "Аудит и очистка проекта Free AI Selector",
       "description": "Удаление мёртвого кода, устаревших файлов и исправление документации",
       "created": "2025-12-23",
-      "status": "QA_PASSED",
+      "status": "VALIDATED",
       "services": []
     }
   },
