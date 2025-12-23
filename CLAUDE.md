@@ -31,13 +31,16 @@ Free AI Selector is a reliability-based AI routing platform that automatically s
 
 ### Services (in `services/`)
 
-| Service | Purpose | Internal Port |
-|---------|---------|---------------|
-| `aimanager_data_postgres_api` | CRUD for AI models, prompt history | 8001 |
-| `aimanager_business_api` | Model selection, AI provider integration | 8000 |
-| `aimanager_telegram_bot` | Russian-language user interface | - |
-| `aimanager_health_worker` | Hourly synthetic monitoring | - |
-| `aimanager_nginx` | Reverse proxy with AI-optimized timeouts | 8000 |
+| Service | Purpose | Internal | External |
+|---------|---------|----------|----------|
+| `aimanager_data_postgres_api` | CRUD for AI models, prompt history | 8001 | 8002 |
+| `aimanager_business_api` | Model selection, AI provider integration | 8000 | via nginx |
+| `aimanager_telegram_bot` | Russian-language user interface | - | - |
+| `aimanager_health_worker` | Hourly synthetic monitoring | - | - |
+| `aimanager_nginx` | Reverse proxy with AI-optimized timeouts | 8000 | 8000 |
+| `postgres` | PostgreSQL 16 database | 5432 | 5433 |
+
+> Полная конфигурация портов: [docker-compose.yml](docker-compose.yml)
 
 ### Layer Structure (DDD/Hexagonal)
 
@@ -91,13 +94,6 @@ docker compose exec aimanager_data_postgres_api pytest tests/unit/test_domain_mo
 
 All inherit from `base.py:AIProviderBase`.
 
-## External Ports (VPS)
-
-Configured in docker-compose.yml to avoid conflicts:
-- `8000` - Business API (via nginx)
-- `8002` - Data API
-- `5433` - PostgreSQL
-
 ## API Documentation
 
 When services are running:
@@ -119,7 +115,7 @@ When services are running:
 
 <!-- Добавлено из шаблона AIDD -->
 
-## AIDD Framework Integration
+## Интеграция AIDD Framework
 
 Этот проект использует фреймворк **AIDD-MVP Generator** для AI-driven разработки.
 
@@ -127,7 +123,8 @@ When services are running:
 |----------|------|------------|
 | Фреймворк | [.aidd/CLAUDE.md](.aidd/CLAUDE.md) | Правила и процесс разработки |
 | Workflow | [.aidd/workflow.md](.aidd/workflow.md) | Пайплайн (этапы 0-8) |
-| Conventions | [.aidd/conventions.md](.aidd/conventions.md) | Соглашения о коде |
+| Соглашения | [.aidd/conventions.md](.aidd/conventions.md) | Соглашения о коде |
+| Роли агентов | [.aidd/.claude/agents/](.aidd/.claude/agents/) | Инструкции для каждой роли AI |
 
 ## Slash-команды (AIDD Pipeline)
 
@@ -151,18 +148,6 @@ When services are running:
 3. **Загрузить роль**: Прочитать `.aidd/.claude/agents/{agent}.md` (если указан агент)
 4. **Выполнить**: Следовать инструкциям из загруженных файлов
 5. **Обновить состояние**: Записать результат в `.pipeline-state.json`
-
-## Роли AI-агентов
-
-| Роль | Файл инструкций | Этапы | Ответственность |
-|------|-----------------|-------|-----------------|
-| Аналитик | `.aidd/.claude/agents/analyst.md` | 1 | PRD, требования |
-| Исследователь | `.aidd/.claude/agents/researcher.md` | 2 | Анализ кода/требований |
-| Архитектор | `.aidd/.claude/agents/architect.md` | 3 | Проектирование |
-| Реализатор | `.aidd/.claude/agents/implementer.md` | 4 | Генерация кода |
-| Ревьюер | `.aidd/.claude/agents/reviewer.md` | 5 | Качество кода |
-| QA | `.aidd/.claude/agents/qa.md` | 6 | Тестирование |
-| Валидатор | `.aidd/.claude/agents/validator.md` | 7-8 | Финальная проверка, деплой |
 
 ## Порядок чтения файлов для AI
 
