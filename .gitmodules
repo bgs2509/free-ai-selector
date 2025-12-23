@@ -1,0 +1,3 @@
+[submodule ".aidd"]
+	path = .aidd
+	url = git@github.com:bgs2509/aidd-mvp-generator.git
