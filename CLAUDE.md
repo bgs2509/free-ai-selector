@@ -114,3 +114,79 @@ When services are running:
 ## Submodules
 
 - `.aidd/` - AIDD MVP Generator framework (read-only knowledge base for AI-driven development)
+
+---
+
+<!-- Добавлено из шаблона AIDD -->
+
+## AIDD Framework Integration
+
+Этот проект использует фреймворк **AIDD-MVP Generator** для AI-driven разработки.
+
+| Документ | Путь | Назначение |
+|----------|------|------------|
+| Фреймворк | [.aidd/CLAUDE.md](.aidd/CLAUDE.md) | Правила и процесс разработки |
+| Workflow | [.aidd/workflow.md](.aidd/workflow.md) | Пайплайн (этапы 0-8) |
+| Conventions | [.aidd/conventions.md](.aidd/conventions.md) | Соглашения о коде |
+
+## Slash-команды (AIDD Pipeline)
+
+| # | Команда | Описание | Агент | Ворота IN | Ворота OUT |
+|---|---------|----------|-------|-----------|------------|
+| 0 | `/init` | Инициализация проекта | — | — | BOOTSTRAP_READY |
+| 1 | `/idea` | Создание PRD документа | Аналитик | BOOTSTRAP_READY | PRD_READY |
+| 2 | `/research` | Анализ кодовой базы | Исследователь | PRD_READY | RESEARCH_DONE |
+| 3 | `/plan` | Архитектурный план (CREATE) | Архитектор | RESEARCH_DONE | PLAN_APPROVED |
+| 3 | `/feature-plan` | План фичи (FEATURE) | Архитектор | RESEARCH_DONE | PLAN_APPROVED |
+| 4 | `/generate` | Генерация кода | Реализатор | PLAN_APPROVED | IMPLEMENT_OK |
+| 5 | `/review` | Код-ревью | Ревьюер | IMPLEMENT_OK | REVIEW_OK |
+| 6 | `/test` | Тестирование и QA | QA | REVIEW_OK | QA_PASSED |
+| 7 | `/validate` | Финальная проверка | Валидатор | QA_PASSED | ALL_GATES_PASSED |
+| 8 | `/deploy` | Сборка и запуск | Валидатор | ALL_GATES_PASSED | DEPLOYED |
+
+### Алгоритм выполнения команды для AI
+
+1. **Проверить ворота**: Прочитать `.pipeline-state.json`, убедиться что Ворота IN пройдены
+2. **Загрузить инструкции**: Прочитать `.aidd/.claude/commands/{command}.md`
+3. **Загрузить роль**: Прочитать `.aidd/.claude/agents/{agent}.md` (если указан агент)
+4. **Выполнить**: Следовать инструкциям из загруженных файлов
+5. **Обновить состояние**: Записать результат в `.pipeline-state.json`
+
+## Роли AI-агентов
+
+| Роль | Файл инструкций | Этапы | Ответственность |
+|------|-----------------|-------|-----------------|
+| Аналитик | `.aidd/.claude/agents/analyst.md` | 1 | PRD, требования |
+| Исследователь | `.aidd/.claude/agents/researcher.md` | 2 | Анализ кода/требований |
+| Архитектор | `.aidd/.claude/agents/architect.md` | 3 | Проектирование |
+| Реализатор | `.aidd/.claude/agents/implementer.md` | 4 | Генерация кода |
+| Ревьюер | `.aidd/.claude/agents/reviewer.md` | 5 | Качество кода |
+| QA | `.aidd/.claude/agents/qa.md` | 6 | Тестирование |
+| Валидатор | `.aidd/.claude/agents/validator.md` | 7-8 | Финальная проверка, деплой |
+
+## Порядок чтения файлов для AI
+
+### При первом запуске (новая сессия)
+
+```
+1. ./CLAUDE.md                  ← Этот файл (контекст проекта)
+2. ./.pipeline-state.json       ← Состояние, режим, ворота
+3. ./ai-docs/docs/              ← Существующие артефакты
+4. ./.aidd/CLAUDE.md            ← Правила фреймворка
+```
+
+### При выполнении команды
+
+```
+1. ./.aidd/.claude/commands/{command}.md   ← Инструкции команды
+2. ./.aidd/.claude/agents/{agent}.md       ← Инструкции роли (если есть)
+3. ./.aidd/templates/documents/            ← Шаблоны (при создании)
+```
+
+## Правила для AI (AIDD)
+
+1. **Читать сначала контекст проекта** (этот файл, .pipeline-state.json, ai-docs/)
+2. **Затем инструкции фреймворка** (.aidd/)
+3. **Не модифицировать .aidd/** — это read-only submodule
+4. **Проверять ворота** перед переходом к следующему этапу
+5. **Генерировать код** только в `services/` и корне проекта

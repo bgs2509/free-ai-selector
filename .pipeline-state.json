@@ -1,0 +1,60 @@
+{
+  "project_name": "free-ai-selector",
+  "mode": "FEATURE",
+  "init_mode": "EXISTING_PROJECT",
+  "init_decisions": {
+    "CLAUDE.md": "merged",
+    "README.md": "kept_existing",
+    ".gitignore": "kept_existing",
+    ".pipeline-state.json": "created",
+    "ai-docs/": "created",
+    ".claude/": "kept_existing"
+  },
+  "current_stage": 0,
+  "created_at": "2025-12-23T10:30:00Z",
+  "gates": {
+    "BOOTSTRAP_READY": {
+      "passed": true,
+      "passed_at": "2025-12-23T10:30:00Z",
+      "checks": {
+        "git": true,
+        "framework": true,
+        "python": "3.12.6",
+        "docker": "28.4.0"
+      }
+    },
+    "PRD_READY": {
+      "passed": false,
+      "passed_at": null
+    },
+    "RESEARCH_DONE": {
+      "passed": false,
+      "passed_at": null
+    },
+    "PLAN_APPROVED": {
+      "passed": false,
+      "passed_at": null
+    },
+    "IMPLEMENT_OK": {
+      "passed": false,
+      "passed_at": null
+    },
+    "REVIEW_OK": {
+      "passed": false,
+      "passed_at": null
+    },
+    "QA_PASSED": {
+      "passed": false,
+      "passed_at": null
+    },
+    "ALL_GATES_PASSED": {
+      "passed": false,
+      "passed_at": null
+    },
+    "DEPLOYED": {
+      "passed": false,
+      "passed_at": null
+    }
+  },
+  "artifacts": {}
+}
