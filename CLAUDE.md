@@ -100,6 +100,27 @@ docker compose exec aimanager_data_postgres_api pytest tests/unit/test_domain_mo
 - Business API: http://localhost:8000/docs
 - Data API: http://localhost:8002/docs
 
+## Документация проекта
+
+Полная документация в `docs/`:
+
+| Раздел | Описание |
+|--------|----------|
+| [docs/index.md](docs/index.md) | Главная навигация |
+| [docs/ai-context/](docs/ai-context/) | **AI Context Files для Claude Code** |
+| [docs/project/](docs/project/) | Специфика проекта |
+| [docs/api/](docs/api/) | API Reference |
+| [docs/operations/](docs/operations/) | Runbooks и troubleshooting |
+| [docs/adr/](docs/adr/) | Architecture Decision Records |
+
+### AI Context Files (для генерации кода)
+
+| Файл | Описание |
+|------|----------|
+| [docs/ai-context/PROJECT_CONTEXT.md](docs/ai-context/PROJECT_CONTEXT.md) | Quick facts, правила, CORRECT/WRONG примеры |
+| [docs/ai-context/SERVICE_MAP.md](docs/ai-context/SERVICE_MAP.md) | Карта сервисов, endpoints, env vars |
+| [docs/ai-context/EXAMPLES.md](docs/ai-context/EXAMPLES.md) | Примеры кода: endpoints, use cases, tests |
+
 ## AIDD Framework
 
 Проект использует фреймворк AIDD-MVP Generator (read-only submodule в `.aidd/`).
