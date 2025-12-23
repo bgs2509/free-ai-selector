@@ -98,9 +98,19 @@ Configured in docker-compose.yml to avoid conflicts:
 - `8002` - Data API
 - `5433` - PostgreSQL
 
+## API Documentation
+
+When services are running:
+- Business API: http://localhost:8000/docs
+- Data API: http://localhost:8002/docs
+
 ## Adding a New AI Provider
 
 1. Create `services/aimanager_business_api/app/infrastructure/ai_providers/newprovider.py` extending `AIProviderBase`
 2. Register in `app/application/use_cases/process_prompt.py`
 3. Add model to `services/aimanager_data_postgres_api/app/infrastructure/database/seed.py`
 4. Add env var to `.env` and `docker-compose.yml`
+
+## Submodules
+
+- `.aidd/` - AIDD MVP Generator framework (read-only knowledge base for AI-driven development)
