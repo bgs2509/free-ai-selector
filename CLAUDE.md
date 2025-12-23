@@ -1,177 +1,122 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Этот файл предоставляет инструкции для Claude Code (claude.ai/code) при работе с кодом в этом репозитории.
 
-## Project Overview
+## Обзор проекта
 
-Free AI Selector is a reliability-based AI routing platform that automatically selects the best-performing free AI model. It uses the formula: `reliability_score = (success_rate × 0.6) + (speed_score × 0.4)`.
+Free AI Selector — платформа маршрутизации AI на основе надёжности, автоматически выбирающая лучшую бесплатную AI-модель. Формула расчёта: `reliability_score = (success_rate × 0.6) + (speed_score × 0.4)`.
 
-## Architecture
+## Архитектура
 
-**5 microservices + PostgreSQL** with HTTP-only data access:
+**5 микросервисов + PostgreSQL** с HTTP-only доступом к данным:
 
 ```
-┌─────────────────┐     ┌─────────────────┐
-│  Telegram Bot   │────▶│  Business API   │
-│  (aiogram 3.x)  │     │  (FastAPI:8000) │
-└─────────────────┘     └────────┬────────┘
-                                 │ HTTP only
-┌─────────────────┐     ┌────────▼────────┐     ┌──────────┐
-│  Health Worker  │────▶│    Data API     │────▶│ Postgres │
-│  (APScheduler)  │     │  (FastAPI:8001) │     │   :5432  │
-└─────────────────┘     └─────────────────┘     └──────────┘
-        ▲
-        │
-┌───────┴───────┐
-│ Nginx (proxy) │  External :8000 → Business API
-└───────────────┘
+┌──────────────┐     ┌──────────────┐
+│ Telegram Bot │────▶│ Business API │◀──┐
+│ (aiogram 3.x)│     │(FastAPI:8000)│   │
+└──────────────┘     └──────┬───────┘   │
+                            │ HTTP only │
+┌──────────────┐     ┌──────▼───────┐   │   ┌──────────┐
+│Health Worker │────▶│   Data API   │──▶│──▶│ Postgres │
+│ (APScheduler)│     │(FastAPI:8001)│   │   │  :5432   │
+└──────────────┘     └──────────────┘   │   └──────────┘
+                                        │
+                     ┌──────────────┐   │
+                     │    Nginx     │───┘
+                     │ :8000 (ext)  │
+                     └──────────────┘
 ```
 
-**Key rule**: Business services access data ONLY via HTTP to Data API, never direct DB.
+**Ключевое правило**: Бизнес-сервисы обращаются к данным ТОЛЬКО через HTTP к Data API, никогда напрямую к БД.
 
-### Services (in `services/`)
+### Сервисы (в `services/`)
 
-| Service | Purpose | Internal | External |
-|---------|---------|----------|----------|
-| `aimanager_data_postgres_api` | CRUD for AI models, prompt history | 8001 | 8002 |
-| `aimanager_business_api` | Model selection, AI provider integration | 8000 | via nginx |
-| `aimanager_telegram_bot` | Russian-language user interface | - | - |
-| `aimanager_health_worker` | Hourly synthetic monitoring | - | - |
-| `aimanager_nginx` | Reverse proxy with AI-optimized timeouts | 8000 | 8000 |
-| `postgres` | PostgreSQL 16 database | 5432 | 5433 |
+| Сервис | Назначение | Внутр. | Внешн. |
+|--------|------------|--------|--------|
+| `aimanager_data_postgres_api` | CRUD для AI-моделей, история промптов | 8001 | 8002 |
+| `aimanager_business_api` | Выбор модели, интеграция с AI-провайдерами | 8000 | через nginx |
+| `aimanager_telegram_bot` | Пользовательский интерфейс (русский язык) | - | - |
+| `aimanager_health_worker` | Почасовой синтетический мониторинг | - | - |
+| `aimanager_nginx` | Reverse proxy с оптимизированными таймаутами для AI | 8000 | 8000 |
+| `postgres` | База данных PostgreSQL 16 | 5432 | 5433 |
 
-> Полная конфигурация портов: [docker-compose.yml](docker-compose.yml)
+### Слоистая структура (DDD/Hexagonal)
 
-### Layer Structure (DDD/Hexagonal)
+Каждый сервис следует: `app/api/` → `app/application/` → `app/domain/` → `app/infrastructure/`
 
-Each service follows: `app/api/` → `app/application/` → `app/domain/` → `app/infrastructure/`
-
-## Common Commands
+## Основные команды
 
 ```bash
-# Docker operations
-make build              # Build all images
-make up                 # Start services + health check
-make down               # Stop services
-make logs               # All service logs
-make logs-business      # Business API logs only
+# Docker операции
+make build              # Собрать все образы
+make up                 # Запустить сервисы + проверка здоровья
+make down               # Остановить сервисы
+make logs               # Логи всех сервисов
+make logs-business      # Логи только Business API
 
-# Database
-make migrate            # Run Alembic migrations
-make seed               # Seed AI models
+# База данных
+make migrate            # Запустить миграции Alembic
+make seed               # Заполнить AI-модели
 make db-shell           # PostgreSQL shell
 
-# Testing (≥75% coverage required)
-make test               # Run all tests
-make test-data          # Data API tests only
-make test-business      # Business API tests only
+# Тестирование (≥75% покрытия обязательно)
+make test               # Все тесты
+make test-data          # Тесты только Data API
+make test-business      # Тесты только Business API
 
-# Code quality
+# Качество кода
 make lint               # ruff + mypy + bandit
 make format             # ruff format
 
-# Debug
-make shell-business     # Shell in Business API container
-make health             # Check all service health
+# Отладка
+make shell-business     # Shell в контейнере Business API
+make health             # Проверить здоровье всех сервисов
 ```
 
-### Running single test
+### Запуск одного теста
 
 ```bash
 docker compose exec aimanager_business_api pytest tests/unit/test_process_prompt_use_case.py -v
 docker compose exec aimanager_data_postgres_api pytest tests/unit/test_domain_models.py::test_specific -v
 ```
 
-## AI Providers
+## AI-провайдеры
 
-6 free providers in `services/aimanager_business_api/app/infrastructure/ai_providers/`:
-- `google_gemini.py` - Google AI Studio
-- `groq.py` - Groq LPU
-- `cerebras.py` - Cerebras
-- `sambanova.py` - SambaNova
-- `huggingface.py` - HuggingFace Inference
-- `cloudflare.py` - Cloudflare Workers AI
+6 бесплатных провайдеров в `services/aimanager_business_api/app/infrastructure/ai_providers/`:
+- `google_gemini.py`, `groq.py`, `cerebras.py`, `sambanova.py`, `huggingface.py`, `cloudflare.py`
 
-All inherit from `base.py:AIProviderBase`.
+Все наследуют от `base.py:AIProviderBase` (должны реализовать `generate()`, `health_check()`, `get_provider_name()`).
 
-## API Documentation
+### Добавление нового провайдера
 
-When services are running:
+1. Создать `services/aimanager_business_api/app/infrastructure/ai_providers/newprovider.py`, наследующий `AIProviderBase`
+2. Зарегистрировать в `app/application/use_cases/process_prompt.py:ProcessPromptUseCase.providers`
+3. Добавить модель в `services/aimanager_data_postgres_api/app/infrastructure/database/seed.py`
+4. Добавить env-переменную в `.env` и `docker-compose.yml`
+
+## API документация
+
+При запущенных сервисах:
 - Business API: http://localhost:8000/docs
 - Data API: http://localhost:8002/docs
 
-## Adding a New AI Provider
+## AIDD Framework
 
-1. Create `services/aimanager_business_api/app/infrastructure/ai_providers/newprovider.py` extending `AIProviderBase`
-2. Register in `app/application/use_cases/process_prompt.py`
-3. Add model to `services/aimanager_data_postgres_api/app/infrastructure/database/seed.py`
-4. Add env var to `.env` and `docker-compose.yml`
+Проект использует фреймворк AIDD-MVP Generator (read-only submodule в `.aidd/`).
 
-## Submodules
+**Не модифицировать файлы в `.aidd/`** — для AI-driven разработки см. [.aidd/CLAUDE.md](.aidd/CLAUDE.md)
 
-- `.aidd/` - AIDD MVP Generator framework (read-only knowledge base for AI-driven development)
+### Slash-команды AIDD
 
----
-
-<!-- Добавлено из шаблона AIDD -->
-
-## Интеграция AIDD Framework
-
-Этот проект использует фреймворк **AIDD-MVP Generator** для AI-driven разработки.
-
-| Документ | Путь | Назначение |
-|----------|------|------------|
-| Фреймворк | [.aidd/CLAUDE.md](.aidd/CLAUDE.md) | Правила и процесс разработки |
-| Workflow | [.aidd/workflow.md](.aidd/workflow.md) | Пайплайн (этапы 0-8) |
-| Соглашения | [.aidd/conventions.md](.aidd/conventions.md) | Соглашения о коде |
-| Роли агентов | [.aidd/.claude/agents/](.aidd/.claude/agents/) | Инструкции для каждой роли AI |
-
-## Slash-команды (AIDD Pipeline)
-
-| # | Команда | Описание | Агент | Ворота IN | Ворота OUT |
-|---|---------|----------|-------|-----------|------------|
-| 0 | `/init` | Инициализация проекта | — | — | BOOTSTRAP_READY |
-| 1 | `/idea` | Создание PRD документа | Аналитик | BOOTSTRAP_READY | PRD_READY |
-| 2 | `/research` | Анализ кодовой базы | Исследователь | PRD_READY | RESEARCH_DONE |
-| 3 | `/plan` | Архитектурный план (CREATE) | Архитектор | RESEARCH_DONE | PLAN_APPROVED |
-| 3 | `/feature-plan` | План фичи (FEATURE) | Архитектор | RESEARCH_DONE | PLAN_APPROVED |
-| 4 | `/generate` | Генерация кода | Реализатор | PLAN_APPROVED | IMPLEMENT_OK |
-| 5 | `/review` | Код-ревью | Ревьюер | IMPLEMENT_OK | REVIEW_OK |
-| 6 | `/test` | Тестирование и QA | QA | REVIEW_OK | QA_PASSED |
-| 7 | `/validate` | Финальная проверка | Валидатор | QA_PASSED | ALL_GATES_PASSED |
-| 8 | `/deploy` | Сборка и запуск | Валидатор | ALL_GATES_PASSED | DEPLOYED |
-
-### Алгоритм выполнения команды для AI
-
-1. **Проверить ворота**: Прочитать `.pipeline-state.json`, убедиться что Ворота IN пройдены
-2. **Загрузить инструкции**: Прочитать `.aidd/.claude/commands/{command}.md`
-3. **Загрузить роль**: Прочитать `.aidd/.claude/agents/{agent}.md` (если указан агент)
-4. **Выполнить**: Следовать инструкциям из загруженных файлов
-5. **Обновить состояние**: Записать результат в `.pipeline-state.json`
-
-## Порядок чтения файлов для AI
-
-### При первом запуске (новая сессия)
-
-```
-1. ./CLAUDE.md                  ← Этот файл (контекст проекта)
-2. ./.pipeline-state.json       ← Состояние, режим, ворота
-3. ./ai-docs/docs/              ← Существующие артефакты
-4. ./.aidd/CLAUDE.md            ← Правила фреймворка
-```
-
-### При выполнении команды
-
-```
-1. ./.aidd/.claude/commands/{command}.md   ← Инструкции команды
-2. ./.aidd/.claude/agents/{agent}.md       ← Инструкции роли (если есть)
-3. ./.aidd/templates/documents/            ← Шаблоны (при создании)
-```
-
-## Правила для AI (AIDD)
-
-1. **Читать сначала контекст проекта** (этот файл, .pipeline-state.json, ai-docs/)
-2. **Затем инструкции фреймворка** (.aidd/)
-3. **Не модифицировать .aidd/** — это read-only submodule
-4. **Проверять ворота** перед переходом к следующему этапу
-5. **Генерировать код** только в `services/` и корне проекта
+| # | Команда | Описание | Ворота |
+|---|---------|----------|--------|
+| 0 | `/aidd-init` | Инициализация проекта | BOOTSTRAP_READY |
+| 1 | `/aidd-idea` | Создание PRD | PRD_READY |
+| 2 | `/aidd-research` | Анализ кодовой базы | RESEARCH_DONE |
+| 3 | `/aidd-plan` | Архитектурный план | PLAN_APPROVED |
+| 3 | `/aidd-feature-plan` | План фичи | PLAN_APPROVED |
+| 4 | `/aidd-generate` | Генерация кода | IMPLEMENT_OK |
+| 5 | `/aidd-review` | Код-ревью | REVIEW_OK |
+| 6 | `/aidd-test` | Тестирование | QA_PASSED |
+| 7 | `/aidd-validate` | Финальная проверка | ALL_GATES_PASSED |
+| 8 | `/aidd-deploy` | Сборка и запуск | DEPLOYED |
