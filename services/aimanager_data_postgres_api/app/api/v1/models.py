@@ -4,6 +4,8 @@ AI Models API routes for AI Manager Platform - Data API Service
 Provides CRUD operations for AI models and statistics management.
 """
 
+from datetime import datetime
+from decimal import Decimal
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -96,9 +98,6 @@ async def create_model(
         )
 
     # Create new model
-    from datetime import datetime
-    from decimal import Decimal
-
     new_model = AIModel(
         id=None,
         name=model_data.name,
@@ -178,8 +177,6 @@ async def increment_success(
     Raises:
         HTTPException: 404 if model not found
     """
-    from decimal import Decimal
-
     repository = AIModelRepository(db)
 
     updated_model = await repository.increment_success(
@@ -216,8 +213,6 @@ async def increment_failure(
     Raises:
         HTTPException: 404 if model not found
     """
-    from decimal import Decimal
-
     repository = AIModelRepository(db)
 
     updated_model = await repository.increment_failure(

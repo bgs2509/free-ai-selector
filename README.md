@@ -4,8 +4,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![Framework](https://img.shields.io/badge/framework-.ai--framework-purple.svg)](.ai-framework/)
-[![Maturity Level](https://img.shields.io/badge/maturity-Level%202%20(Development)-green.svg)](.ai-framework/docs/reference/maturity-levels.md)
+[![Framework](https://img.shields.io/badge/framework-AIDD--MVP-purple.svg)](.aidd/)
+[![Maturity Level](https://img.shields.io/badge/maturity-Level%202%20(Development)-green.svg)](.aidd/docs/)
 
 ## 🎯 What is Free AI Selector?
 
@@ -254,7 +254,7 @@ make db-shell       # Open PostgreSQL shell
 
 ```
 free-ai-selector/
-├── .ai-framework/              # Framework documentation and patterns
+├── .aidd/                      # AIDD-MVP framework (git submodule)
 ├── services/
 │   ├── aimanager_data_postgres_api/    # Data layer service
 │   │   ├── app/
@@ -331,7 +331,7 @@ Contributions are welcome! Please:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Follow the `.ai-framework/` guidelines
+3. Follow the project guidelines in `CLAUDE.md`
 4. Ensure tests pass and coverage ≥75%
 5. Commit your changes (`git commit -m 'feat: add amazing feature'`)
 6. Push to the branch (`git push origin feature/amazing-feature`)
@@ -347,7 +347,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Built with [.ai-framework](https://github.com/yourusername/ai-framework) - Microservices framework for AI applications
+- Built with [AIDD-MVP Generator](.aidd/) - AI-Driven Development framework for microservices
 - Free AI providers (no credit card required):
   - [Google AI Studio](https://aistudio.google.com/) - Gemini models
   - [Groq](https://groq.com/) - Ultra-fast LPU inference
@@ -362,11 +362,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/free-ai-selector/issues)
 - **API Keys Setup**: [API_KEY_SETUP_GUIDE.md](API_KEY_SETUP_GUIDE.md) - Detailed guide for getting API keys
-- **Documentation**: [.ai-framework/docs](.ai-framework/docs/)
-- **Framework Guide**: [AI Code Generation Master Workflow](.ai-framework/docs/guides/ai-code-generation-master-workflow.md)
+- **Documentation**: [CLAUDE.md](CLAUDE.md) - Project guidelines and architecture
+- **Framework Guide**: [.aidd/CLAUDE.md](.aidd/CLAUDE.md) - AIDD-MVP workflow
 
 ---
 
 **Maturity Level**: Level 2 (Development Ready) - Suitable for development teams of 2-5 developers preparing for beta launch.
 
-For production deployment (Level 4), see [.ai-framework/docs/reference/maturity-levels.md](.ai-framework/docs/reference/maturity-levels.md).
+For production deployment (Level 4+), see [.aidd/knowledge/architecture/](.aidd/knowledge/architecture/).

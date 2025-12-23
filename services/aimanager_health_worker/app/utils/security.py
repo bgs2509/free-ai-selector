@@ -116,39 +116,3 @@ def sanitize_error_message(error: Union[Exception, str]) -> str:
     message = re.sub(r"(?<=[=:'\"\s])[A-Za-z0-9_\-\.]{40,}(?=[,;'\"\s]|$)", "***", message)
 
     return message
-
-
-def is_sensitive_key_present(text: str) -> bool:
-    """
-    Check if text contains patterns that look like API keys or tokens.
-
-    Useful for validation before logging or returning error messages to users.
-
-    Args:
-        text: Text to check for sensitive patterns
-
-    Returns:
-        True if sensitive patterns detected, False otherwise
-
-    Examples:
-        >>> is_sensitive_key_present("Error: Invalid API key AIzaSyABC123")
-        True
-
-        >>> is_sensitive_key_present("Error: Connection timeout")
-        False
-    """
-    # Check for common API key patterns
-    patterns = [
-        r"AIza[A-Za-z0-9_-]{35}",  # Google
-        r"sk-[A-Za-z0-9]{48,}",  # OpenAI
-        r"hf_[A-Za-z0-9]{34,}",  # HuggingFace
-        r"gsk_[A-Za-z0-9_]{50,}",  # Groq
-        r"Bearer [A-Za-z0-9_\-\.]{20,}",  # Bearer tokens
-        r"[?&](key|token|secret)=[^&\s]+",  # URL params
-    ]
-
-    for pattern in patterns:
-        if re.search(pattern, text, re.IGNORECASE):
-            return True
-
-    return False

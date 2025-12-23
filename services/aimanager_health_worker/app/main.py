@@ -18,7 +18,6 @@ import asyncio
 import logging
 import os
 import time
-from decimal import Decimal
 
 import httpx
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
