@@ -276,7 +276,7 @@ class TestNewProvider:
 
 1. Добавить в этот файл (`docs/project/ai-providers.md`)
 2. Обновить `docs/ai-context/SERVICE_MAP.md`
-3. Обновить `API_KEY_SETUP_GUIDE.md` в корне
+3. Обновить `docs/operations/api-keys.md`
 
 ---
 

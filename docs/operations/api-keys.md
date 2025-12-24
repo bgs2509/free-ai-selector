@@ -1,202 +1,507 @@
-# API Keys Setup
+# Руководство по получению API ключей
 
-> Краткое руководство по получению API ключей для всех провайдеров.
+> **Подробная инструкция по настройке всех 6 бесплатных AI провайдеров**
 
-Все 6 провайдеров **бесплатны и не требуют кредитную карту**.
-
----
-
-## Сводная таблица
-
-| Провайдер | URL | Переменная | Время |
-|-----------|-----|------------|-------|
-| Google AI Studio | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | `GOOGLE_AI_STUDIO_API_KEY` | 1 мин |
-| Groq | [console.groq.com/keys](https://console.groq.com/keys) | `GROQ_API_KEY` | 2 мин |
-| Cerebras | [cloud.cerebras.ai](https://cloud.cerebras.ai/) | `CEREBRAS_API_KEY` | 2 мин |
-| SambaNova | [cloud.sambanova.ai](https://cloud.sambanova.ai/) | `SAMBANOVA_API_KEY` | 2 мин |
-| HuggingFace | [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) | `HUGGINGFACE_API_KEY` | 2 мин |
-| Cloudflare | [dash.cloudflare.com](https://dash.cloudflare.com/) | `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` | 5 мин |
-
-**Общее время:** ~15 минут на все провайдеры.
+Все провайдеры в этом списке **НЕ требуют кредитную карту** и предоставляют бесплатный доступ сразу после регистрации.
 
 ---
 
-## 1. Google AI Studio
+## Содержание
 
-**Лимиты:** 10 RPM, 250 RPD
+1. [Google AI Studio (Gemini)](#1-google-ai-studio-gemini)
+2. [Groq](#2-groq)
+3. [Cerebras](#3-cerebras)
+4. [SambaNova](#4-sambanova)
+5. [HuggingFace](#5-huggingface)
+6. [Cloudflare Workers AI](#6-cloudflare-workers-ai)
+7. [Итоговая проверка конфигурации](#итоговая-проверка-конфигурации)
+8. [Troubleshooting](#troubleshooting)
+
+---
+
+## 1. Google AI Studio (Gemini)
+
+### Информация о Free Tier
+- **Модель**: Gemini 2.5 Flash
+- **Лимиты**: 10 запросов/минуту, 250 запросов/день
+- **Требуется кредитная карта**: НЕТ
+
+### Пошаговая инструкция
+
+#### Шаг 1: Переход на сайт
+Откройте в браузере: https://aistudio.google.com/apikey
+
+#### Шаг 2: Авторизация
+- Войдите через свой Google аккаунт
+- Если у вас нет аккаунта Google, создайте его на https://accounts.google.com/
+
+#### Шаг 3: Создание API ключа
+1. На странице "API Keys" нажмите кнопку **"Create API Key"** (синяя кнопка справа вверху)
+2. Выберите один из вариантов:
+   - **"Create API key in new project"** (рекомендуется для новых пользователей)
+   - **"Create API key in existing project"** (если у вас уже есть Google Cloud проект)
+3. Нажмите на выбранный вариант
+
+#### Шаг 4: Копирование ключа
+- API ключ будет сгенерирован мгновенно
+- Скопируйте ключ (кнопка "Copy" справа от ключа)
+- Ключ выглядит примерно так: `AIzaSyD...` (начинается с `AIzaSy`)
+
+#### Шаг 5: Добавление в .env файл
+Откройте файл `.env` в корне проекта и добавьте:
 
 ```bash
-# 1. Откройте https://aistudio.google.com/apikey
-# 2. Войдите через Google аккаунт
-# 3. Нажмите "Create API Key"
-# 4. Скопируйте ключ (начинается с AIzaSy...)
-
-GOOGLE_AI_STUDIO_API_KEY=AIzaSy...
+GOOGLE_AI_STUDIO_API_KEY=AIzaSyD_ваш_ключ_здесь
 ```
+
+### Важные замечания
+- API ключ активен сразу после создания, ожидание не требуется
+- Ключ можно использовать неограниченно долго
+- Если потеряли ключ, создайте новый на той же странице
+- Не публикуйте ключ в публичных репозиториях!
 
 ---
 
 ## 2. Groq
 
-**Лимиты:** 20 RPM, 14,400 RPD, 1,800 tokens/sec
+### Информация о Free Tier
+- **Модель**: Llama 3.3 70B Versatile
+- **Лимиты**: 20 запросов/минуту, 14,400 запросов/день
+- **Скорость**: До 1,800 токенов/секунду
+- **Требуется кредитная карта**: НЕТ
 
+### Пошаговая инструкция
+
+#### Шаг 1: Регистрация
+Откройте: https://console.groq.com/
+
+#### Шаг 2: Создание аккаунта
+1. Нажмите **"Sign Up"** (если еще не зарегистрированы)
+2. Выберите способ регистрации:
+   - Google account (быстрый способ)
+   - GitHub account
+   - Email + пароль
+3. Подтвердите email (если регистрируетесь через email)
+
+#### Шаг 3: Переход к API ключам
+После входа в консоль:
+1. В левом меню выберите **"API Keys"**
+2. Или перейдите напрямую: https://console.groq.com/keys
+
+#### Шаг 4: Создание API ключа
+1. Нажмите кнопку **"Create API Key"** (оранжевая кнопка)
+2. Введите название для ключа (например, "Free AI Selector")
+3. Нажмите **"Submit"**
+
+#### Шаг 5: Копирование ключа
+- **ВАЖНО**: Ключ показывается только один раз!
+- Скопируйте ключ сразу после создания
+- Ключ выглядит так: `gsk_...` (начинается с `gsk_`)
+- Если не скопировали, нужно будет создать новый ключ
+
+#### Шаг 6: Добавление в .env файл
 ```bash
-# 1. Откройте https://console.groq.com/keys
-# 2. Sign Up / Login
-# 3. Нажмите "Create API Key"
-# 4. ВАЖНО: Скопируйте сразу - показывается один раз!
-
-GROQ_API_KEY=gsk_...
+GROQ_API_KEY=gsk_ваш_ключ_здесь
 ```
+
+### Важные замечания
+- Ключ показывается только один раз при создании
+- Можно создать несколько ключей для разных проектов
+- Groq имеет самую высокую скорость генерации (до 1,800 токенов/сек)
 
 ---
 
 ## 3. Cerebras
 
-**Лимиты:** 1M tokens/day, 30 RPM, 2,500+ tokens/sec (самый быстрый!)
+### Информация о Free Tier
+- **Модель**: Llama 3.3 70B
+- **Лимиты**: 1,000,000 токенов/день, 30 запросов/минуту
+- **Скорость**: 2,500+ токенов/секунду (самый быстрый!)
+- **Требуется кредитная карта**: НЕТ
 
+### Пошаговая инструкция
+
+#### Шаг 1: Регистрация
+Откройте: https://cloud.cerebras.ai/
+
+#### Шаг 2: Создание аккаунта
+1. Нажмите **"Sign Up"** или **"Get Started"**
+2. Выберите способ регистрации:
+   - Google account (рекомендуется)
+   - GitHub account
+   - Email + пароль
+3. Заполните профиль (имя, компания - можно указать "Personal")
+
+#### Шаг 3: Переход к Dashboard
+После входа вы попадете в Cerebras Cloud Dashboard
+
+#### Шаг 4: Создание API ключа
+1. В левом меню найдите **"API Keys"** или **"Settings"**
+2. Нажмите **"Create API Key"** или **"Generate New Key"**
+3. Введите название ключа (например, "AI Manager Platform")
+4. Нажмите **"Create"**
+
+#### Шаг 5: Копирование ключа
+- Скопируйте сгенерированный API ключ
+- Ключ начинается с префикса, характерного для Cerebras
+- **ВАЖНО**: Сохраните ключ сразу, он может показываться только один раз
+
+#### Шаг 6: Добавление в .env файл
 ```bash
-# 1. Откройте https://cloud.cerebras.ai/
-# 2. Sign Up / Login
-# 3. API Keys → Create API Key
-# 4. Скопируйте ключ
-
-CEREBRAS_API_KEY=...
+CEREBRAS_API_KEY=ваш_ключ_здесь
 ```
+
+### Важные замечания
+- Cerebras предоставляет самую высокую скорость генерации (2,500+ токенов/сек)
+- Free tier очень щедрый: 1 миллион токенов в день
+- Идеально подходит для быстрых ответов
 
 ---
 
 ## 4. SambaNova
 
-**Лимиты:** 20 RPM, 430 tokens/sec
+### Информация о Free Tier
+- **Модель**: Meta-Llama-3.3-70B-Instruct
+- **Лимиты**: 20 запросов/минуту
+- **Скорость**: 430 токенов/секунду
+- **Бонус**: $5 кредитов = 30M+ токенов на Llama 8B
+- **Требуется кредитная карта**: НЕТ
 
+### Пошаговая инструкция
+
+#### Шаг 1: Регистрация
+Откройте: https://cloud.sambanova.ai/
+
+#### Шаг 2: Создание аккаунта
+1. Нажмите **"Sign Up"** или **"Get Started"**
+2. Выберите способ регистрации:
+   - Google account
+   - GitHub account
+   - Email + пароль
+3. Подтвердите email (если используете email регистрацию)
+
+#### Шаг 3: Переход к API Keys
+1. После входа в консоль, найдите в меню **"API Keys"**
+2. Или перейдите в **"Settings"** -> **"API Keys"**
+
+#### Шаг 4: Создание API ключа
+1. Нажмите **"Create API Key"** или **"Generate Key"**
+2. Введите название (например, "Free AI Selector Production")
+3. Выберите права доступа (обычно "Full Access" для разработки)
+4. Нажмите **"Create"**
+
+#### Шаг 5: Копирование ключа
+- Скопируйте API ключ сразу после генерации
+- **ВАЖНО**: Ключ может показываться только один раз
+- Сохраните его в безопасном месте
+
+#### Шаг 6: Добавление в .env файл
 ```bash
-# 1. Откройте https://cloud.sambanova.ai/
-# 2. Sign Up / Login
-# 3. Settings → API Keys → Create
-# 4. Скопируйте ключ
-
-SAMBANOVA_API_KEY=...
+SAMBANOVA_API_KEY=ваш_ключ_здесь
 ```
+
+### Важные замечания
+- SambaNova дает доступ к мощной модели Llama 3.3 70B бесплатно
+- Можно также использовать Llama 405B (самая большая модель в списке!)
+- Бонусные $5 кредитов позволяют протестировать другие модели
 
 ---
 
 ## 5. HuggingFace
 
-**Лимиты:** Rate limited (достаточно для разработки)
+### Информация о Free Tier
+- **Модель**: Meta-Llama-3-8B-Instruct (и тысячи других)
+- **Лимиты**: Rate limited (обычно достаточно для разработки)
+- **Требуется кредитная карта**: НЕТ
 
+### Пошаговая инструкция
+
+#### Шаг 1: Регистрация
+Откройте: https://huggingface.co/join
+
+#### Шаг 2: Создание аккаунта
+1. Заполните форму регистрации:
+   - Email
+   - Username
+   - Password
+2. Или войдите через:
+   - Google account
+   - GitHub account
+3. Подтвердите email (проверьте почту)
+
+#### Шаг 3: Переход к настройкам
+1. Нажмите на свой аватар в правом верхнем углу
+2. Выберите **"Settings"**
+3. В левом меню выберите **"Access Tokens"**
+4. Или перейдите напрямую: https://huggingface.co/settings/tokens
+
+#### Шаг 4: Создание токена
+1. Нажмите **"New token"** (синяя кнопка)
+2. Заполните форму:
+   - **Name**: "Free AI Selector" (или любое название)
+   - **Role**: Выберите **"Read"** (достаточно для inference API)
+3. Нажмите **"Generate token"**
+
+#### Шаг 5: Копирование токена
+- Скопируйте сгенерированный токен
+- Токен выглядит так: `hf_...` (начинается с `hf_`)
+- **ВАЖНО**: Сохраните токен сразу
+
+#### Шаг 6: Добавление в .env файл
 ```bash
-# 1. Откройте https://huggingface.co/settings/tokens
-# 2. Sign Up / Login
-# 3. New token → Role: Read → Generate
-# 4. Скопируйте токен (начинается с hf_...)
-
-HUGGINGFACE_API_KEY=hf_...
+HUGGINGFACE_API_KEY=hf_ваш_токен_здесь
 ```
+
+### Важные замечания
+- HuggingFace предоставляет доступ к тысячам моделей
+- Free Inference API может иметь задержки при загрузке модели
+- Токены можно удалять и создавать новые в любое время
+- Рекомендуется создавать отдельные токены для разных проектов
 
 ---
 
-## 6. Cloudflare (требует 2 значения!)
+## 6. Cloudflare Workers AI
 
-**Лимиты:** 10,000 Neurons/day
+### Информация о Free Tier
+- **Модель**: Llama 3.3 70B Instruct FP8 Fast
+- **Лимиты**: 10,000 Neurons/день
+- **Требуется кредитная карта**: НЕТ
+- **Особенность**: Требуется Account ID + API Token (два значения!)
+
+### Пошаговая инструкция
+
+#### Шаг 1: Регистрация
+Откройте: https://dash.cloudflare.com/sign-up
+
+#### Шаг 2: Создание аккаунта
+1. Заполните форму:
+   - Email
+   - Password
+2. Подтвердите email (проверьте почту и перейдите по ссылке)
+3. Войдите в Dashboard
+
+#### Шаг 3: Получение Account ID
+
+##### 3.1. Переход на главную страницу
+После входа вы окажетесь в Cloudflare Dashboard
+
+##### 3.2. Поиск Account ID
+1. В правой части экрана найдите секцию **"Account ID"**
+2. Или прокрутите вниз на главной странице
+3. Account ID выглядит как: `1a2b3c4d5e6f7g8h9i0j` (32 символа, hex)
+4. Нажмите на иконку **"Copy"** рядом с Account ID
+
+##### 3.3. Сохраните Account ID
+Временно сохраните его в блокнот - он понадобится для .env
+
+#### Шаг 4: Создание API Token
+
+##### 4.1. Переход к API Tokens
+1. В верхнем меню нажмите на иконку профиля (правый верхний угол)
+2. Выберите **"My Profile"**
+3. В левом меню выберите **"API Tokens"**
+4. Или перейдите напрямую: https://dash.cloudflare.com/profile/api-tokens
+
+##### 4.2. Создание токена
+1. Нажмите **"Create Token"** (синяя кнопка)
+2. Найдите шаблон **"Edit Cloudflare Workers"** и нажмите **"Use template"**
+3. Или создайте Custom Token с правами:
+   - Account: Workers AI - Read
+   - Zone: Workers Routes - Edit (опционально)
+
+##### 4.3. Настройка прав доступа
+1. В секции **"Account Resources"** выберите:
+   - Include -> Specific account -> Выберите ваш аккаунт
+2. В секции **"Permissions"** убедитесь что есть:
+   - **Account** -> **Workers AI** -> **Read**
+3. Можно установить срок действия токена (или оставить без ограничений)
+4. Нажмите **"Continue to summary"**
+
+##### 4.4. Подтверждение и копирование
+1. Проверьте права доступа
+2. Нажмите **"Create Token"**
+3. **ВАЖНО**: Скопируйте токен сразу - он показывается только один раз!
+4. Токен выглядит как длинная строка символов
+
+#### Шаг 5: Добавление в .env файл
+
+Cloudflare требует **ДВА** значения:
 
 ```bash
-# 1. Откройте https://dash.cloudflare.com/
-# 2. Sign Up / Login
-
-# ACCOUNT ID:
-# - На главной странице Dashboard справа
-# - Скопируйте 32-символьный hex
-
-# API TOKEN:
-# - Profile → API Tokens → Create Token
-# - Use template "Edit Cloudflare Workers"
-# - ВАЖНО: Скопируйте сразу!
-
-CLOUDFLARE_ACCOUNT_ID=1a2b3c4d...
-CLOUDFLARE_API_TOKEN=...
+# Cloudflare Workers AI - требуется Account ID и API Token
+CLOUDFLARE_ACCOUNT_ID=ваш_account_id_здесь
+CLOUDFLARE_API_TOKEN=ваш_api_token_здесь
 ```
+
+### Важные замечания
+- Cloudflare - единственный провайдер, требующий два значения (Account ID + API Token)
+- Account ID можно скопировать в любое время с главной страницы Dashboard
+- API Token показывается только один раз при создании
+- Рекомендуется создавать токен именно с шаблона "Edit Cloudflare Workers"
+- Free tier: 10,000 Neurons в день - это примерно 10,000 запросов
 
 ---
 
-## Итоговый .env
+## Итоговая проверка конфигурации
+
+После получения всех ключей, ваш файл `.env` должен выглядеть так:
 
 ```bash
-# === AI Providers ===
-
-# Google AI Studio (10 RPM, 250 RPD)
+# Google AI Studio - https://aistudio.google.com/apikey
+# Free tier: 10 RPM, 250 RPD
 GOOGLE_AI_STUDIO_API_KEY=AIzaSy...
 
-# Groq (20 RPM, 14,400 RPD)
+# Groq - https://console.groq.com/keys
+# Free tier: 20 RPM, 14,400 RPD, 1,800 tokens/sec
 GROQ_API_KEY=gsk_...
 
-# Cerebras (1M tokens/day, 30 RPM)
+# Cerebras - https://cloud.cerebras.ai/
+# Free tier: 1M tokens/day, 30 RPM, 2,500+ tokens/sec
 CEREBRAS_API_KEY=...
 
-# SambaNova (20 RPM)
+# SambaNova - https://cloud.sambanova.ai/
+# Free tier: 20 RPM, 430 tokens/sec
 SAMBANOVA_API_KEY=...
 
-# HuggingFace
+# HuggingFace - https://huggingface.co/settings/tokens
+# Free tier: Rate limited inference API
 HUGGINGFACE_API_KEY=hf_...
 
-# Cloudflare (10,000 Neurons/day)
+# Cloudflare Workers AI - https://dash.cloudflare.com/
+# Free tier: 10,000 Neurons/day
 CLOUDFLARE_ACCOUNT_ID=...
 CLOUDFLARE_API_TOKEN=...
 
-# === Telegram Bot (опционально) ===
+# Telegram Bot Token (получить у @BotFather)
 TELEGRAM_BOT_TOKEN=...
+
+# Optional: Admin user IDs (comma-separated)
 BOT_ADMIN_IDS=123456789
 ```
 
----
+### Проверка правильности настройки
 
-## Проверка
+После заполнения `.env` файла:
 
 ```bash
-# 1. Запустить сервисы
+# 1. Запустите все сервисы
 make up
 
-# 2. Подождать 30 сек
+# 2. Подождите ~30 секунд для инициализации
 
-# 3. Проверить провайдеров
-curl -X POST http://localhost:8000/api/v1/providers/test | jq
+# 3. Проверьте здоровье системы
+make health
+
+# 4. Проверьте логи Business API
+make logs-business
 ```
 
-Ожидаемый вывод:
-
-```json
-{
-  "results": [
-    {"provider": "GoogleGemini", "success": true},
-    {"provider": "Groq", "success": true},
-    ...
-  ],
-  "successful": 6,
-  "failed": 0
-}
-```
+Если все настроено правильно, вы увидите:
+- Все сервисы в статусе "Healthy"
+- Нет ошибок "API key is required" в логах
+- Health Worker успешно проверяет провайдеры
 
 ---
 
-## Частые ошибки
+## Troubleshooting
 
-| Ошибка | Причина | Решение |
-|--------|---------|---------|
-| `API key is required` | Ключ не в .env | Добавить в .env |
-| `Invalid API key` | Неверный ключ | Проверить/пересоздать |
-| `Rate limit exceeded` | Лимит превышен | Подождать, использовать fallback |
-| `Account not found` (Cloudflare) | Неверный Account ID | Скопировать с Dashboard |
+### Проблема: "API key is required" в логах
+
+**Решение**:
+1. Проверьте что `.env` файл находится в корне проекта
+2. Убедитесь что нет пробелов вокруг знака `=`
+   - Правильно: `GROQ_API_KEY=gsk_...`
+   - Неправильно: `GROQ_API_KEY = gsk_...`
+3. Перезапустите контейнеры: `make down && make up`
+
+### Проблема: "Invalid API key" или "Unauthorized"
+
+**Решение**:
+1. Проверьте что скопировали ключ полностью (без пробелов в начале/конце)
+2. Убедитесь что ключ активен (не удален на стороне провайдера)
+3. Для Cloudflare: проверьте что используете и Account ID, и API Token
+4. Создайте новый API ключ на стороне провайдера
+
+### Проблема: Rate limit exceeded
+
+**Решение**:
+1. Это нормально для free tier - подождите несколько минут
+2. Система автоматически переключится на другой провайдер
+3. Проверьте лимиты вашего провайдера в таблице выше
+
+### Проблема: Model loading (HuggingFace)
+
+**Решение**:
+1. HuggingFace может загружать модель при первом запросе (до 20-30 секунд)
+2. Статус 503 считается нормальным при загрузке модели
+3. Система автоматически повторит запрос или переключится на другой провайдер
+
+### Проблема: Cloudflare "Account not found"
+
+**Решение**:
+1. Убедитесь что CLOUDFLARE_ACCOUNT_ID скопирован правильно
+2. Account ID должен быть виден на главной странице Dashboard
+3. Проверьте что API Token создан с правами для Workers AI
+4. Пересоздайте API Token с шаблона "Edit Cloudflare Workers"
+
+### Проблема: Все провайдеры недоступны
+
+**Решение**:
+1. Проверьте подключение к интернету
+2. Убедитесь что Docker контейнеры запущены: `docker compose ps`
+3. Проверьте логи: `make logs-business`
+4. Убедитесь что .env файл корректно подключен к контейнерам
+5. Пересоздайте контейнеры: `make down && make build && make up`
 
 ---
 
-## Подробная инструкция
+## Сравнительная таблица требований
 
-Полная пошаговая инструкция со скриншотами: [API_KEY_SETUP_GUIDE.md](../../API_KEY_SETUP_GUIDE.md)
+| Провайдер | Что требуется | Время получения | Сложность |
+|-----------|---------------|-----------------|-----------|
+| Google AI Studio | API Key | 1 минута | Очень легко |
+| Groq | API Key | 2 минуты | Очень легко |
+| Cerebras | API Key | 2 минуты | Легко |
+| SambaNova | API Key | 2 минуты | Легко |
+| HuggingFace | Access Token | 2 минуты | Очень легко |
+| Cloudflare | Account ID + API Token | 5 минут | Средне |
+
+**Общее время на настройку всех 6 провайдеров**: ~15-20 минут
 
 ---
 
-## Related Documentation
+## Следующие шаги
 
-- [Quick Start](quick-start.md) - Быстрый запуск
-- [Troubleshooting](troubleshooting.md) - Решение проблем
-- [../project/ai-providers.md](../project/ai-providers.md) - Детали провайдеров
+После успешной настройки API ключей:
+
+1. **Запустите систему**:
+   ```bash
+   make up
+   make migrate
+   make seed
+   ```
+
+2. **Протестируйте REST API**:
+   ```bash
+   curl -X POST http://localhost:8000/api/v1/prompts/process \
+     -H "Content-Type: application/json" \
+     -d '{"prompt": "Привет! Расскажи о себе"}'
+   ```
+
+3. **Или используйте Telegram Bot**:
+   - Настройте TELEGRAM_BOT_TOKEN в .env
+   - Найдите бота в Telegram
+   - Отправьте /start
+
+4. **Мониторьте статистику**:
+   ```bash
+   curl http://localhost:8000/api/v1/models/stats
+   ```
+
+---
+
+## Дополнительные ресурсы
+
+- [README.md](../../README.md) - Основная документация проекта
+- [.env.example](../../.env.example) - Шаблон конфигурации
+- [Makefile](../../Makefile) - Доступные команды разработки

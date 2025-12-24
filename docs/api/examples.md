@@ -397,7 +397,7 @@ Bot: Code flows like a stream,
      Bugs dance in moonlit night,
      Debug until dawn.
 
-     🤖 Model: HuggingFace Meta-Llama-3-8B-Instruct
-     🔧 Provider: HuggingFace
-     ⚡ Time: 2.1 sec
+     Model: HuggingFace Meta-Llama-3-8B-Instruct
+     Provider: HuggingFace
+     Time: 2.1 sec
 ```

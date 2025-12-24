@@ -32,6 +32,7 @@
 | Business API (8000) | [api/business-api.md](api/business-api.md) | http://localhost:8000/docs |
 | Data API (8001) | [api/data-api.md](api/data-api.md) | http://localhost:8002/docs |
 | Коды ошибок | [api/errors.md](api/errors.md) | - |
+| Примеры использования | [api/examples.md](api/examples.md) | - |
 
 ### Architecture Decision Records
 
@@ -75,6 +76,7 @@
 | [operations/deployment.md](operations/deployment.md) | Развёртывание |
 | [operations/troubleshooting.md](operations/troubleshooting.md) | Решение проблем |
 | [operations/api-keys.md](operations/api-keys.md) | Настройка API ключей |
+| [operations/development.md](operations/development.md) | Руководство для разработчиков |
 
 ---
 
@@ -91,12 +93,14 @@ docs/
 ├── api/                        # API Reference
 │   ├── business-api.md
 │   ├── data-api.md
-│   └── errors.md
+│   ├── errors.md
+│   └── examples.md
 ├── operations/                 # Runbooks
 │   ├── quick-start.md
 │   ├── deployment.md
 │   ├── troubleshooting.md
-│   └── api-keys.md
+│   ├── api-keys.md
+│   └── development.md
 ├── adr/                        # Architecture Decisions
 │   ├── template.md
 │   ├── 0001-reliability-scoring.md
@@ -115,7 +119,6 @@ docs/
 |--------|----------|
 | [README.md](../README.md) | Главный README проекта |
 | [CLAUDE.md](../CLAUDE.md) | Инструкции для Claude Code |
-| [API_KEY_SETUP_GUIDE.md](../API_KEY_SETUP_GUIDE.md) | Подробная инструкция по ключам |
 | [.aidd/CLAUDE.md](../.aidd/CLAUDE.md) | AIDD Framework guide |
 
 ---

@@ -69,7 +69,7 @@ make test-data
 make test-business
 ```
 
-**Level 2 Requirement**: ≥75% code coverage
+**Level 2 Requirement**: >=75% code coverage
 
 ### Code Quality
 
@@ -119,7 +119,7 @@ make logs-worker
 
 ```
 free-ai-selector/
-├── .ai-framework/              # Framework documentation
+├── .aidd/                      # AIDD Framework (git submodule)
 ├── services/
 │   ├── aimanager_data_postgres_api/
 │   │   ├── app/
@@ -169,13 +169,13 @@ free-ai-selector/
 **Rule**: Business services MUST access data only via HTTP to Data API.
 
 ```python
-# ✅ CORRECT: Use HTTP client
+# CORRECT: Use HTTP client
 from app.infrastructure.http_clients.data_api_client import DataAPIClient
 
 data_client = DataAPIClient()
 models = await data_client.get_all_models()
 
-# ❌ WRONG: Direct database access
+# WRONG: Direct database access
 from app.infrastructure.database.connection import get_db  # NO!
 ```
 
@@ -314,7 +314,7 @@ docker-compose logs --tail=100 aimanager_business_api
 3. Follow coding standards:
    - Type hints for all functions
    - Docstrings in Google format
-   - ≥75% test coverage
+   - >=75% test coverage
    - Pass all linters (ruff, mypy, bandit)
 4. Commit: `git commit -m 'feat: add amazing feature'`
 5. Push: `git push origin feature/amazing-feature`
@@ -364,6 +364,7 @@ pytest --cov=app --cov-report=html
 
 ## References
 
-- [Framework Documentation](.ai-framework/docs/)
-- [Maturity Levels](.ai-framework/docs/reference/maturity-levels.md)
-- [Architecture Guide](.ai-framework/docs/guides/architecture-guide.md)
+- [Project Documentation](../index.md)
+- [AI Providers](../project/ai-providers.md)
+- [API Reference](../api/business-api.md)
+- [AIDD Framework](../../.aidd/CLAUDE.md)
