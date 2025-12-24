@@ -152,7 +152,7 @@ reliability_score = (0.0 × 0.6) + (1.0 × 0.4)
 ## Реализация в коде
 
 ```python
-# services/aimanager_data_postgres_api/app/domain/models.py
+# services/free-ai-selector-data-postgres-api/app/domain/models.py
 
 @dataclass
 class AIModel:
@@ -178,7 +178,7 @@ class AIModel:
 ## Выбор модели
 
 ```python
-# services/aimanager_business_api/app/application/use_cases/process_prompt.py
+# services/free-ai-selector-business-api/app/application/use_cases/process_prompt.py
 
 def _select_best_model(self, models: list[AIModelInfo]) -> AIModelInfo:
     """Выбрать модель с максимальным reliability_score."""

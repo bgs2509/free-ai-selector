@@ -168,7 +168,7 @@ Free AI Selector позиционируется как **бесплатный** 
 ## Архитектура интеграции
 
 ```python
-# services/aimanager_business_api/app/infrastructure/ai_providers/
+# services/free-ai-selector-business-api/app/infrastructure/ai_providers/
 
 ai_providers/
 ├── base.py              # AIProviderBase (интерфейс)

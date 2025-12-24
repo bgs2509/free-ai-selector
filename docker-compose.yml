@@ -1,25 +1,24 @@
 # =============================================================================
-# AI Manager Platform - Docker Compose Configuration
+# Free AI Selector - Docker Compose Configuration
 # =============================================================================
-# Level 2 (Development Ready) - 4 microservices + PostgreSQL
-# Architecture: Improved Hybrid Approach with HTTP-only data access
+# Конфигурация для VPS с внешним nginx-proxy
+# Архитектура: 4 микросервиса + PostgreSQL, доступ через proxy-network
 # =============================================================================
 
 services:
   # ---------------------------------------------------------------------------
   # PostgreSQL Database
   # ---------------------------------------------------------------------------
-  # External port 5433 to avoid conflict with other projects on VPS
+  # Внешний порт убран — доступ только через внутреннюю сеть
   postgres:
     image: postgres:16-alpine
-    container_name: aimanager_postgres
+    container_name: free-ai-selector-postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
-    ports:
-      - "5433:5432"
+    # ports убраны — БД доступна только внутри Docker-сети
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -29,18 +28,18 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - aimanager_network
+      - free-ai-selector-network
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
   # Data API Service (PostgreSQL Data Layer)
   # ---------------------------------------------------------------------------
-  # External port 8002 to avoid conflict with other projects on VPS
-  aimanager_data_postgres_api:
+  # Внешний порт убран — доступ только через внутреннюю сеть
+  free-ai-selector-data-postgres-api:
     build:
-      context: ./services/aimanager_data_postgres_api
+      context: ./services/free-ai-selector-data-postgres-api
       dockerfile: Dockerfile
-    container_name: aimanager_data_postgres_api
+    container_name: free-ai-selector-data-postgres-api
     environment:
       DATABASE_URL: ${DATABASE_URL}
       DATA_API_HOST: ${DATA_API_HOST}
@@ -48,8 +47,7 @@ services:
       DATA_API_LOG_LEVEL: ${DATA_API_LOG_LEVEL}
       ENVIRONMENT: ${ENVIRONMENT}
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
-    ports:
-      - "8002:8001"
+    # ports убраны — API доступен только внутри Docker-сети
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,21 +58,22 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - aimanager_network
+      - free-ai-selector-network
     restart: unless-stopped
     volumes:
-      - ./services/aimanager_data_postgres_api:/app
+      - ./services/free-ai-selector-data-postgres-api:/app
       - /app/__pycache__
 
   # ---------------------------------------------------------------------------
   # Business API Service (Business Logic Layer)
   # ---------------------------------------------------------------------------
-  # NOTE: No external port mapping - accessed only through nginx reverse proxy
-  aimanager_business_api:
+  # Точка входа для внешнего nginx-proxy через proxy-network
+  # Внутренний порт 8000 — доступен только через Docker-сети
+  free-ai-selector-business-api:
     build:
-      context: ./services/aimanager_business_api
+      context: ./services/free-ai-selector-business-api
       dockerfile: Dockerfile
-    container_name: aimanager_business_api
+    container_name: free-ai-selector-business-api
     environment:
       BUSINESS_API_HOST: ${BUSINESS_API_HOST}
       BUSINESS_API_PORT: ${BUSINESS_API_PORT}
@@ -92,9 +91,9 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS}
       ENVIRONMENT: ${ENVIRONMENT}
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
-    # Port removed - nginx will proxy to aimanager_business_api:8000 internally
+    # ports убраны — доступ через nginx-proxy (proxy-network)
     depends_on:
-      aimanager_data_postgres_api:
+      free-ai-selector-data-postgres-api:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -103,44 +102,21 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - aimanager_network
+      - free-ai-selector-network
+      - proxy-network
     restart: unless-stopped
     volumes:
-      - ./services/aimanager_business_api:/app
+      - ./services/free-ai-selector-business-api:/app
       - /app/__pycache__
-
-  # ---------------------------------------------------------------------------
-  # Nginx Reverse Proxy (API Gateway)
-  # ---------------------------------------------------------------------------
-  # External port 8000 with optimized timeouts for AI requests
-  aimanager_nginx:
-    build:
-      context: ./services/aimanager_nginx
-      dockerfile: Dockerfile
-    container_name: aimanager_nginx
-    ports:
-      - "8000:8000"
-    depends_on:
-      aimanager_business_api:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    networks:
-      - aimanager_network
-    restart: unless-stopped
 
   # ---------------------------------------------------------------------------
   # Telegram Bot Service (User Interface Layer)
   # ---------------------------------------------------------------------------
-  aimanager_telegram_bot:
+  free-ai-selector-telegram-bot:
     build:
-      context: ./services/aimanager_telegram_bot
+      context: ./services/free-ai-selector-telegram-bot
       dockerfile: Dockerfile
-    container_name: aimanager_telegram_bot
+    container_name: free-ai-selector-telegram-bot
     environment:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_BOT_LOG_LEVEL: ${TELEGRAM_BOT_LOG_LEVEL}
@@ -150,23 +126,23 @@ services:
       ENVIRONMENT: ${ENVIRONMENT}
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
     depends_on:
-      aimanager_business_api:
+      free-ai-selector-business-api:
         condition: service_healthy
     networks:
-      - aimanager_network
+      - free-ai-selector-network
     restart: unless-stopped
     volumes:
-      - ./services/aimanager_telegram_bot:/app
+      - ./services/free-ai-selector-telegram-bot:/app
       - /app/__pycache__
 
   # ---------------------------------------------------------------------------
   # Health Worker Service (Background Monitoring)
   # ---------------------------------------------------------------------------
-  aimanager_health_worker:
+  free-ai-selector-health-worker:
     build:
-      context: ./services/aimanager_health_worker
+      context: ./services/free-ai-selector-health-worker
       dockerfile: Dockerfile
-    container_name: aimanager_health_worker
+    container_name: free-ai-selector-health-worker
     environment:
       WORKER_LOG_LEVEL: ${WORKER_LOG_LEVEL}
       HEALTH_CHECK_INTERVAL: ${HEALTH_CHECK_INTERVAL}
@@ -182,22 +158,27 @@ services:
       ENVIRONMENT: ${ENVIRONMENT}
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
     depends_on:
-      aimanager_data_postgres_api:
+      free-ai-selector-data-postgres-api:
         condition: service_healthy
     networks:
-      - aimanager_network
+      - free-ai-selector-network
     restart: unless-stopped
     volumes:
-      - ./services/aimanager_health_worker:/app
+      - ./services/free-ai-selector-health-worker:/app
       - /app/__pycache__
 
 # =============================================================================
 # Networks
 # =============================================================================
 networks:
-  aimanager_network:
+  # Внутренняя сеть для связи между сервисами кластера
+  free-ai-selector-network:
     driver: bridge
-    name: aimanager_network
+    name: free-ai-selector-network
+
+  # Внешняя сеть для связи с nginx-proxy (создаётся отдельно на VPS)
+  proxy-network:
+    external: true
 
 # =============================================================================
 # Volumes
@@ -205,4 +186,4 @@ networks:
 volumes:
   postgres_data:
     driver: local
-    name: aimanager_postgres_data
+    name: free-ai-selector-postgres-data

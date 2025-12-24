@@ -47,7 +47,7 @@ make seed
 
 ```bash
 # Перезапуск конкретного сервиса
-docker compose restart aimanager_business_api
+docker compose restart free-ai-selector-business-api
 
 # Полная пересборка
 make down
@@ -66,19 +66,19 @@ make up
 services:
   postgres:           # 1. Сначала БД
 
-  aimanager_data_postgres_api:
+  free-ai-selector-data-postgres-api:
     depends_on:
       postgres:       # 2. Data API после БД
         condition: service_healthy
 
-  aimanager_business_api:
+  free-ai-selector-business-api:
     depends_on:
-      aimanager_data_postgres_api:  # 3. Business API после Data API
+      free-ai-selector-data-postgres-api:  # 3. Business API после Data API
         condition: service_healthy
 
-  aimanager_telegram_bot:
+  free-ai-selector-telegram-bot:
     depends_on:
-      aimanager_business_api:       # 4. Bot после Business API
+      free-ai-selector-business-api:       # 4. Bot после Business API
         condition: service_healthy
 ```
 
@@ -109,11 +109,11 @@ docker compose ps
 
 ```
 NAME                              STATUS          PORTS
-aimanager_business_api            Up (healthy)    8000/tcp
-aimanager_data_postgres_api       Up (healthy)    8001/tcp
-aimanager_health_worker           Up
-aimanager_nginx                   Up              0.0.0.0:8000->80/tcp
-aimanager_telegram_bot            Up
+free-ai-selector-business-api            Up (healthy)    8000/tcp
+free-ai-selector-data-postgres-api       Up (healthy)    8001/tcp
+free-ai-selector-health-worker           Up
+free-ai-selector-nginx                   Up              0.0.0.0:8000->80/tcp
+free-ai-selector-telegram-bot            Up
 postgres                          Up (healthy)    5432/tcp
 ```
 
@@ -165,7 +165,7 @@ curl -X POST http://localhost:8000/api/v1/providers/test
 make migrate
 
 # Или напрямую через Alembic
-docker compose exec aimanager_data_postgres_api alembic upgrade head
+docker compose exec free-ai-selector-data-postgres-api alembic upgrade head
 ```
 
 ### Seed данные
@@ -179,10 +179,10 @@ make seed
 
 ```bash
 # Создать backup
-docker compose exec postgres pg_dump -U aimanager aimanager > backup.sql
+docker compose exec postgres pg_dump -U free_ai_selector_user free_ai_selector_db > backup.sql
 
 # Восстановить
-docker compose exec -T postgres psql -U aimanager aimanager < backup.sql
+docker compose exec -T postgres psql -U free_ai_selector_user -d free_ai_selector_db < backup.sql
 ```
 
 ---
@@ -200,7 +200,7 @@ make logs-business
 make logs-data
 
 # Следить за логами
-docker compose logs -f aimanager_business_api
+docker compose logs -f free-ai-selector-business-api
 ```
 
 ### Формат логов (JSON)
@@ -231,7 +231,7 @@ Health Worker выполняет каждый час:
 
 ```bash
 # Логи Health Worker
-docker compose logs aimanager_health_worker
+docker compose logs free-ai-selector-health-worker
 
 # Статистика моделей
 curl http://localhost:8000/api/v1/models/stats
@@ -245,7 +245,7 @@ curl http://localhost:8000/api/v1/models/stats
 
 ```bash
 # Проверить логи
-docker compose logs aimanager_business_api
+docker compose logs free-ai-selector-business-api
 
 # Проверить зависимости
 docker compose ps
@@ -255,7 +255,7 @@ docker compose ps
 
 ```bash
 # Проверить PostgreSQL
-docker compose exec postgres psql -U aimanager -c "SELECT 1"
+docker compose exec postgres psql -U free_ai_selector_user -c "SELECT 1"
 
 # Проверить connection string
 echo $DATABASE_URL
@@ -268,7 +268,7 @@ echo $DATABASE_URL
 curl -X POST http://localhost:8000/api/v1/providers/test
 
 # Проверить API ключи
-docker compose exec aimanager_business_api env | grep API_KEY
+docker compose exec free-ai-selector-business-api env | grep API_KEY
 ```
 
 ---
@@ -289,7 +289,7 @@ make shell-business
 make db-shell
 
 # Пересоздать контейнер
-docker compose up -d --force-recreate aimanager_business_api
+docker compose up -d --force-recreate free-ai-selector-business-api
 ```
 
 ---

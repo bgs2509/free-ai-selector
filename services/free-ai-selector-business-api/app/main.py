@@ -27,7 +27,7 @@ from app.api.v1.schemas import HealthCheckResponse
 # Configuration
 # =============================================================================
 
-SERVICE_NAME = "aimanager_business_api"
+SERVICE_NAME = "free-ai-selector-business-api"
 SERVICE_VERSION = "1.0.0"
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 LOG_LEVEL = os.getenv("BUSINESS_API_LOG_LEVEL", "INFO")

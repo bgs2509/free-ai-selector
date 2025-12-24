@@ -121,7 +121,7 @@ make logs-worker
 free-ai-selector/
 ├── .aidd/                      # AIDD Framework (git submodule)
 ├── services/
-│   ├── aimanager_data_postgres_api/
+│   ├── free-ai-selector-data-postgres-api/
 │   │   ├── app/
 │   │   │   ├── api/v1/         # FastAPI routes
 │   │   │   ├── domain/         # Domain models
@@ -132,7 +132,7 @@ free-ai-selector/
 │   │   ├── Dockerfile
 │   │   └── requirements.txt
 │   │
-│   ├── aimanager_business_api/
+│   ├── free-ai-selector-business-api/
 │   │   ├── app/
 │   │   │   ├── api/v1/         # FastAPI routes
 │   │   │   ├── application/    # Use cases
@@ -143,14 +143,14 @@ free-ai-selector/
 │   │   ├── Dockerfile
 │   │   └── requirements.txt
 │   │
-│   ├── aimanager_telegram_bot/
+│   ├── free-ai-selector-telegram-bot/
 │   │   ├── app/
 │   │   │   ├── handlers/       # Command handlers
 │   │   │   └── main.py         # Bot entry point
 │   │   ├── Dockerfile
 │   │   └── requirements.txt
 │   │
-│   └── aimanager_health_worker/
+│   └── free-ai-selector-health-worker/
 │       ├── app/
 │       │   └── main.py         # Worker with APScheduler
 │       ├── Dockerfile
@@ -192,10 +192,10 @@ from app.infrastructure.database.connection import get_db  # NO!
 
 Each service runs in a **separate container**:
 
-- **aimanager_data_postgres_api** (port 8001)
-- **aimanager_business_api** (port 8000)
-- **aimanager_telegram_bot** (no exposed port)
-- **aimanager_health_worker** (no exposed port)
+- **free-ai-selector-data-postgres-api** (port 8001)
+- **free-ai-selector-business-api** (port 8000)
+- **free-ai-selector-telegram-bot** (no exposed port)
+- **free-ai-selector-health-worker** (no exposed port)
 - **postgres** (port 5432)
 
 ## Adding a New AI Provider
@@ -203,7 +203,7 @@ Each service runs in a **separate container**:
 ### Step 1: Create Provider Implementation
 
 ```python
-# services/aimanager_business_api/app/infrastructure/ai_providers/newprovider.py
+# services/free-ai-selector-business-api/app/infrastructure/ai_providers/newprovider.py
 
 from app.infrastructure.ai_providers.base import AIProviderBase
 
@@ -223,7 +223,7 @@ class NewProvider(AIProviderBase):
 ### Step 2: Register in Use Case
 
 ```python
-# services/aimanager_business_api/app/application/use_cases/process_prompt.py
+# services/free-ai-selector-business-api/app/application/use_cases/process_prompt.py
 
 from app.infrastructure.ai_providers.newprovider import NewProvider
 
@@ -243,7 +243,7 @@ class ProcessPromptUseCase:
 ### Step 3: Seed Database
 
 ```python
-# Add to services/aimanager_data_postgres_api/app/infrastructure/database/seed.py
+# Add to services/free-ai-selector-data-postgres-api/app/infrastructure/database/seed.py
 
 SEED_MODELS = [
     # ... existing models ...
@@ -304,7 +304,7 @@ curl http://localhost:8000/health  # Business API
 make logs-business
 
 # Last 100 lines
-docker-compose logs --tail=100 aimanager_business_api
+docker-compose logs --tail=100 free-ai-selector-business-api
 ```
 
 ## Contributing

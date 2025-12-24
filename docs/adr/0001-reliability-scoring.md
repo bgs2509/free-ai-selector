@@ -189,4 +189,4 @@ reliability_score = (0.95 × 0.6) + (0.4 × 0.4) = 0.73
 
 - [Reliability Formula](../project/reliability-formula.md) - Детальная документация
 - [Database Schema](../project/database-schema.md) - Где хранится статистика
-- [services/aimanager_data_postgres_api/app/domain/models.py](../../services/aimanager_data_postgres_api/app/domain/models.py) - Реализация
+- [services/free-ai-selector-data-postgres-api/app/domain/models.py](../../services/free-ai-selector-data-postgres-api/app/domain/models.py) - Реализация

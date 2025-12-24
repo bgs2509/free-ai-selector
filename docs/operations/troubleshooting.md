@@ -30,7 +30,7 @@ docker compose logs --tail=50 | grep -i error
 **Диагностика:**
 
 ```bash
-docker compose logs aimanager_business_api --tail=100
+docker compose logs free-ai-selector-business-api --tail=100
 ```
 
 **Решения:**
@@ -104,7 +104,7 @@ make logs-business | grep -i "provider\|error\|failed"
 
 ```bash
 # 1. Проверить API ключи
-docker compose exec aimanager_business_api env | grep API_KEY
+docker compose exec free-ai-selector-business-api env | grep API_KEY
 
 # 2. Проверить .env файл
 cat .env | grep -v "^#" | grep API
@@ -167,7 +167,7 @@ curl -X POST http://localhost:8000/api/v1/providers/test | jq '.results[] | sele
 
 ```bash
 # Проверить PostgreSQL
-docker compose exec postgres psql -U aimanager -c "SELECT 1"
+docker compose exec postgres psql -U free_ai_selector_user -d free_ai_selector_db -c "SELECT 1"
 
 # Проверить Data API
 curl http://localhost:8002/health
@@ -180,7 +180,7 @@ curl http://localhost:8002/health
 docker compose restart postgres
 
 # Проверить connection string
-docker compose exec aimanager_data_postgres_api env | grep DATABASE
+docker compose exec free-ai-selector-data-postgres-api env | grep DATABASE
 ```
 
 ### Миграции не применяются
@@ -188,17 +188,17 @@ docker compose exec aimanager_data_postgres_api env | grep DATABASE
 **Диагностика:**
 
 ```bash
-docker compose exec aimanager_data_postgres_api alembic current
+docker compose exec free-ai-selector-data-postgres-api alembic current
 ```
 
 **Решение:**
 
 ```bash
 # Принудительно применить миграции
-docker compose exec aimanager_data_postgres_api alembic upgrade head
+docker compose exec free-ai-selector-data-postgres-api alembic upgrade head
 
 # Если ошибка - проверить логи
-docker compose logs aimanager_data_postgres_api | grep -i alembic
+docker compose logs free-ai-selector-data-postgres-api | grep -i alembic
 ```
 
 ### Нет AI-моделей в БД
@@ -225,7 +225,7 @@ make seed
 **Диагностика:**
 
 ```bash
-docker compose logs aimanager_telegram_bot --tail=50
+docker compose logs free-ai-selector-telegram-bot --tail=50
 ```
 
 **Решения:**
@@ -276,7 +276,7 @@ docker volume prune
 **Диагностика:**
 
 ```bash
-docker compose exec aimanager_business_api ping aimanager_data_postgres_api
+docker compose exec free-ai-selector-business-api ping free-ai-selector-data-postgres-api
 ```
 
 **Решение:**
@@ -306,13 +306,13 @@ make down && make up
 
 ```bash
 # Business API
-docker compose logs -f aimanager_business_api
+docker compose logs -f free-ai-selector-business-api
 
 # Data API
-docker compose logs -f aimanager_data_postgres_api
+docker compose logs -f free-ai-selector-data-postgres-api
 
 # Health Worker
-docker compose logs -f aimanager_health_worker
+docker compose logs -f free-ai-selector-health-worker
 ```
 
 ### Shell в контейнере
@@ -322,7 +322,7 @@ docker compose logs -f aimanager_health_worker
 make shell-business
 
 # Data API
-docker compose exec aimanager_data_postgres_api /bin/bash
+docker compose exec free-ai-selector-data-postgres-api /bin/bash
 
 # PostgreSQL
 make db-shell

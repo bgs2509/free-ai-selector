@@ -93,7 +93,7 @@ Free AI Selector интегрирован с 6 бесплатными AI-про�
 Все провайдеры реализуют `AIProviderBase`:
 
 ```python
-# services/aimanager_business_api/app/infrastructure/ai_providers/base.py
+# services/free-ai-selector-business-api/app/infrastructure/ai_providers/base.py
 
 from abc import ABC, abstractmethod
 
@@ -147,7 +147,7 @@ class AIProviderBase(ABC):
 
 ```bash
 # Путь
-services/aimanager_business_api/app/infrastructure/ai_providers/newprovider.py
+services/free-ai-selector-business-api/app/infrastructure/ai_providers/newprovider.py
 ```
 
 ```python
@@ -202,7 +202,7 @@ class NewProvider(AIProviderBase):
 ### Шаг 2: Зарегистрировать в Use Case
 
 ```python
-# services/aimanager_business_api/app/application/use_cases/process_prompt.py
+# services/free-ai-selector-business-api/app/application/use_cases/process_prompt.py
 
 from app.infrastructure.ai_providers.newprovider import NewProvider
 
@@ -217,7 +217,7 @@ class ProcessPromptUseCase:
 ### Шаг 3: Добавить модель в seed
 
 ```python
-# services/aimanager_data_postgres_api/app/infrastructure/database/seed.py
+# services/free-ai-selector-data-postgres-api/app/infrastructure/database/seed.py
 
 INITIAL_MODELS = [
     # ... existing models
@@ -243,7 +243,7 @@ NEW_PROVIDER_API_KEY=your_api_key_here
 ### Шаг 5: Добавить тесты
 
 ```python
-# services/aimanager_business_api/tests/unit/test_newprovider.py
+# services/free-ai-selector-business-api/tests/unit/test_newprovider.py
 
 import pytest
 from unittest.mock import AsyncMock, patch

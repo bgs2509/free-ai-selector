@@ -7,7 +7,7 @@
 ### Business API - Process Prompt
 
 ```python
-# services/aimanager_business_api/app/api/v1/prompts.py
+# services/free-ai-selector-business-api/app/api/v1/prompts.py
 
 from fastapi import APIRouter, HTTPException, status
 from app.api.v1.schemas import ProcessPromptRequest, ProcessPromptResponse
@@ -69,7 +69,7 @@ async def process_prompt(request: ProcessPromptRequest) -> ProcessPromptResponse
 ### ProcessPromptUseCase
 
 ```python
-# services/aimanager_business_api/app/application/use_cases/process_prompt.py
+# services/free-ai-selector-business-api/app/application/use_cases/process_prompt.py
 
 from decimal import Decimal
 import time
@@ -205,7 +205,7 @@ class ProcessPromptUseCase:
 ### GoogleGeminiProvider
 
 ```python
-# services/aimanager_business_api/app/infrastructure/ai_providers/google_gemini.py
+# services/free-ai-selector-business-api/app/infrastructure/ai_providers/google_gemini.py
 
 import os
 import httpx
@@ -288,7 +288,7 @@ class GoogleGeminiProvider(AIProviderBase):
 ### AIModel with Business Logic
 
 ```python
-# services/aimanager_data_postgres_api/app/domain/models.py
+# services/free-ai-selector-data-postgres-api/app/domain/models.py
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -371,7 +371,7 @@ class AIModel:
 ### AIModelRepository
 
 ```python
-# services/aimanager_data_postgres_api/app/infrastructure/repositories/ai_model_repository.py
+# services/free-ai-selector-data-postgres-api/app/infrastructure/repositories/ai_model_repository.py
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -458,7 +458,7 @@ class AIModelRepository:
 ### Unit Test for Use Case
 
 ```python
-# services/aimanager_business_api/tests/unit/test_process_prompt_use_case.py
+# services/free-ai-selector-business-api/tests/unit/test_process_prompt_use_case.py
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock
@@ -561,7 +561,7 @@ class TestProcessPromptUseCase:
 ### DataAPIClient
 
 ```python
-# services/aimanager_business_api/app/infrastructure/http_clients/data_api_client.py
+# services/free-ai-selector-business-api/app/infrastructure/http_clients/data_api_client.py
 
 import os
 import httpx

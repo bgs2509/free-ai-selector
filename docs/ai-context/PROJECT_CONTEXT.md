@@ -69,7 +69,7 @@ from sqlalchemy import select  # FORBIDDEN in Business API!
 ### 2. Directory Structure
 
 ```
-services/aimanager_business_api/
+services/free-ai-selector-business-api/
 ├── app/
 │   ├── api/v1/           # FastAPI routers (HTTP endpoints)
 │   ├── application/      # Use cases (business logic orchestration)
@@ -82,7 +82,7 @@ services/aimanager_business_api/
 │   └── integration/      # Integration tests
 └── Dockerfile
 
-services/aimanager_data_postgres_api/
+services/free-ai-selector-data-postgres-api/
 ├── app/
 │   ├── api/v1/           # FastAPI routers (CRUD endpoints)
 │   ├── domain/           # Domain models with business logic
@@ -168,7 +168,7 @@ class ProcessPromptUseCase:
 
 | Variable | Service | Description |
 |----------|---------|-------------|
-| `DATA_API_URL` | Business API | URL Data API (http://aimanager_data_postgres_api:8001) |
+| `DATA_API_URL` | Business API | URL Data API (http://free-ai-selector-data-postgres-api:8001) |
 | `DATABASE_URL` | Data API | PostgreSQL connection string |
 | `GOOGLE_AI_STUDIO_API_KEY` | Business API | Google Gemini API key |
 | `GROQ_API_KEY` | Business API | Groq API key |

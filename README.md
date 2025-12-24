@@ -60,11 +60,11 @@ Free AI Selector is a **reliability-based AI routing platform** that automatical
 
 | Service | Purpose | Port | Technology |
 |---------|---------|------|------------|
-| **aimanager_data_postgres_api** | Data layer - CRUD operations for AI models and prompt history | 8001 | FastAPI + SQLAlchemy 2.0 async |
-| **aimanager_business_api** | Business logic - prompt processing, model selection, AI provider integration | 8000 | FastAPI + httpx |
-| **aimanager_telegram_bot** | User interface for end users (Russian language) | - | Aiogram 3.13+ |
-| **aimanager_health_worker** | Background monitoring - hourly synthetic checks, stats updates | - | AsyncIO + APScheduler |
-| **postgres** | PostgreSQL 16 database | 5432 | PostgreSQL 16 |
+| **free-ai-selector-data-postgres-api** | Data layer - CRUD operations for AI models and prompt history | 8001 | FastAPI + SQLAlchemy 2.0 async |
+| **free-ai-selector-business-api** | Business logic - prompt processing, model selection, AI provider integration | 8000 | FastAPI + httpx |
+| **free-ai-selector-telegram-bot** | User interface for end users (Russian language) | - | Aiogram 3.13+ |
+| **free-ai-selector-health-worker** | Background monitoring - hourly synthetic checks, stats updates | - | AsyncIO + APScheduler |
+| **free-ai-selector-postgres** | PostgreSQL 16 database | 5432 | PostgreSQL 16 |
 
 ---
 
@@ -256,7 +256,7 @@ make db-shell       # Open PostgreSQL shell
 free-ai-selector/
 ├── .aidd/                      # AIDD-MVP framework (git submodule)
 ├── services/
-│   ├── aimanager_data_postgres_api/    # Data layer service
+│   ├── free-ai-selector-data-postgres-api/    # Data layer service
 │   │   ├── app/
 │   │   │   ├── api/            # FastAPI routes
 │   │   │   ├── domain/         # Domain models
@@ -265,7 +265,7 @@ free-ai-selector/
 │   │   ├── tests/              # Unit + integration tests
 │   │   ├── Dockerfile
 │   │   └── requirements.txt
-│   ├── aimanager_business_api/         # Business logic service
+│   ├── free-ai-selector-business-api/         # Business logic service
 │   │   ├── app/
 │   │   │   ├── api/
 │   │   │   ├── application/    # Use cases
@@ -275,9 +275,9 @@ free-ai-selector/
 │   │   ├── tests/
 │   │   ├── Dockerfile
 │   │   └── requirements.txt
-│   ├── aimanager_telegram_bot/         # Telegram interface
+│   ├── free-ai-selector-telegram-bot/         # Telegram interface
 │   │   └── ...
-│   └── aimanager_health_worker/        # Background monitoring
+│   └── free-ai-selector-health-worker/        # Background monitoring
 │       └── ...
 ├── shared/                     # Shared utilities (future)
 ├── docker-compose.yml          # Service orchestration

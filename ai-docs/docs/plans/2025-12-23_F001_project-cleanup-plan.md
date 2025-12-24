@@ -52,12 +52,12 @@ research_ref: "research/2025-12-23_F001_project-cleanup-audit-research.md"
 | 1 | `shared/` | Удалить директорию | DELETE |
 | 2 | `PROMPT_FOR_AI_GENERATION.md` | Удалить файл | DELETE |
 | 3 | `README.md` | Исправить ссылки | EDIT |
-| 4 | `services/aimanager_business_api/app/utils/security.py` | Удалить функцию | EDIT |
-| 5 | `services/aimanager_data_postgres_api/app/utils/security.py` | Удалить функцию | EDIT |
-| 6 | `services/aimanager_telegram_bot/app/utils/security.py` | Удалить функцию | EDIT |
-| 7 | `services/aimanager_health_worker/app/utils/security.py` | Удалить функцию | EDIT |
-| 8 | `services/aimanager_health_worker/app/main.py` | Удалить импорт | EDIT |
-| 9 | `services/aimanager_data_postgres_api/app/api/v1/models.py` | Исправить импорты | EDIT |
+| 4 | `services/free-ai-selector-business-api/app/utils/security.py` | Удалить функцию | EDIT |
+| 5 | `services/free-ai-selector-data-postgres-api/app/utils/security.py` | Удалить функцию | EDIT |
+| 6 | `services/free-ai-selector-telegram-bot/app/utils/security.py` | Удалить функцию | EDIT |
+| 7 | `services/free-ai-selector-health-worker/app/utils/security.py` | Удалить функцию | EDIT |
+| 8 | `services/free-ai-selector-health-worker/app/main.py` | Удалить импорт | EDIT |
+| 9 | `services/free-ai-selector-data-postgres-api/app/api/v1/models.py` | Исправить импорты | EDIT |
 
 ### 2.2 Точки интеграции
 
@@ -107,10 +107,10 @@ research_ref: "research/2025-12-23_F001_project-cleanup-audit-research.md"
 **Затронутые файлы** (4 шт.):
 
 ```
-services/aimanager_business_api/app/utils/security.py:121-155
-services/aimanager_data_postgres_api/app/utils/security.py:121-155
-services/aimanager_telegram_bot/app/utils/security.py:121-155
-services/aimanager_health_worker/app/utils/security.py:121-155
+services/free-ai-selector-business-api/app/utils/security.py:121-155
+services/free-ai-selector-data-postgres-api/app/utils/security.py:121-155
+services/free-ai-selector-telegram-bot/app/utils/security.py:121-155
+services/free-ai-selector-health-worker/app/utils/security.py:121-155
 ```
 
 **Действие**: Удалить функцию `is_sensitive_key_present()` (строки 121-155) из каждого файла
@@ -119,7 +119,7 @@ services/aimanager_health_worker/app/utils/security.py:121-155
 
 ### 3.4 Этап 4: Удаление неиспользуемого импорта (низкий риск)
 
-**Файл**: `services/aimanager_health_worker/app/main.py`
+**Файл**: `services/free-ai-selector-health-worker/app/main.py`
 
 **Изменение**: Удалить строку 21
 
@@ -128,11 +128,11 @@ services/aimanager_health_worker/app/utils/security.py:121-155
 from decimal import Decimal
 ```
 
-**Верификация**: `grep "from decimal import Decimal" services/aimanager_health_worker/app/main.py` — должно быть пусто
+**Верификация**: `grep "from decimal import Decimal" services/free-ai-selector-health-worker/app/main.py` — должно быть пусто
 
 ### 3.5 Этап 5: Исправление дублирующихся импортов (средний риск)
 
-**Файл**: `services/aimanager_data_postgres_api/app/api/v1/models.py`
+**Файл**: `services/free-ai-selector-data-postgres-api/app/api/v1/models.py`
 
 **Проблема**: Локальные импорты внутри функций (строки 99-100, 181, 219)
 

@@ -21,7 +21,7 @@ from aiogram.types import Message
 # Configuration
 # =============================================================================
 
-SERVICE_NAME = "aimanager_telegram_bot"
+SERVICE_NAME = "free-ai-selector-telegram-bot"
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 BUSINESS_API_URL = os.getenv("BUSINESS_API_URL", "http://localhost:8000")
 LOG_LEVEL = os.getenv("TELEGRAM_BOT_LOG_LEVEL", "INFO")

@@ -4,7 +4,7 @@
 
 ## Service Inventory
 
-### 1. aimanager_business_api (Port 8000)
+### 1. free-ai-selector-business-api (Port 8000)
 
 **Назначение:** Выбор лучшей AI-модели и генерация ответов
 
@@ -20,7 +20,7 @@
 | AI Providers | `app/infrastructure/ai_providers/*.py` | 6 provider implementations |
 | HTTP Client | `app/infrastructure/http_clients/data_api_client.py` | Data API client |
 
-### 2. aimanager_data_postgres_api (Port 8001)
+### 2. free-ai-selector-data-postgres-api (Port 8001)
 
 **Назначение:** CRUD операции для AI-моделей и истории промптов
 
@@ -36,7 +36,7 @@
 | Seed | `app/infrastructure/database/seed.py` | Initial AI models data |
 | Migrations | `alembic/versions/` | Database migrations |
 
-### 3. aimanager_telegram_bot
+### 3. free-ai-selector-telegram-bot
 
 **Назначение:** Telegram интерфейс для пользователей
 
@@ -46,7 +46,7 @@
 | Handlers | `app/handlers/` | Message handlers |
 | Keyboards | `app/keyboards/` | Inline keyboards |
 
-### 4. aimanager_health_worker
+### 4. free-ai-selector-health-worker
 
 **Назначение:** Почасовой синтетический мониторинг AI-моделей
 
@@ -55,10 +55,6 @@
 | Main | `app/main.py` | APScheduler worker |
 | Health Check | `app/tasks/` | Scheduled health checks |
 
-### 5. aimanager_nginx (Port 8000 external)
-
-**Назначение:** Reverse proxy с оптимизированными таймаутами для AI
-
 ---
 
 ## Data Flow Diagram
@@ -66,14 +62,14 @@
 ```mermaid
 sequenceDiagram
     participant User as User/Telegram
-    participant Nginx as Nginx :8000
+    participant Proxy as nginx-proxy (VPS)
     participant Business as Business API :8000
     participant Data as Data API :8001
     participant DB as PostgreSQL :5432
     participant AI as AI Provider
 
-    User->>Nginx: POST /api/v1/prompts/process
-    Nginx->>Business: Forward request
+    User->>Proxy: POST /free-ai-selector/api/v1/prompts/process
+    Proxy->>Business: Forward request
 
     Note over Business: ProcessPromptUseCase.execute()
 
@@ -95,8 +91,8 @@ sequenceDiagram
         Data->>DB: INSERT INTO prompt_history
     end
 
-    Business-->>Nginx: PromptResponse
-    Nginx-->>User: JSON response
+    Business-->>Proxy: PromptResponse
+    Proxy-->>User: JSON response
 ```
 
 ---
@@ -112,7 +108,7 @@ sequenceDiagram
 | Business API | AI Providers | HTTPS | Various | Generate AI responses |
 | Telegram Bot | Business API | HTTP | POST /api/v1/prompts/process | Process user prompts |
 | Health Worker | Data API | HTTP | Various | Update health stats |
-| Nginx | Business API | HTTP | /* | Reverse proxy |
+| nginx-proxy (VPS) | Business API | HTTP | /* | Reverse proxy |
 
 ---
 
@@ -173,7 +169,7 @@ sequenceDiagram
 ### Business API
 
 ```bash
-DATA_API_URL=http://aimanager_data_postgres_api:8001
+DATA_API_URL=http://free-ai-selector-data-postgres-api:8001
 GOOGLE_AI_STUDIO_API_KEY=xxx
 GROQ_API_KEY=xxx
 CEREBRAS_API_KEY=xxx
@@ -186,11 +182,11 @@ CLOUDFLARE_API_TOKEN=xxx
 ### Data API
 
 ```bash
-DATABASE_URL=postgresql+asyncpg://user:pass@postgres:5432/aimanager
+DATABASE_URL=postgresql+asyncpg://free_ai_selector_user:pass@postgres:5432/free_ai_selector_db
 POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
-POSTGRES_DB=aimanager
-POSTGRES_USER=aimanager
+POSTGRES_DB=free_ai_selector_db
+POSTGRES_USER=free_ai_selector_user
 POSTGRES_PASSWORD=xxx
 ```
 
@@ -198,14 +194,14 @@ POSTGRES_PASSWORD=xxx
 
 ```bash
 TELEGRAM_BOT_TOKEN=xxx
-BUSINESS_API_URL=http://aimanager_business_api:8000
+BUSINESS_API_URL=http://free-ai-selector-business-api:8000
 BOT_ADMIN_IDS=123456,789012
 ```
 
 ### Health Worker
 
 ```bash
-DATA_API_URL=http://aimanager_data_postgres_api:8001
+DATA_API_URL=http://free-ai-selector-data-postgres-api:8001
 HEALTH_CHECK_INTERVAL=3600
 SYNTHETIC_TEST_PROMPT="Hello! Please respond with 'OK'"
 ```
@@ -214,15 +210,19 @@ SYNTHETIC_TEST_PROMPT="Hello! Please respond with 'OK'"
 
 ## Docker Network
 
-All services communicate via Docker network `aimanager_network`:
+Services communicate via two Docker networks:
 
 ```yaml
 networks:
-  aimanager_network:
+  free-ai-selector-network:
     driver: bridge
+    # Внутренняя сеть для связи между сервисами
+  proxy-network:
+    external: true
+    # Внешняя сеть для связи с nginx-proxy (VPS)
 ```
 
 **Internal DNS:**
-- `aimanager_business_api:8000`
-- `aimanager_data_postgres_api:8001`
+- `free-ai-selector-business-api:8000`
+- `free-ai-selector-data-postgres-api:8001`
 - `postgres:5432`

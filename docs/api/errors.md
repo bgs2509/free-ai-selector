@@ -147,7 +147,7 @@
 ### Business API
 
 ```python
-# services/aimanager_business_api/app/api/v1/prompts.py
+# services/free-ai-selector-business-api/app/api/v1/prompts.py
 
 from fastapi import HTTPException, status
 

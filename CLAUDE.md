@@ -8,22 +8,22 @@ Free AI Selector — платформа маршрутизации AI на ос�
 
 ## Архитектура
 
-**5 микросервисов + PostgreSQL** с HTTP-only доступом к данным:
+**4 микросервиса + PostgreSQL** с HTTP-only доступом к данным:
 
 ```
 ┌──────────────┐     ┌──────────────┐
-│ Telegram Bot │────▶│ Business API │◀──┐
-│ (aiogram 3.x)│     │(FastAPI:8000)│   │
-└──────────────┘     └──────┬───────┘   │
-                            │ HTTP only │
-┌──────────────┐     ┌──────▼───────┐   │   ┌──────────┐
-│Health Worker │────▶│   Data API   │──▶│──▶│ Postgres │
-│ (APScheduler)│     │(FastAPI:8001)│   │   │  :5432   │
-└──────────────┘     └──────────────┘   │   └──────────┘
-                                        │
-                     ┌──────────────┐   │
-                     │    Nginx     │───┘
-                     │ :8000 (ext)  │
+│ Telegram Bot │────▶│ Business API │◀────────────┐
+│ (aiogram 3.x)│     │(FastAPI:8000)│             │
+└──────────────┘     └──────┬───────┘             │
+                            │ HTTP only           │
+┌──────────────┐     ┌──────▼───────┐   ┌────────┴───────┐
+│Health Worker │────▶│   Data API   │   │  nginx-proxy   │
+│ (APScheduler)│     │(FastAPI:8001)│   │ (внешний VPS)  │
+└──────────────┘     └──────┬───────┘   └────────────────┘
+                            │
+                     ┌──────▼───────┐
+                     │   Postgres   │
+                     │    :5432     │
                      └──────────────┘
 ```
 
@@ -31,14 +31,13 @@ Free AI Selector — платформа маршрутизации AI на ос�
 
 ### Сервисы (в `services/`)
 
-| Сервис | Назначение | Внутр. | Внешн. |
-|--------|------------|--------|--------|
-| `aimanager_data_postgres_api` | CRUD для AI-моделей, история промптов | 8001 | 8002 |
-| `aimanager_business_api` | Выбор модели, интеграция с AI-провайдерами | 8000 | через nginx |
-| `aimanager_telegram_bot` | Пользовательский интерфейс (русский язык) | - | - |
-| `aimanager_health_worker` | Почасовой синтетический мониторинг | - | - |
-| `aimanager_nginx` | Reverse proxy с оптимизированными таймаутами для AI | 8000 | 8000 |
-| `postgres` | База данных PostgreSQL 16 | 5432 | 5433 |
+| Сервис | Назначение | Порт |
+|--------|------------|------|
+| `free-ai-selector-data-postgres-api` | CRUD для AI-моделей, история промптов | 8001 |
+| `free-ai-selector-business-api` | Выбор модели, интеграция с AI-провайдерами | 8000 |
+| `free-ai-selector-telegram-bot` | Пользовательский интерфейс (русский язык) | - |
+| `free-ai-selector-health-worker` | Почасовой синтетический мониторинг | - |
+| `free-ai-selector-postgres` | База данных PostgreSQL 16 | 5432 |
 
 ### Слоистая структура (DDD/Hexagonal)
 
@@ -76,29 +75,43 @@ make health             # Проверить здоровье всех серв�
 ### Запуск одного теста
 
 ```bash
-docker compose exec aimanager_business_api pytest tests/unit/test_process_prompt_use_case.py -v
-docker compose exec aimanager_data_postgres_api pytest tests/unit/test_domain_models.py::test_specific -v
+docker compose exec free-ai-selector-business-api pytest tests/unit/test_process_prompt_use_case.py -v
+docker compose exec free-ai-selector-data-postgres-api pytest tests/unit/test_domain_models.py::test_specific -v
 ```
 
 ## AI-провайдеры
 
-6 бесплатных провайдеров в `services/aimanager_business_api/app/infrastructure/ai_providers/`:
+6 бесплатных провайдеров в `services/free-ai-selector-business-api/app/infrastructure/ai_providers/`:
 - `google_gemini.py`, `groq.py`, `cerebras.py`, `sambanova.py`, `huggingface.py`, `cloudflare.py`
 
 Все наследуют от `base.py:AIProviderBase` (должны реализовать `generate()`, `health_check()`, `get_provider_name()`).
 
 ### Добавление нового провайдера
 
-1. Создать `services/aimanager_business_api/app/infrastructure/ai_providers/newprovider.py`, наследующий `AIProviderBase`
+1. Создать `services/free-ai-selector-business-api/app/infrastructure/ai_providers/newprovider.py`, наследующий `AIProviderBase`
 2. Зарегистрировать в `app/application/use_cases/process_prompt.py:ProcessPromptUseCase.providers`
-3. Добавить модель в `services/aimanager_data_postgres_api/app/infrastructure/database/seed.py`
+3. Добавить модель в `services/free-ai-selector-data-postgres-api/app/infrastructure/database/seed.py`
 4. Добавить env-переменную в `.env` и `docker-compose.yml`
 
 ## API документация
 
 При запущенных сервисах:
 - Business API: http://localhost:8000/docs
-- Data API: http://localhost:8002/docs
+- Data API: http://localhost:8001/docs
+
+## VPS деплой
+
+Проект настроен для деплоя на VPS с внешним nginx-proxy:
+
+```bash
+# На VPS
+cd /opt/free-ai-selector
+./scripts/deploy-vps.sh deploy   # Полный деплой
+./scripts/deploy-vps.sh update   # Обновление
+./scripts/deploy-vps.sh health   # Проверка здоровья
+```
+
+Доступ через nginx-proxy: `http://<VPS_IP>/free-ai-selector/`
 
 ## Документация проекта
 

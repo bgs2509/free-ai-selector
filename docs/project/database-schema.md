@@ -121,7 +121,7 @@ reliability_score = (success_rate * 0.6) + (speed_score * 0.4)
 
 ```bash
 # Путь к миграциям
-services/aimanager_data_postgres_api/alembic/versions/
+services/free-ai-selector-data-postgres-api/alembic/versions/
 
 # Текущая миграция
 20250117_0001_initial_schema.py
@@ -131,7 +131,7 @@ services/aimanager_data_postgres_api/alembic/versions/
 
 ```bash
 # Внутри контейнера Data API
-docker compose exec aimanager_data_postgres_api alembic revision --autogenerate -m "description"
+docker compose exec free-ai-selector-data-postgres-api alembic revision --autogenerate -m "description"
 ```
 
 ### Применение миграций
@@ -139,7 +139,7 @@ docker compose exec aimanager_data_postgres_api alembic revision --autogenerate 
 ```bash
 make migrate
 # или
-docker compose exec aimanager_data_postgres_api alembic upgrade head
+docker compose exec free-ai-selector-data-postgres-api alembic upgrade head
 ```
 
 ---
@@ -155,7 +155,7 @@ make seed
 Seed содержит 6 AI-моделей:
 
 ```python
-# services/aimanager_data_postgres_api/app/infrastructure/database/seed.py
+# services/free-ai-selector-data-postgres-api/app/infrastructure/database/seed.py
 
 INITIAL_MODELS = [
     {
@@ -181,7 +181,7 @@ INITIAL_MODELS = [
 ### ORM Model
 
 ```python
-# services/aimanager_data_postgres_api/app/infrastructure/database/models.py
+# services/free-ai-selector-data-postgres-api/app/infrastructure/database/models.py
 
 from sqlalchemy import Column, Integer, String, Boolean, Numeric, DateTime
 from sqlalchemy.orm import declarative_base
@@ -211,7 +211,7 @@ class AIModelORM(Base):
 ### Domain Model
 
 ```python
-# services/aimanager_data_postgres_api/app/domain/models.py
+# services/free-ai-selector-data-postgres-api/app/domain/models.py
 
 @dataclass
 class AIModel:
@@ -235,13 +235,13 @@ class AIModel:
 ### Backup
 
 ```bash
-docker compose exec postgres pg_dump -U aimanager aimanager > backup.sql
+docker compose exec postgres pg_dump -U free_ai_selector_user free_ai_selector_db > backup.sql
 ```
 
 ### Restore
 
 ```bash
-docker compose exec -T postgres psql -U aimanager aimanager < backup.sql
+docker compose exec -T postgres psql -U free_ai_selector_user free_ai_selector_db < backup.sql
 ```
 
 ---

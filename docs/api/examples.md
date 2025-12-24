@@ -91,7 +91,7 @@ curl http://localhost:8000/health
 ```json
 {
   "status": "healthy",
-  "service": "aimanager_business_api",
+  "service": "free-ai-selector-business-api",
   "version": "1.0.0",
   "data_api_connection": "healthy"
 }

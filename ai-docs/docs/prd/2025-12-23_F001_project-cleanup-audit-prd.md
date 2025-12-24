@@ -54,11 +54,11 @@ migrated_at: "2025-12-23"
 ```
 free-ai-selector/
 ├── services/                      # 5 микросервисов ✅
-│   ├── aimanager_business_api/    # Бизнес-логика (FastAPI)
-│   ├── aimanager_data_postgres_api/ # Data API (PostgreSQL)
-│   ├── aimanager_telegram_bot/    # Telegram интерфейс
-│   ├── aimanager_health_worker/   # Мониторинг здоровья
-│   └── aimanager_nginx/           # Reverse proxy
+│   ├── free-ai-selector-business-api/    # Бизнес-логика (FastAPI)
+│   ├── free-ai-selector-data-postgres-api/ # Data API (PostgreSQL)
+│   ├── free-ai-selector-telegram-bot/    # Telegram интерфейс
+│   ├── free-ai-selector-health-worker/   # Мониторинг здоровья
+│   └── free-ai-selector-nginx/           # Reverse proxy
 ├── shared/                        # Общие утилиты ⚠️ НЕ ИСПОЛЬЗУЕТСЯ
 ├── ai-docs/                       # AIDD артефакты
 ├── .aidd/                         # AIDD фреймворк (submodule)
@@ -138,10 +138,10 @@ grep -r "from shared\|import shared" .  # Результат: пусто
 | **Критерий приёмки** | Функция удалена из всех security.py или задокументировано её предназначение |
 
 **Затронутые файлы:**
-- `services/aimanager_business_api/app/utils/security.py`
-- `services/aimanager_data_postgres_api/app/utils/security.py`
-- `services/aimanager_telegram_bot/app/utils/security.py`
-- `services/aimanager_health_worker/app/utils/security.py`
+- `services/free-ai-selector-business-api/app/utils/security.py`
+- `services/free-ai-selector-data-postgres-api/app/utils/security.py`
+- `services/free-ai-selector-telegram-bot/app/utils/security.py`
+- `services/free-ai-selector-health-worker/app/utils/security.py`
 
 ---
 
@@ -151,7 +151,7 @@ grep -r "from shared\|import shared" .  # Результат: пусто
 |------|----------|
 | **ID** | FR-005 |
 | **Название** | Удалить неиспользуемый импорт Decimal |
-| **Описание** | В `aimanager_health_worker/app/main.py` импортирован `Decimal`, но не используется |
+| **Описание** | В `free-ai-selector-health-worker/app/main.py` импортирован `Decimal`, но не используется |
 | **Приоритет** | Should |
 | **Критерий приёмки** | Импорт `from decimal import Decimal` удалён из main.py |
 
@@ -163,7 +163,7 @@ grep -r "from shared\|import shared" .  # Результат: пусто
 |------|----------|
 | **ID** | FR-006 |
 | **Название** | Исправить дублирование импортов в models.py |
-| **Описание** | В `aimanager_data_postgres_api/app/api/v1/models.py` импорты `datetime` и `Decimal` дублируются внутри функций (строки 99-100, 181, 219) |
+| **Описание** | В `free-ai-selector-data-postgres-api/app/api/v1/models.py` импорты `datetime` и `Decimal` дублируются внутри функций (строки 99-100, 181, 219) |
 | **Приоритет** | Should |
 | **Критерий приёмки** | Локальные импорты удалены, глобальные импорты добавлены в начало файла |
 
@@ -246,8 +246,8 @@ grep -r "from shared\|import shared" .  # Результат: пусто
 |---|------|-----------|
 | 1 | `README.md` | Удалить/заменить ссылки на `.ai-framework/` |
 | 2 | `services/*/app/utils/security.py` (×4) | Удалить функцию `is_sensitive_key_present()` |
-| 3 | `services/aimanager_health_worker/app/main.py` | Удалить `from decimal import Decimal` |
-| 4 | `services/aimanager_data_postgres_api/app/api/v1/models.py` | Исправить дублирующиеся локальные импорты |
+| 3 | `services/free-ai-selector-health-worker/app/main.py` | Удалить `from decimal import Decimal` |
+| 4 | `services/free-ai-selector-data-postgres-api/app/api/v1/models.py` | Исправить дублирующиеся локальные импорты |
 
 ---
 
@@ -270,8 +270,8 @@ grep -r "from shared\|import shared" .  # Результат: пусто
 | FR-002 | PROMPT_FOR_AI_GENERATION.md | Удалить | Низкий |
 | FR-003 | README.md | Редактировать | Низкий |
 | FR-004 | security.py (×4) | Редактировать | Низкий |
-| FR-005 | aimanager_health_worker/main.py | Редактировать | Низкий |
-| FR-006 | aimanager_data_postgres_api/models.py | Редактировать | Средний |
+| FR-005 | free-ai-selector-health-worker/main.py | Редактировать | Низкий |
+| FR-006 | free-ai-selector-data-postgres-api/models.py | Редактировать | Средний |
 | FR-007 | deploy.sh | Проверить | Низкий |
 
 ---

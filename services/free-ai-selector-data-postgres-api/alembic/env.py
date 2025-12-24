@@ -29,7 +29,7 @@ target_metadata = Base.metadata
 
 # Get database URL from environment variable
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql+asyncpg://aimanager_user:password@localhost:5432/aimanager_db"
+    "DATABASE_URL", "postgresql+asyncpg://free_ai_selector_user:password@localhost:5432/free_ai_selector_db"
 )
 
 # Set database URL in config

@@ -43,11 +43,11 @@ migrated_at: "2025-12-23"
 ```
 free-ai-selector/
 ├── services/                      # 5 микросервисов ✅
-│   ├── aimanager_business_api/    # FastAPI, DDD/Hexagonal ✅
-│   ├── aimanager_data_postgres_api/ # FastAPI, DDD ✅ (⚠ без Application слоя)
-│   ├── aimanager_telegram_bot/    # Aiogram ⚠ (монолит в main.py)
-│   ├── aimanager_health_worker/   # APScheduler ✅
-│   └── aimanager_nginx/           # Reverse proxy ✅
+│   ├── free-ai-selector-business-api/    # FastAPI, DDD/Hexagonal ✅
+│   ├── free-ai-selector-data-postgres-api/ # FastAPI, DDD ✅ (⚠ без Application слоя)
+│   ├── free-ai-selector-telegram-bot/    # Aiogram ⚠ (монолит в main.py)
+│   ├── free-ai-selector-health-worker/   # APScheduler ✅
+│   └── free-ai-selector-nginx/           # Reverse proxy ✅
 ├── shared/                        # ❌ НЕ ИСПОЛЬЗУЕТСЯ — удалить
 ├── ai-docs/                       # AIDD артефакты ✅
 ├── .aidd/                         # Фреймворк (submodule) ✅
@@ -100,10 +100,10 @@ $ grep -r "from shared\|import shared" .
 ### 3.2 Функция is_sensitive_key_present()
 
 **Местоположение** (4 файла):
-- `services/aimanager_business_api/app/utils/security.py:121`
-- `services/aimanager_data_postgres_api/app/utils/security.py:121`
-- `services/aimanager_telegram_bot/app/utils/security.py:121`
-- `services/aimanager_health_worker/app/utils/security.py:121`
+- `services/free-ai-selector-business-api/app/utils/security.py:121`
+- `services/free-ai-selector-data-postgres-api/app/utils/security.py:121`
+- `services/free-ai-selector-telegram-bot/app/utils/security.py:121`
+- `services/free-ai-selector-health-worker/app/utils/security.py:121`
 
 **Вызовы функции**: 0
 
@@ -111,7 +111,7 @@ $ grep -r "from shared\|import shared" .
 
 ### 3.3 Неиспользуемый импорт Decimal
 
-**Файл**: `services/aimanager_health_worker/app/main.py`
+**Файл**: `services/free-ai-selector-health-worker/app/main.py`
 **Строка**: 21
 
 ```python
@@ -122,7 +122,7 @@ from decimal import Decimal  # ← Не используется
 
 ### 3.4 Дублирующиеся локальные импорты
 
-**Файл**: `services/aimanager_data_postgres_api/app/api/v1/models.py`
+**Файл**: `services/free-ai-selector-data-postgres-api/app/api/v1/models.py`
 
 | Строка | Содержимое | Проблема |
 |--------|------------|----------|

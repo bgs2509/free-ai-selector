@@ -25,7 +25,7 @@ from app.infrastructure.database.connection import AsyncSessionLocal, engine
 # Configuration
 # =============================================================================
 
-SERVICE_NAME = "aimanager_data_postgres_api"
+SERVICE_NAME = "free-ai-selector-data-postgres-api"
 SERVICE_VERSION = "1.0.0"
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 LOG_LEVEL = os.getenv("DATA_API_LOG_LEVEL", "INFO")

@@ -24,14 +24,14 @@ class TestModelsAPI:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] in ["healthy", "unhealthy"]
-        assert data["service"] == "aimanager_data_postgres_api"
+        assert data["service"] == "free-ai-selector-data-postgres-api"
 
     async def test_root_endpoint(self, client: AsyncClient):
         """Test root endpoint."""
         response = await client.get("/")
         assert response.status_code == 200
         data = response.json()
-        assert data["service"] == "aimanager_data_postgres_api"
+        assert data["service"] == "free-ai-selector-data-postgres-api"
         assert "version" in data
 
     async def test_get_all_models_empty(self, client: AsyncClient):

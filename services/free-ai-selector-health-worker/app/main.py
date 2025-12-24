@@ -29,7 +29,7 @@ from app.utils.security import sanitize_error_message
 # Configuration
 # =============================================================================
 
-SERVICE_NAME = "aimanager_health_worker"
+SERVICE_NAME = "free-ai-selector-health-worker"
 LOG_LEVEL = os.getenv("WORKER_LOG_LEVEL", "INFO")
 HEALTH_CHECK_INTERVAL = int(os.getenv("HEALTH_CHECK_INTERVAL", "3600"))  # seconds
 DATA_API_URL = os.getenv("DATA_API_URL", "http://localhost:8001")
