@@ -43,6 +43,9 @@ CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost
 RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
 RATE_LIMIT_PERIOD = int(os.getenv("RATE_LIMIT_PERIOD", "60"))
 
+# Root path for reverse proxy (для работы за nginx-proxy)
+ROOT_PATH = os.getenv("ROOT_PATH", "")
+
 # =============================================================================
 # Logging Configuration (Level 2: JSON logging)
 # =============================================================================
@@ -107,12 +110,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 # =============================================================================
 
 app = FastAPI(
-    title="AI Manager Platform - Business API",
+    title="Free AI Selector - Business API",
     description="Business logic service providing AI prompt processing and model selection",
     version=SERVICE_VERSION,
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
+    root_path=ROOT_PATH,
     lifespan=lifespan,
 )
 

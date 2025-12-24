@@ -91,6 +91,7 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS}
       ENVIRONMENT: ${ENVIRONMENT}
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
+      ROOT_PATH: ${ROOT_PATH:-}
     # ports убраны — доступ через nginx-proxy (proxy-network)
     depends_on:
       free-ai-selector-data-postgres-api:
