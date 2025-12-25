@@ -15,7 +15,8 @@ from typing import AsyncGenerator
 import httpx
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -123,6 +124,15 @@ app = FastAPI(
 # Add rate limiter to app state
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# =============================================================================
+# Static Files для веб-интерфейса
+# =============================================================================
+
+# Монтируем статические файлы для веб-интерфейса
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # =============================================================================
 # Middleware
@@ -255,14 +265,25 @@ app.include_router(providers.router, prefix="/api/v1")
 # =============================================================================
 
 
-@app.get("/", tags=["Root"], summary="Root endpoint")
-@limiter.limit(f"{RATE_LIMIT_REQUESTS}/{RATE_LIMIT_PERIOD}second")
-async def root(request: Request):
+@app.get("/", include_in_schema=False)
+async def root():
     """
-    Root endpoint providing service information.
+    Перенаправление на веб-интерфейс.
 
     Returns:
-        Service name, version, and documentation links
+        RedirectResponse на /static/index.html
+    """
+    return RedirectResponse(url="/static/index.html")
+
+
+@app.get("/api", tags=["Root"], summary="API информация")
+@limiter.limit(f"{RATE_LIMIT_REQUESTS}/{RATE_LIMIT_PERIOD}second")
+async def api_info(request: Request):
+    """
+    Информация об API.
+
+    Returns:
+        Название сервиса, версия и ссылки на документацию
     """
     return {
         "service": SERVICE_NAME,
