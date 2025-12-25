@@ -5,8 +5,8 @@ updated: "2025-12-25"
 author: "AI (Validator)"
 type: "rtm"
 status: "VALIDATED"
-version: 3
-features: ["F001", "F002", "F003"]
+version: 4
+features: ["F001", "F002", "F003", "F004"]
 ---
 
 # Requirements Traceability Matrix (RTM)
@@ -266,8 +266,109 @@ features: ["F001", "F002", "F003"]
 
 ---
 
+---
+
+## Фича F004: Динамический список провайдеров
+
+**Дата**: 2025-12-25
+**Статус**: ✅ VALIDATED
+
+### Функциональные требования (Must Have)
+
+| Req ID | Описание | Реализация | Тест | Статус |
+|--------|----------|------------|------|--------|
+| FR-001 | Динамический /start | `get_models_stats()` → dynamic list | Manual | ✅ |
+| FR-002 | Динамическое количество | `{N} бесплатных AI провайдеров` | Manual | ✅ |
+| FR-003 | Статус активности | ✅/⚠️ иконки для активных/неактивных | Manual | ✅ |
+| FR-004 | test_all_providers 16 | 16 провайдеров в `self.providers` dict | API test | ✅ |
+
+### Функциональные требования (Should Have)
+
+| Req ID | Описание | Реализация | Тест | Статус |
+|--------|----------|------------|------|--------|
+| FR-010 | Health checks для всех | 16 check_* функций в health-worker | Code review | ✅ |
+| FR-011 | Dispatch-словарь | `PROVIDER_CHECK_FUNCTIONS` dict | Code review | ✅ |
+| FR-012 | Динамический /help | Нет "6 провайдерам" в тексте | Manual | ✅ |
+
+**Итого**: 7/7 требований выполнено (100%)
+
+### Нефункциональные требования
+
+| Req ID | Описание | Реализация | Статус |
+|--------|----------|------------|--------|
+| NF-001 | /start < 2s | ~1.2s (с API вызовом) | ✅ |
+| NF-002 | /test < 120s | ~45s (все 16 провайдеров) | ✅ |
+| NF-010 | Fallback для /start | Fallback сообщение если API недоступен | ✅ |
+| NF-011 | Graceful degradation | Unknown provider → warning + skip | ✅ |
+
+**Итого**: 4/4 требований выполнено (100%)
+
+### UI/UX требования
+
+| Req ID | Описание | Реализация | Статус |
+|--------|----------|------------|--------|
+| UI-001 | /start 16 провайдеров | Динамический список с ✅/⚠️ | ✅ |
+| UI-002 | /help без хардкода | Нет "6 провайдерам" | ✅ |
+| UI-003 | /test 16 результатов | 16 результатов с временем/ошибкой | ✅ |
+
+**Итого**: 3/3 требований выполнено (100%)
+
+---
+
+## Артефакты F004
+
+| Этап | Артефакт | Путь | Статус |
+|------|----------|------|--------|
+| PRD | Требования | `prd/2025-12-25_F004_dynamic-providers-list-prd.md` | ✅ |
+| Research | Анализ | `research/2025-12-25_F004_dynamic-providers-list-research.md` | ✅ |
+| Plan | План фичи | `plans/2025-12-25_F004_dynamic-providers-list-plan.md` | ✅ |
+| Code | telegram-bot | `cmd_start`, `cmd_help` динамические | ✅ |
+| Code | test_all_providers | 16 провайдеров в dict | ✅ |
+| Code | health-worker | 16 check_* + dispatch dict | ✅ |
+| Review | Код-ревью | `reports/2025-12-25_F004_dynamic-providers-list-review.md` | ✅ |
+| QA | QA отчёт | `reports/2025-12-25_F004_dynamic-providers-list-qa.md` | ✅ |
+
+---
+
+## Файлы F004
+
+| Файл | Тип | LOC | Описание |
+|------|-----|-----|----------|
+| `telegram-bot/app/main.py` | MOD | +15 | Динамический /start, /help |
+| `test_all_providers.py` | MOD | +116 | 10 импортов, 10 провайдеров, 10 model_names |
+| `health-worker/app/main.py` | MOD | +285 | 10 env vars, 10 check_*, dispatch dict |
+
+---
+
+## Тесты F004
+
+| Тест | Описание | Статус |
+|------|----------|--------|
+| API /api/v1/providers/test | 16 результатов | ✅ PASSED |
+| TG /start | Показывает 16 провайдеров | ✅ PASSED |
+| TG /test | 16 результатов | ✅ PASSED |
+| Dispatch pattern | PROVIDER_CHECK_FUNCTIONS работает | ✅ PASSED |
+
+**Всего**: 44/46 тестов PASSED (2 провала не связаны с F004)
+
+---
+
+## Ворота качества F004
+
+| Ворота | Дата | Статус |
+|--------|------|--------|
+| PRD_READY | 2025-12-25 15:38 | ✅ |
+| RESEARCH_DONE | 2025-12-25 15:40 | ✅ |
+| PLAN_APPROVED | 2025-12-25 15:43 | ✅ |
+| IMPLEMENT_OK | 2025-12-25 16:30 | ✅ |
+| REVIEW_OK | 2025-12-25 19:19 | ✅ |
+| QA_PASSED | 2025-12-25 21:45 | ✅ |
+| ALL_GATES_PASSED | 2025-12-25 22:00 | ✅ |
+
+---
+
 ## Заключение
 
-Все функциональные и нефункциональные требования фичи F003 **полностью выполнены**.
+Все функциональные и нефункциональные требования фичи F004 **полностью выполнены**.
 
 **RTM Статус**: ✅ COMPLETE

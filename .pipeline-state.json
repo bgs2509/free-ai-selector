@@ -11,7 +11,7 @@
     ".claude/": "kept_existing",
     ".claude/commands/": "copied_10_commands"
   },
-  "current_stage": 6,
+  "current_stage": 7,
   "created_at": "2025-12-23T10:30:00Z",
   "updated_at": "2025-12-25T21:15:00Z",
 
@@ -20,7 +20,7 @@
     "name": "dynamic-providers-list",
     "title": "Динамический список провайдеров во всех сервисах",
     "created": "2025-12-25",
-    "stage": "QA_PASSED",
+    "stage": "ALL_GATES_PASSED",
     "artifacts": {
       "prd": "prd/2025-12-25_F004_dynamic-providers-list-prd.md",
       "research": "research/2025-12-25_F004_dynamic-providers-list-research.md",
@@ -96,10 +96,15 @@
     },
     "ALL_GATES_PASSED": {
       "passed": true,
-      "passed_at": "2025-12-25T20:00:00Z",
-      "artifact": "ai-docs/docs/reports/2025-12-25_F003_expand-ai-providers-validation.md",
+      "passed_at": "2025-12-25T22:00:00Z",
+      "artifact": "ai-docs/docs/reports/2025-12-25_F004_dynamic-providers-list-validation.md",
       "rtm_updated": true,
-      "gates_verified": ["PRD_READY", "RESEARCH_DONE", "PLAN_APPROVED", "IMPLEMENT_OK", "REVIEW_OK", "QA_PASSED"]
+      "gates_verified": ["PRD_READY", "RESEARCH_DONE", "PLAN_APPROVED", "IMPLEMENT_OK", "REVIEW_OK", "QA_PASSED"],
+      "requirements_coverage": {
+        "FR": "7/7",
+        "NFR": "4/4",
+        "UI": "3/3"
+      }
     },
     "DEPLOYED": {
       "passed": true,
@@ -151,7 +156,7 @@
       "title": "Динамический список провайдеров во всех сервисах",
       "description": "Замена захардкоженных списков провайдеров на динамические во всех сервисах: TG бот, test_all_providers, health-worker",
       "created": "2025-12-25",
-      "status": "QA_PASSED",
+      "status": "ALL_GATES_PASSED",
       "services": ["free-ai-selector-telegram-bot", "free-ai-selector-business-api", "free-ai-selector-health-worker"]
     }
   },
