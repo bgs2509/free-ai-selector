@@ -11,20 +11,20 @@
     ".claude/": "kept_existing",
     ".claude/commands/": "copied_10_commands"
   },
-  "current_stage": 8,
+  "current_stage": 2,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2025-12-23T19:30:00Z",
+  "updated_at": "2025-12-25T10:30:00Z",
 
   "current_feature": {
-    "id": "F001",
-    "name": "project-cleanup-audit",
-    "title": "Аудит и очистка проекта Free AI Selector",
-    "created": "2025-12-23",
-    "stage": "DEPLOYED",
+    "id": "F002",
+    "name": "web-ui",
+    "title": "Веб-интерфейс для Free AI Selector",
+    "created": "2025-12-25",
+    "stage": "PLAN_APPROVED",
     "artifacts": {
-      "prd": "prd/2025-12-23_F001_project-cleanup-audit-prd.md",
-      "research": "research/2025-12-23_F001_project-cleanup-audit-research.md",
-      "plan": "plans/2025-12-23_F001_project-cleanup-plan.md"
+      "prd": "prd/2025-12-25_F002_web-ui-prd.md",
+      "research": "research/2025-12-25_F002_web-ui-research.md",
+      "plan": "plans/2025-12-25_F002_web-ui-plan.md"
     }
   },
 
@@ -41,68 +41,40 @@
     },
     "PRD_READY": {
       "passed": true,
-      "passed_at": "2025-12-23T15:30:00Z",
-      "artifact": "ai-docs/docs/prd/2025-12-23_F001_project-cleanup-audit-prd.md"
+      "passed_at": "2025-12-25T10:00:00Z",
+      "artifact": "ai-docs/docs/prd/2025-12-25_F002_web-ui-prd.md"
     },
     "RESEARCH_DONE": {
       "passed": true,
-      "passed_at": "2025-12-23T16:00:00Z",
-      "artifact": "ai-docs/docs/research/2025-12-23_F001_project-cleanup-audit-research.md"
+      "passed_at": "2025-12-25T10:30:00Z",
+      "artifact": "ai-docs/docs/research/2025-12-25_F002_web-ui-research.md"
     },
     "PLAN_APPROVED": {
       "passed": true,
-      "passed_at": "2025-12-23T18:00:00Z",
-      "artifact": "ai-docs/docs/plans/2025-12-23_F001_project-cleanup-plan.md"
+      "passed_at": "2025-12-25T11:00:00Z",
+      "artifact": "ai-docs/docs/plans/2025-12-25_F002_web-ui-plan.md"
     },
     "IMPLEMENT_OK": {
-      "passed": true,
-      "passed_at": "2025-12-23T18:30:00Z",
-      "commit": "a83cab5",
-      "changes": {
-        "files_deleted": ["shared/", "PROMPT_FOR_AI_GENERATION.md"],
-        "files_modified": 8,
-        "lines_removed": 1344
-      }
+      "passed": false
     },
     "REVIEW_OK": {
-      "passed": true,
-      "passed_at": "2025-12-23T18:45:00Z",
-      "artifact": "ai-docs/docs/reports/2025-12-23_F001_project-cleanup-review-report.md"
+      "passed": false
     },
     "QA_PASSED": {
-      "passed": true,
-      "passed_at": "2025-12-23T19:00:00Z",
-      "artifact": "ai-docs/docs/reports/2025-12-23_F001_project-cleanup-qa-report.md",
-      "test_results": {
-        "data_api": {"passed": 11, "failed": 3, "errors": 7},
-        "business_api": {"passed": 6, "failed": 0, "errors": 0}
-      },
-      "pre_existing_issues": ["aiosqlite missing", "test data isolation", "low coverage"]
+      "passed": false
     },
     "ALL_GATES_PASSED": {
-      "passed": true,
-      "passed_at": "2025-12-23T19:15:00Z",
-      "artifact": "ai-docs/docs/reports/2025-12-23_F001_project-cleanup-validation-report.md",
-      "rtm": "ai-docs/docs/rtm.md"
+      "passed": false
     },
     "DEPLOYED": {
-      "passed": true,
-      "passed_at": "2025-12-23T19:30:00Z",
-      "services": {
-        "postgres": "healthy",
-        "data_api": "healthy",
-        "business_api": "healthy",
-        "telegram_bot": "running",
-        "health_worker": "running",
-        "nginx": "running"
-      }
+      "passed": false
     }
   },
 
   "artifacts": {
-    "prd": "ai-docs/docs/prd/2025-12-23_F001_project-cleanup-audit-prd.md",
-    "research": "ai-docs/docs/research/2025-12-23_F001_project-cleanup-audit-research.md",
-    "plan": "ai-docs/docs/plans/2025-12-23_F001_project-cleanup-plan.md"
+    "prd": "ai-docs/docs/prd/2025-12-25_F002_web-ui-prd.md",
+    "research": "ai-docs/docs/research/2025-12-25_F002_web-ui-research.md",
+    "plan": "ai-docs/docs/plans/2025-12-25_F002_web-ui-plan.md"
   },
 
   "features_registry": {
@@ -113,8 +85,16 @@
       "created": "2025-12-23",
       "status": "DEPLOYED",
       "services": []
+    },
+    "F002": {
+      "name": "web-ui",
+      "title": "Веб-интерфейс для Free AI Selector",
+      "description": "Минимальный веб-интерфейс с чатом AI, статистикой моделей и тестированием провайдеров",
+      "created": "2025-12-25",
+      "status": "RESEARCH_DONE",
+      "services": ["free-ai-selector-business-api"]
     }
   },
 
-  "next_feature_id": 2
+  "next_feature_id": 3
 }
