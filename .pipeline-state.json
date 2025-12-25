@@ -11,7 +11,7 @@
     ".claude/": "kept_existing",
     ".claude/commands/": "copied_10_commands"
   },
-  "current_stage": 5,
+  "current_stage": 6,
   "created_at": "2025-12-23T10:30:00Z",
   "updated_at": "2025-12-25T21:15:00Z",
 
@@ -20,7 +20,7 @@
     "name": "dynamic-providers-list",
     "title": "Динамический список провайдеров во всех сервисах",
     "created": "2025-12-25",
-    "stage": "REVIEW_OK",
+    "stage": "QA_PASSED",
     "artifacts": {
       "prd": "prd/2025-12-25_F004_dynamic-providers-list-prd.md",
       "research": "research/2025-12-25_F004_dynamic-providers-list-research.md",
@@ -80,14 +80,17 @@
     },
     "QA_PASSED": {
       "passed": true,
-      "passed_at": "2025-12-25T19:45:00Z",
-      "artifact": "ai-docs/docs/reports/2025-12-25_F003_expand-ai-providers-qa.md",
+      "passed_at": "2025-12-25T21:45:00Z",
+      "artifact": "ai-docs/docs/reports/2025-12-25_F004_dynamic-providers-list-qa.md",
       "results": {
-        "tests_total": 60,
-        "tests_passed": 60,
-        "tests_failed": 0,
+        "tests_total": 46,
+        "tests_passed": 44,
+        "tests_failed": 2,
+        "failed_unrelated_to_feature": true,
         "coverage": "46%",
-        "fr_verified": "14/14",
+        "fr_verified": "7/7",
+        "nfr_verified": "4/4",
+        "ui_verified": "3/3",
         "critical_bugs": 0
       }
     },
@@ -148,7 +151,7 @@
       "title": "Динамический список провайдеров во всех сервисах",
       "description": "Замена захардкоженных списков провайдеров на динамические во всех сервисах: TG бот, test_all_providers, health-worker",
       "created": "2025-12-25",
-      "status": "REVIEW_OK",
+      "status": "QA_PASSED",
       "services": ["free-ai-selector-telegram-bot", "free-ai-selector-business-api", "free-ai-selector-health-worker"]
     }
   },
