@@ -25,8 +25,11 @@ from app.infrastructure.database.models import AIModelORM
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initial AI models configuration - 6 verified free-tier providers (no credit card required)
+# Initial AI models configuration - 16 verified free-tier providers (no credit card required)
 SEED_MODELS = [
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Существующие провайдеры (6 шт.)
+    # ═══════════════════════════════════════════════════════════════════════════
     {
         "name": "Gemini 2.5 Flash",
         "provider": "GoogleGemini",
@@ -61,6 +64,75 @@ SEED_MODELS = [
         "name": "Llama 3.3 70B Instruct FP8 Fast",
         "provider": "Cloudflare",
         "api_endpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "is_active": True,
+    },
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Новые провайдеры F003 — Фаза 1: Приоритетные (4 шт.)
+    # ═══════════════════════════════════════════════════════════════════════════
+    {
+        "name": "DeepSeek Chat",
+        "provider": "DeepSeek",
+        "api_endpoint": "https://api.deepseek.com/v1/chat/completions",
+        "is_active": True,
+    },
+    {
+        "name": "Command R+",
+        "provider": "Cohere",
+        "api_endpoint": "https://api.cohere.com/v2/chat",
+        "is_active": True,
+    },
+    {
+        "name": "DeepSeek R1 (OpenRouter)",
+        "provider": "OpenRouter",
+        "api_endpoint": "https://openrouter.ai/api/v1/chat/completions",
+        "is_active": True,
+    },
+    {
+        "name": "GPT-4o Mini (GitHub)",
+        "provider": "GitHubModels",
+        "api_endpoint": "https://models.inference.ai.azure.com/chat/completions",
+        "is_active": True,
+    },
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Новые провайдеры F003 — Фаза 2: Дополнительные (4 шт.)
+    # ═══════════════════════════════════════════════════════════════════════════
+    {
+        "name": "Llama 3.1 70B (Fireworks)",
+        "provider": "Fireworks",
+        "api_endpoint": "https://api.fireworks.ai/inference/v1/chat/completions",
+        "is_active": True,
+    },
+    {
+        "name": "Llama 3.3 70B (Hyperbolic)",
+        "provider": "Hyperbolic",
+        "api_endpoint": "https://api.hyperbolic.xyz/v1/chat/completions",
+        "is_active": True,
+    },
+    {
+        "name": "Llama 3.1 70B (Novita)",
+        "provider": "Novita",
+        "api_endpoint": "https://api.novita.ai/v3/openai/chat/completions",
+        "is_active": True,
+    },
+    {
+        "name": "Llama 3.1 70B (Scaleway)",
+        "provider": "Scaleway",
+        "api_endpoint": "https://api.scaleway.ai/v1/chat/completions",
+        "is_active": True,
+    },
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Новые провайдеры F003 — Фаза 3: Резервные (2 шт.)
+    # ═══════════════════════════════════════════════════════════════════════════
+    {
+        "name": "Llama 3.3 70B Turbo (Kluster)",
+        "provider": "Kluster",
+        "api_endpoint": "https://api.kluster.ai/v1/chat/completions",
+        "is_active": True,
+    },
+    {
+        "name": "Llama 3.1 70B (Nebius)",
+        "provider": "Nebius",
+        "api_endpoint": "https://api.studio.nebius.ai/v1/chat/completions",
         "is_active": True,
     },
 ]
