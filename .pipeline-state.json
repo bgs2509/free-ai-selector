@@ -11,16 +11,16 @@
     ".claude/": "kept_existing",
     ".claude/commands/": "copied_10_commands"
   },
-  "current_stage": 4,
+  "current_stage": 5,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2025-12-25T21:00:00Z",
+  "updated_at": "2025-12-25T21:15:00Z",
 
   "current_feature": {
     "id": "F004",
     "name": "dynamic-providers-list",
     "title": "Динамический список провайдеров во всех сервисах",
     "created": "2025-12-25",
-    "stage": "IMPLEMENT_OK",
+    "stage": "REVIEW_OK",
     "artifacts": {
       "prd": "prd/2025-12-25_F004_dynamic-providers-list-prd.md",
       "research": "research/2025-12-25_F004_dynamic-providers-list-research.md",
@@ -148,7 +148,7 @@
       "title": "Динамический список провайдеров во всех сервисах",
       "description": "Замена захардкоженных списков провайдеров на динамические во всех сервисах: TG бот, test_all_providers, health-worker",
       "created": "2025-12-25",
-      "status": "IMPLEMENT_OK",
+      "status": "REVIEW_OK",
       "services": ["free-ai-selector-telegram-bot", "free-ai-selector-business-api", "free-ai-selector-health-worker"]
     }
   },
