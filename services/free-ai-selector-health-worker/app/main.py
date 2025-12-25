@@ -5,13 +5,23 @@ Background worker for synthetic monitoring of AI providers.
 Runs health checks hourly and updates model statistics.
 Level 2 (Development Ready) maturity.
 
-Supports 6 verified free-tier AI providers (no credit card required):
+Supports 16 verified free-tier AI providers (no credit card required):
 - Google AI Studio (Gemini 2.5 Flash)
 - Groq (Llama 3.3 70B - 1,800 tokens/sec)
 - Cerebras (Llama 3.3 70B - 2,500+ tokens/sec)
 - SambaNova (Meta-Llama-3.3-70B-Instruct)
 - HuggingFace (Meta-Llama-3-8B-Instruct)
 - Cloudflare Workers AI (10,000 Neurons/day)
+- DeepSeek (5M tokens free)
+- Cohere (1000 calls/month)
+- OpenRouter (50 RPD free models)
+- GitHub Models (50 RPD via PAT)
+- Fireworks ($1 credits)
+- Hyperbolic ($1 credits)
+- Novita ($10 credits)
+- Scaleway (1M tokens/month, EU)
+- Kluster ($5 credits)
+- Nebius ($1 credits)
 """
 
 import asyncio
@@ -35,7 +45,8 @@ HEALTH_CHECK_INTERVAL = int(os.getenv("HEALTH_CHECK_INTERVAL", "3600"))  # secon
 DATA_API_URL = os.getenv("DATA_API_URL", "http://localhost:8001")
 SYNTHETIC_TEST_PROMPT = os.getenv("SYNTHETIC_TEST_PROMPT", "Generate a simple greeting message")
 
-# AI Provider API Keys - 6 verified free-tier providers
+# AI Provider API Keys - 16 verified free-tier providers
+# Существующие провайдеры (6 шт.)
 GOOGLE_AI_STUDIO_API_KEY = os.getenv("GOOGLE_AI_STUDIO_API_KEY", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "")
@@ -43,6 +54,17 @@ SAMBANOVA_API_KEY = os.getenv("SAMBANOVA_API_KEY", "")
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "")
 CLOUDFLARE_API_TOKEN = os.getenv("CLOUDFLARE_API_TOKEN", "")
 CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
+# Новые провайдеры F003 (10 шт.)
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+COHERE_API_KEY = os.getenv("COHERE_API_KEY", "")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+FIREWORKS_API_KEY = os.getenv("FIREWORKS_API_KEY", "")
+HYPERBOLIC_API_KEY = os.getenv("HYPERBOLIC_API_KEY", "")
+NOVITA_API_KEY = os.getenv("NOVITA_API_KEY", "")
+SCALEWAY_API_KEY = os.getenv("SCALEWAY_API_KEY", "")
+KLUSTER_API_KEY = os.getenv("KLUSTER_API_KEY", "")
+NEBIUS_API_KEY = os.getenv("NEBIUS_API_KEY", "")
 
 # =============================================================================
 # Logging Configuration
@@ -273,6 +295,299 @@ async def check_cloudflare(endpoint: str) -> tuple[bool, float]:
 
 
 # =============================================================================
+# New Provider Health Checks (F003)
+# =============================================================================
+
+
+async def check_deepseek(endpoint: str) -> tuple[bool, float]:
+    """Check DeepSeek API health. OpenAI-compatible format."""
+    if not DEEPSEEK_API_KEY:
+        logger.warning("DeepSeek API key not configured")
+        return False, 0.0
+
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {
+                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": "deepseek-chat",
+                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
+                "max_tokens": 50,
+            }
+            response = await client.post(endpoint, headers=headers, json=payload)
+            response_time = time.time() - start_time
+            return response.status_code == 200, response_time
+    except Exception as e:
+        logger.error(f"DeepSeek health check failed: {sanitize_error_message(e)}")
+        return False, time.time() - start_time
+
+
+async def check_cohere(endpoint: str) -> tuple[bool, float]:
+    """Check Cohere API health. Cohere v2 format."""
+    if not COHERE_API_KEY:
+        logger.warning("Cohere API key not configured")
+        return False, 0.0
+
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {
+                "Authorization": f"Bearer {COHERE_API_KEY}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            }
+            payload = {
+                "model": "command-r-plus",
+                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
+                "max_tokens": 50,
+            }
+            response = await client.post(endpoint, headers=headers, json=payload)
+            response_time = time.time() - start_time
+            return response.status_code == 200, response_time
+    except Exception as e:
+        logger.error(f"Cohere health check failed: {sanitize_error_message(e)}")
+        return False, time.time() - start_time
+
+
+async def check_openrouter(endpoint: str) -> tuple[bool, float]:
+    """Check OpenRouter API health. OpenAI-compatible format."""
+    if not OPENROUTER_API_KEY:
+        logger.warning("OpenRouter API key not configured")
+        return False, 0.0
+
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://github.com/free-ai-selector",
+            }
+            payload = {
+                "model": "deepseek/deepseek-r1:free",
+                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
+                "max_tokens": 50,
+            }
+            response = await client.post(endpoint, headers=headers, json=payload)
+            response_time = time.time() - start_time
+            return response.status_code == 200, response_time
+    except Exception as e:
+        logger.error(f"OpenRouter health check failed: {sanitize_error_message(e)}")
+        return False, time.time() - start_time
+
+
+async def check_github_models(endpoint: str) -> tuple[bool, float]:
+    """Check GitHub Models API health. OpenAI-compatible format."""
+    if not GITHUB_TOKEN:
+        logger.warning("GitHub Token not configured")
+        return False, 0.0
+
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {
+                "Authorization": f"Bearer {GITHUB_TOKEN}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": "gpt-4o-mini",
+                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
+                "max_tokens": 50,
+            }
+            response = await client.post(endpoint, headers=headers, json=payload)
+            response_time = time.time() - start_time
+            return response.status_code == 200, response_time
+    except Exception as e:
+        logger.error(f"GitHub Models health check failed: {sanitize_error_message(e)}")
+        return False, time.time() - start_time
+
+
+async def check_fireworks(endpoint: str) -> tuple[bool, float]:
+    """Check Fireworks API health. OpenAI-compatible format."""
+    if not FIREWORKS_API_KEY:
+        logger.warning("Fireworks API key not configured")
+        return False, 0.0
+
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {
+                "Authorization": f"Bearer {FIREWORKS_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": "accounts/fireworks/models/llama-v3p1-70b-instruct",
+                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
+                "max_tokens": 50,
+            }
+            response = await client.post(endpoint, headers=headers, json=payload)
+            response_time = time.time() - start_time
+            return response.status_code == 200, response_time
+    except Exception as e:
+        logger.error(f"Fireworks health check failed: {sanitize_error_message(e)}")
+        return False, time.time() - start_time
+
+
+async def check_hyperbolic(endpoint: str) -> tuple[bool, float]:
+    """Check Hyperbolic API health. OpenAI-compatible format."""
+    if not HYPERBOLIC_API_KEY:
+        logger.warning("Hyperbolic API key not configured")
+        return False, 0.0
+
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {
+                "Authorization": f"Bearer {HYPERBOLIC_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": "meta-llama/Llama-3.3-70B-Instruct",
+                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
+                "max_tokens": 50,
+            }
+            response = await client.post(endpoint, headers=headers, json=payload)
+            response_time = time.time() - start_time
+            return response.status_code == 200, response_time
+    except Exception as e:
+        logger.error(f"Hyperbolic health check failed: {sanitize_error_message(e)}")
+        return False, time.time() - start_time
+
+
+async def check_novita(endpoint: str) -> tuple[bool, float]:
+    """Check Novita API health. OpenAI-compatible format."""
+    if not NOVITA_API_KEY:
+        logger.warning("Novita API key not configured")
+        return False, 0.0
+
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {
+                "Authorization": f"Bearer {NOVITA_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": "meta-llama/llama-3.1-70b-instruct",
+                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
+                "max_tokens": 50,
+            }
+            response = await client.post(endpoint, headers=headers, json=payload)
+            response_time = time.time() - start_time
+            return response.status_code == 200, response_time
+    except Exception as e:
+        logger.error(f"Novita health check failed: {sanitize_error_message(e)}")
+        return False, time.time() - start_time
+
+
+async def check_scaleway(endpoint: str) -> tuple[bool, float]:
+    """Check Scaleway API health. OpenAI-compatible format."""
+    if not SCALEWAY_API_KEY:
+        logger.warning("Scaleway API key not configured")
+        return False, 0.0
+
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {
+                "Authorization": f"Bearer {SCALEWAY_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": "llama-3.1-70b-instruct",
+                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
+                "max_tokens": 50,
+            }
+            response = await client.post(endpoint, headers=headers, json=payload)
+            response_time = time.time() - start_time
+            return response.status_code == 200, response_time
+    except Exception as e:
+        logger.error(f"Scaleway health check failed: {sanitize_error_message(e)}")
+        return False, time.time() - start_time
+
+
+async def check_kluster(endpoint: str) -> tuple[bool, float]:
+    """Check Kluster API health. OpenAI-compatible format."""
+    if not KLUSTER_API_KEY:
+        logger.warning("Kluster API key not configured")
+        return False, 0.0
+
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {
+                "Authorization": f"Bearer {KLUSTER_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": "klusterai/Meta-Llama-3.3-70B-Instruct-Turbo",
+                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
+                "max_tokens": 50,
+            }
+            response = await client.post(endpoint, headers=headers, json=payload)
+            response_time = time.time() - start_time
+            return response.status_code == 200, response_time
+    except Exception as e:
+        logger.error(f"Kluster health check failed: {sanitize_error_message(e)}")
+        return False, time.time() - start_time
+
+
+async def check_nebius(endpoint: str) -> tuple[bool, float]:
+    """Check Nebius API health. OpenAI-compatible format."""
+    if not NEBIUS_API_KEY:
+        logger.warning("Nebius API key not configured")
+        return False, 0.0
+
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {
+                "Authorization": f"Bearer {NEBIUS_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
+                "max_tokens": 50,
+            }
+            response = await client.post(endpoint, headers=headers, json=payload)
+            response_time = time.time() - start_time
+            return response.status_code == 200, response_time
+    except Exception as e:
+        logger.error(f"Nebius health check failed: {sanitize_error_message(e)}")
+        return False, time.time() - start_time
+
+
+# =============================================================================
+# Provider Check Dispatch Dictionary
+# =============================================================================
+
+PROVIDER_CHECK_FUNCTIONS = {
+    # Существующие провайдеры (6)
+    "GoogleGemini": check_google_gemini,
+    "Groq": check_groq,
+    "Cerebras": check_cerebras,
+    "SambaNova": check_sambanova,
+    "HuggingFace": check_huggingface,
+    "Cloudflare": check_cloudflare,
+    # Новые провайдеры F003 (10)
+    "DeepSeek": check_deepseek,
+    "Cohere": check_cohere,
+    "OpenRouter": check_openrouter,
+    "GitHubModels": check_github_models,
+    "Fireworks": check_fireworks,
+    "Hyperbolic": check_hyperbolic,
+    "Novita": check_novita,
+    "Scaleway": check_scaleway,
+    "Kluster": check_kluster,
+    "Nebius": check_nebius,
+}
+
+
+# =============================================================================
 # Main Health Check Job
 # =============================================================================
 
@@ -304,21 +619,12 @@ async def run_health_checks():
 
             logger.info(f"Checking {model_name} ({provider})...")
 
-            # Run provider-specific health check
-            if provider == "GoogleGemini":
-                is_healthy, response_time = await check_google_gemini(endpoint)
-            elif provider == "Groq":
-                is_healthy, response_time = await check_groq(endpoint)
-            elif provider == "Cerebras":
-                is_healthy, response_time = await check_cerebras(endpoint)
-            elif provider == "SambaNova":
-                is_healthy, response_time = await check_sambanova(endpoint)
-            elif provider == "HuggingFace":
-                is_healthy, response_time = await check_huggingface(endpoint)
-            elif provider == "Cloudflare":
-                is_healthy, response_time = await check_cloudflare(endpoint)
+            # Run provider-specific health check using dispatch dictionary
+            check_func = PROVIDER_CHECK_FUNCTIONS.get(provider)
+            if check_func:
+                is_healthy, response_time = await check_func(endpoint)
             else:
-                logger.warning(f"Unknown provider: {provider}")
+                logger.warning(f"Unknown provider: {provider}, skipping health check")
                 continue
 
             # Update model statistics in Data API
@@ -364,6 +670,7 @@ async def main():
 
     # Log configured providers
     configured_providers = []
+    # Существующие провайдеры (6)
     if GOOGLE_AI_STUDIO_API_KEY:
         configured_providers.append("GoogleGemini")
     if GROQ_API_KEY:
@@ -376,8 +683,29 @@ async def main():
         configured_providers.append("HuggingFace")
     if CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID:
         configured_providers.append("Cloudflare")
+    # Новые провайдеры F003 (10)
+    if DEEPSEEK_API_KEY:
+        configured_providers.append("DeepSeek")
+    if COHERE_API_KEY:
+        configured_providers.append("Cohere")
+    if OPENROUTER_API_KEY:
+        configured_providers.append("OpenRouter")
+    if GITHUB_TOKEN:
+        configured_providers.append("GitHubModels")
+    if FIREWORKS_API_KEY:
+        configured_providers.append("Fireworks")
+    if HYPERBOLIC_API_KEY:
+        configured_providers.append("Hyperbolic")
+    if NOVITA_API_KEY:
+        configured_providers.append("Novita")
+    if SCALEWAY_API_KEY:
+        configured_providers.append("Scaleway")
+    if KLUSTER_API_KEY:
+        configured_providers.append("Kluster")
+    if NEBIUS_API_KEY:
+        configured_providers.append("Nebius")
 
-    logger.info(f"Configured providers ({len(configured_providers)}/6): {', '.join(configured_providers)}")
+    logger.info(f"Configured providers ({len(configured_providers)}/16): {', '.join(configured_providers)}")
 
     if len(configured_providers) == 0:
         logger.warning("No AI provider API keys configured! Health checks will fail.")
