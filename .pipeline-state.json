@@ -11,7 +11,7 @@
     ".claude/": "kept_existing",
     ".claude/commands/": "copied_10_commands"
   },
-  "current_stage": 7,
+  "current_stage": 8,
   "created_at": "2025-12-23T10:30:00Z",
   "updated_at": "2025-12-25T21:15:00Z",
 
@@ -20,7 +20,7 @@
     "name": "dynamic-providers-list",
     "title": "Динамический список провайдеров во всех сервисах",
     "created": "2025-12-25",
-    "stage": "ALL_GATES_PASSED",
+    "stage": "DEPLOYED",
     "artifacts": {
       "prd": "prd/2025-12-25_F004_dynamic-providers-list-prd.md",
       "research": "research/2025-12-25_F004_dynamic-providers-list-research.md",
@@ -108,7 +108,7 @@
     },
     "DEPLOYED": {
       "passed": true,
-      "passed_at": "2025-12-25T20:22:00Z",
+      "passed_at": "2025-12-25T22:15:00Z",
       "containers": {
         "postgres": "healthy",
         "data-api": "healthy",
@@ -116,7 +116,12 @@
         "health-worker": "running",
         "telegram-bot": "running"
       },
-      "endpoints_verified": ["/health", "/api"]
+      "endpoints_verified": ["/health", "/api", "/api/v1/providers/test", "/static/index.html"],
+      "f004_verified": {
+        "providers_test": "16 providers tested",
+        "dispatch_pattern": "PROVIDER_CHECK_FUNCTIONS working",
+        "health_worker": "checks all known providers"
+      }
     }
   },
 
@@ -156,7 +161,7 @@
       "title": "Динамический список провайдеров во всех сервисах",
       "description": "Замена захардкоженных списков провайдеров на динамические во всех сервисах: TG бот, test_all_providers, health-worker",
       "created": "2025-12-25",
-      "status": "ALL_GATES_PASSED",
+      "status": "DEPLOYED",
       "services": ["free-ai-selector-telegram-bot", "free-ai-selector-business-api", "free-ai-selector-health-worker"]
     }
   },
