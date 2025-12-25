@@ -3,105 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Рейтинг бесплатных ИИ моделей - автоматический выбор лучшей модели">
+    <meta name="description" content="Free AI Selector - автоматический выбор лучшей AI модели">
     <meta name="theme-color" content="#0066ff">
-    <title>Рейтинг бесплатных ИИ моделей</title>
+    <title>Free AI Selector</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Заголовок -->
-        <header class="header">
-            <h1>Рейтинг бесплатных ИИ моделей</h1>
-            <p class="subtitle">Автоматический выбор лучшей модели</p>
-        </header>
+    <div class="page-wrapper">
+        <div class="card">
+            <!-- Заголовок -->
+            <h1 class="title">Free AI Selector</h1>
+            <p class="subtitle">Автоматический выбор лучшей бесплатной AI модели</p>
 
-        <!-- Секция 1: Чат с AI -->
-        <section class="card" id="chat-section">
-            <h2>Чат с AI</h2>
-            <div class="chat-form">
-                <textarea
-                    id="prompt-input"
-                    placeholder="Введите ваш запрос..."
-                    rows="4"
-                ></textarea>
-                <button id="send-btn" class="btn-primary" onclick="sendPrompt()">
-                    <span id="send-btn-text">Отправить</span>
-                    <span id="send-btn-loader" class="loader hidden"></span>
-                </button>
+            <!-- Вкладки -->
+            <div class="tabs">
+                <button class="tab active" data-tab="chat">Чат</button>
+                <button class="tab" data-tab="stats">Рейтинг</button>
+                <button class="tab" data-tab="test">Тест</button>
             </div>
-            <div id="chat-response" class="response-box hidden">
-                <div class="response-header">
-                    <span id="response-model" class="badge"></span>
-                    <span id="response-provider" class="badge badge-secondary"></span>
-                    <span id="response-time" class="badge badge-info"></span>
+
+            <!-- Контент вкладок -->
+            <div class="tab-content">
+                <!-- Вкладка: Чат с AI -->
+                <div id="chat" class="tab-pane active">
+                    <textarea
+                        id="prompt-input"
+                        placeholder="Введите ваш запрос к AI..."
+                        rows="4"
+                    ></textarea>
+                    <button id="send-btn" class="btn-primary" onclick="sendPrompt()">
+                        <span id="send-btn-text">Отправить</span>
+                        <span id="send-btn-loader" class="loader hidden"></span>
+                    </button>
+
+                    <div id="chat-response" class="response-box hidden">
+                        <div class="response-meta">
+                            <span id="response-model" class="tag"></span>
+                            <span id="response-provider" class="tag tag-gray"></span>
+                            <span id="response-time" class="tag tag-blue"></span>
+                        </div>
+                        <div id="response-text" class="response-text"></div>
+                    </div>
+                    <div id="chat-error" class="error-box hidden"></div>
                 </div>
-                <div id="response-text" class="response-text"></div>
-            </div>
-            <div id="chat-error" class="error-box hidden"></div>
-        </section>
 
-        <!-- Секция 2: Статистика моделей -->
-        <section class="card" id="stats-section">
-            <div class="section-header">
-                <h2>Статистика моделей</h2>
-                <button id="refresh-stats-btn" class="btn-icon" onclick="loadStats()" title="Обновить">
-                    <span id="refresh-icon">&#x21bb;</span>
-                </button>
-            </div>
-            <div id="stats-loader" class="loader-container hidden">
-                <span class="loader"></span>
-                <span>Загрузка...</span>
-            </div>
-            <div id="stats-table-container">
-                <table id="stats-table" class="stats-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Модель</th>
-                            <th>Провайдер</th>
-                            <th>Score</th>
-                            <th>Успешность</th>
-                            <th>Статус</th>
-                        </tr>
-                    </thead>
-                    <tbody id="stats-tbody">
-                        <!-- Данные загружаются динамически -->
-                    </tbody>
-                </table>
-            </div>
-            <div id="stats-error" class="error-box hidden"></div>
-        </section>
+                <!-- Вкладка: Статистика моделей -->
+                <div id="stats" class="tab-pane hidden">
+                    <div class="section-header">
+                        <span class="section-title">Рейтинг моделей по надёжности</span>
+                        <button id="refresh-stats-btn" class="btn-icon" onclick="loadStats()" title="Обновить">↻</button>
+                    </div>
 
-        <!-- Секция 3: Тестирование провайдеров -->
-        <section class="card" id="providers-section">
-            <div class="section-header">
-                <h2>Тестирование провайдеров</h2>
-                <button id="test-providers-btn" class="btn-primary" onclick="testProviders()">
-                    <span id="test-btn-text">Тестировать все</span>
-                    <span id="test-btn-loader" class="loader hidden"></span>
-                </button>
-            </div>
-            <div id="providers-results" class="providers-results hidden">
-                <div id="providers-summary" class="providers-summary"></div>
-                <div id="providers-list" class="providers-list"></div>
-            </div>
-            <div id="providers-error" class="error-box hidden"></div>
-        </section>
+                    <div id="stats-loader" class="loader-box hidden">
+                        <span class="loader loader-dark"></span>
+                        <span>Загрузка...</span>
+                    </div>
 
-        <!-- Footer со статусом системы -->
-        <footer class="footer">
-            <div class="status-indicator">
-                <span>Статус:</span>
-                <span id="system-status" class="status-badge">
-                    <span id="status-icon" class="status-icon"></span>
+                    <div id="stats-table-container">
+                        <table class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Модель</th>
+                                    <th>Провайдер</th>
+                                    <th>Score</th>
+                                    <th>Успех</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stats-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div id="stats-error" class="error-box hidden"></div>
+                </div>
+
+                <!-- Вкладка: Тестирование провайдеров -->
+                <div id="test" class="tab-pane hidden">
+                    <p class="hint">Проверить доступность всех AI провайдеров</p>
+                    <button id="test-providers-btn" class="btn-primary" onclick="testProviders()">
+                        <span id="test-btn-text">Тестировать все</span>
+                        <span id="test-btn-loader" class="loader hidden"></span>
+                    </button>
+
+                    <div id="providers-results" class="providers-results hidden">
+                        <div id="providers-summary" class="providers-summary"></div>
+                        <div id="providers-list" class="providers-list"></div>
+                    </div>
+                    <div id="providers-error" class="error-box hidden"></div>
+                </div>
+            </div>
+
+            <!-- Футер -->
+            <div class="card-footer">
+                <span class="status">
+                    <span id="status-icon" class="status-dot"></span>
                     <span id="status-text">Проверка...</span>
                 </span>
+                <a href="docs" class="link">API Docs</a>
             </div>
-            <div class="footer-links">
-                <a href="/docs" target="_blank">API Docs</a>
-            </div>
-        </footer>
+        </div>
     </div>
 
     <script src="app.js"></script>
