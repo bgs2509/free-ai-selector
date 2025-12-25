@@ -38,7 +38,9 @@ REQUEST_ID_HEADER = os.getenv("REQUEST_ID_HEADER", "X-Request-ID")
 DATA_API_URL = os.getenv("DATA_API_URL", "http://localhost:8001")
 
 # CORS configuration
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
+CORS_ORIGINS = os.getenv(
+    "CORS_ORIGINS", "http://localhost:3000,http://localhost:8000"
+).split(",")
 
 # Rate limiting configuration (Level 2 requirement)
 RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
@@ -86,7 +88,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         - Log service shutdown
     """
     # Startup
-    logger.info(f"Starting {SERVICE_NAME} v{SERVICE_VERSION} (Environment: {ENVIRONMENT})")
+    logger.info(
+        f"Starting {SERVICE_NAME} v{SERVICE_VERSION} (Environment: {ENVIRONMENT})"
+    )
 
     # Verify Data API connection
     try:
@@ -95,7 +99,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
             if response.status_code == 200:
                 logger.info("Data API connection verified successfully")
             else:
-                logger.warning(f"Data API health check returned status {response.status_code}")
+                logger.warning(
+                    f"Data API health check returned status {response.status_code}"
+                )
     except Exception as e:
         logger.error(f"Data API connection failed: {sanitize_error_message(e)}")
         logger.warning("Service will start but may encounter errors")
@@ -240,7 +246,9 @@ async def health_check() -> HealthCheckResponse:
                 data_api_status = f"unhealthy: status {response.status_code}"
     except Exception as e:
         data_api_status = f"unhealthy: {sanitize_error_message(e)}"
-        logger.error(f"Health check failed: Data API connection error - {sanitize_error_message(e)}")
+        logger.error(
+            f"Health check failed: Data API connection error - {sanitize_error_message(e)}"
+        )
 
     return HealthCheckResponse(
         status="healthy" if data_api_status == "healthy" else "unhealthy",
@@ -271,9 +279,9 @@ async def root():
     Перенаправление на веб-интерфейс.
 
     Returns:
-        RedirectResponse на /static/index.html
+        RedirectResponse на static/index.html
     """
-    return RedirectResponse(url="/static/index.html")
+    return RedirectResponse(url="static/index.html")
 
 
 @app.get("/api", tags=["Root"], summary="API информация")
