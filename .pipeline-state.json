@@ -11,20 +11,20 @@
     ".claude/": "kept_existing",
     ".claude/commands/": "copied_10_commands"
   },
-  "current_stage": 2,
+  "current_stage": 3,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2025-12-25T14:00:00Z",
+  "updated_at": "2025-12-25T20:30:00Z",
 
   "current_feature": {
-    "id": "F002",
-    "name": "web-ui",
-    "title": "Веб-интерфейс для Free AI Selector",
+    "id": "F003",
+    "name": "expand-ai-providers",
+    "title": "Расширение AI провайдеров до 20 (без барьеров)",
     "created": "2025-12-25",
     "stage": "DEPLOYED",
     "artifacts": {
-      "prd": "prd/2025-12-25_F002_web-ui-prd.md",
-      "research": "research/2025-12-25_F002_web-ui-research.md",
-      "plan": "plans/2025-12-25_F002_web-ui-plan.md"
+      "prd": "prd/2025-12-25_F003_expand-ai-providers-prd.md",
+      "research": "research/2025-12-25_F003_expand-ai-providers-research.md",
+      "plan": "plans/2025-12-25_F003_expand-ai-providers-plan.md"
     }
   },
 
@@ -41,124 +41,81 @@
     },
     "PRD_READY": {
       "passed": true,
-      "passed_at": "2025-12-25T10:00:00Z",
-      "artifact": "ai-docs/docs/prd/2025-12-25_F002_web-ui-prd.md"
+      "passed_at": "2025-12-25T17:30:00Z",
+      "artifact": "ai-docs/docs/prd/2025-12-25_F003_expand-ai-providers-prd.md"
     },
     "RESEARCH_DONE": {
       "passed": true,
-      "passed_at": "2025-12-25T10:30:00Z",
-      "artifact": "ai-docs/docs/research/2025-12-25_F002_web-ui-research.md"
+      "passed_at": "2025-12-25T17:45:00Z",
+      "artifact": "ai-docs/docs/research/2025-12-25_F003_expand-ai-providers-research.md"
     },
     "PLAN_APPROVED": {
       "passed": true,
-      "passed_at": "2025-12-25T11:00:00Z",
-      "artifact": "ai-docs/docs/plans/2025-12-25_F002_web-ui-plan.md"
+      "passed_at": "2025-12-25T18:15:00Z",
+      "artifact": "ai-docs/docs/plans/2025-12-25_F003_expand-ai-providers-plan.md",
+      "approved_by": "user"
     },
     "IMPLEMENT_OK": {
       "passed": true,
-      "passed_at": "2025-12-25T12:00:00Z",
-      "files_created": [
-        "services/free-ai-selector-business-api/app/static/index.html",
-        "services/free-ai-selector-business-api/app/static/style.css",
-        "services/free-ai-selector-business-api/app/static/app.js",
-        "services/free-ai-selector-business-api/tests/unit/test_static_files.py"
-      ],
-      "files_modified": [
-        "services/free-ai-selector-business-api/app/main.py"
-      ],
-      "tests_passed": 11
+      "passed_at": "2025-12-25T19:00:00Z",
+      "details": {
+        "providers_created": 10,
+        "tests_passed": 46,
+        "coverage": "46%",
+        "files_modified": ["process_prompt.py", "seed.py", ".env.example", "docker-compose.yml"]
+      }
     },
     "REVIEW_OK": {
       "passed": true,
-      "passed_at": "2025-12-25T12:30:00Z",
-      "artifact": "ai-docs/docs/reports/2025-12-25_F002_web-ui-review.md",
+      "passed_at": "2025-12-25T19:30:00Z",
+      "artifact": "ai-docs/docs/reports/2025-12-25_F003_expand-ai-providers-review.md",
       "checks": {
-        "architecture_compliance": true,
-        "conventions_compliance": true,
+        "architecture": true,
         "dry_kiss_yagni": true,
+        "type_hints": true,
+        "docstrings": true,
         "security": true,
-        "test_coverage": true,
-        "critical_issues": 0
+        "tests": true
       }
     },
     "QA_PASSED": {
       "passed": true,
-      "passed_at": "2025-12-25T13:00:00Z",
-      "artifact": "ai-docs/docs/reports/2025-12-25_F002_web-ui-qa.md",
-      "tests": {
-        "total": 11,
-        "passed": 11,
-        "failed": 0
-      },
-      "coverage": {
-        "total": 46,
-        "f002_main_py": 71,
-        "note": "Low total coverage due to pre-existing untested code (AI providers)"
-      },
-      "requirements": {
-        "FR_verified": 8,
-        "NF_verified": 5,
-        "US_verified": 3
-      },
-      "bugs": {
-        "critical": 0,
-        "major": 0,
-        "minor": 0
+      "passed_at": "2025-12-25T19:45:00Z",
+      "artifact": "ai-docs/docs/reports/2025-12-25_F003_expand-ai-providers-qa.md",
+      "results": {
+        "tests_total": 60,
+        "tests_passed": 60,
+        "tests_failed": 0,
+        "coverage": "46%",
+        "fr_verified": "14/14",
+        "critical_bugs": 0
       }
     },
     "ALL_GATES_PASSED": {
       "passed": true,
-      "passed_at": "2025-12-25T13:30:00Z",
-      "artifact": "ai-docs/docs/reports/2025-12-25_F002_web-ui-validation.md",
-      "gates_verified": {
-        "PRD_READY": true,
-        "RESEARCH_DONE": true,
-        "PLAN_APPROVED": true,
-        "IMPLEMENT_OK": true,
-        "REVIEW_OK": true,
-        "QA_PASSED": true
-      },
-      "artifacts_verified": {
-        "prd": true,
-        "research": true,
-        "plan": true,
-        "code": true,
-        "tests": true,
-        "review": true,
-        "qa": true,
-        "rtm": true
-      },
-      "requirements_met": {
-        "FR": "8/8",
-        "NF": "5/5",
-        "UI": "5/5"
-      }
+      "passed_at": "2025-12-25T20:00:00Z",
+      "artifact": "ai-docs/docs/reports/2025-12-25_F003_expand-ai-providers-validation.md",
+      "rtm_updated": true,
+      "gates_verified": ["PRD_READY", "RESEARCH_DONE", "PLAN_APPROVED", "IMPLEMENT_OK", "REVIEW_OK", "QA_PASSED"]
     },
     "DEPLOYED": {
       "passed": true,
-      "passed_at": "2025-12-25T14:00:00Z",
-      "environment": "local",
+      "passed_at": "2025-12-25T20:22:00Z",
       "containers": {
-        "free-ai-selector-postgres": "healthy",
-        "free-ai-selector-data-postgres-api": "healthy",
-        "free-ai-selector-business-api": "healthy",
-        "free-ai-selector-health-worker": "running",
-        "free-ai-selector-telegram-bot": "running"
+        "postgres": "healthy",
+        "data-api": "healthy",
+        "business-api": "healthy",
+        "health-worker": "running",
+        "telegram-bot": "running"
       },
-      "endpoints_verified": {
-        "health": "/health → 200",
-        "api_info": "/api → 200",
-        "models_stats": "/api/v1/models/stats → 200",
-        "web_ui": "/static/index.html → 200",
-        "root_redirect": "/ → 307 → /static/index.html"
-      }
+      "endpoints_verified": ["/health", "/api"]
     }
   },
 
   "artifacts": {
-    "prd": "ai-docs/docs/prd/2025-12-25_F002_web-ui-prd.md",
-    "research": "ai-docs/docs/research/2025-12-25_F002_web-ui-research.md",
-    "plan": "ai-docs/docs/plans/2025-12-25_F002_web-ui-plan.md"
+    "prd": "ai-docs/docs/prd/2025-12-25_F003_expand-ai-providers-prd.md",
+    "research": "ai-docs/docs/research/2025-12-25_F003_expand-ai-providers-research.md",
+    "plan": "ai-docs/docs/plans/2025-12-25_F003_expand-ai-providers-plan.md"
   },
 
   "features_registry": {
@@ -177,8 +134,16 @@
       "created": "2025-12-25",
       "status": "DEPLOYED",
       "services": ["free-ai-selector-business-api"]
+    },
+    "F003": {
+      "name": "expand-ai-providers",
+      "title": "Расширение AI провайдеров до 20 (без барьеров)",
+      "description": "Добавление 10 новых AI провайдеров без требования кредитной карты и верификации телефона",
+      "created": "2025-12-25",
+      "status": "DEPLOYED",
+      "services": ["free-ai-selector-business-api", "free-ai-selector-data-postgres-api"]
     }
   },
 
-  "next_feature_id": 3
+  "next_feature_id": 4
 }
