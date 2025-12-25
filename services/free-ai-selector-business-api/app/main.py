@@ -120,9 +120,9 @@ app = FastAPI(
     title="Free AI Selector - Business API",
     description="Business logic service providing AI prompt processing and model selection",
     version=SERVICE_VERSION,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json",
+    docs_url="docs",
+    redoc_url="redoc",
+    openapi_url="openapi.json",
     root_path=ROOT_PATH,
     lifespan=lifespan,
 )
