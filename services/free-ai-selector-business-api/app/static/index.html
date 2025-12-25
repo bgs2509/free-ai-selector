@@ -292,8 +292,8 @@
 
         function show(el) { el.classList.remove('hidden'); }
         function hide(el) { el.classList.add('hidden'); }
-        function formatTime(s) { return s == null ? '—' : `${s.toFixed(2)}с`; }
-        function formatPercent(v) { return v == null ? '—' : `${(v * 100).toFixed(1)}%`; }
+        function formatTime(s) { return s == null ? '—' : `${Number(s).toFixed(2)}с`; }
+        function formatPercent(v) { return v == null ? '—' : `${(Number(v) * 100).toFixed(1)}%`; }
         function getMedal(r) { return r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : ''; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
