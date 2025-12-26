@@ -9,6 +9,12 @@ echo "================================================"
 echo "🚀 Starting deployment process..."
 echo "================================================"
 
+# Создание внешней сети proxy-network (для связи с nginx-proxy)
+# Если сеть уже существует — команда завершится успешно без ошибки
+echo ""
+echo "🌐 Проверка/создание внешней сети proxy-network..."
+docker network create proxy-network 2>/dev/null && echo "   Сеть proxy-network создана" || echo "   Сеть proxy-network уже существует"
+
 # Stop and remove existing containers
 echo ""
 echo "🛑 Stopping existing containers..."

@@ -77,6 +77,13 @@ cmd_deploy() {
     cd "$PROJECT_DIR"
     check_env
 
+    log_info "Проверка/создание внешней сети proxy-network..."
+    if docker network create proxy-network 2>/dev/null; then
+        log_success "Сеть proxy-network создана"
+    else
+        log_info "Сеть proxy-network уже существует"
+    fi
+
     log_info "Получение изменений из репозитория..."
     git fetch origin
     git reset --hard origin/$BRANCH
@@ -129,6 +136,10 @@ cmd_start() {
     header "Запуск сервисов"
     cd "$PROJECT_DIR"
     check_env
+
+    # Создаём сеть если не существует
+    docker network create proxy-network 2>/dev/null || true
+
     docker compose -f $COMPOSE_FILE up -d
     log_success "Сервисы запущены"
     cmd_status
