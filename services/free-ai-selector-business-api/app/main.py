@@ -116,13 +116,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 # FastAPI Application
 # =============================================================================
 
+# Динамический OpenAPI URL для работы за reverse proxy (nginx-proxy)
+# При пустом ROOT_PATH используется стандартный путь /openapi.json
+# При ROOT_PATH="/free-ai-selector" путь станет /free-ai-selector/openapi.json
+_openapi_url = f"{ROOT_PATH}/openapi.json" if ROOT_PATH else "/openapi.json"
+
 app = FastAPI(
     title="Free AI Selector - Business API",
-    description="Business logic service providing AI prompt processing and model selection",
+    description="Бизнес-логика и интеграция с AI-провайдерами",
     version=SERVICE_VERSION,
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json",
+    openapi_url=_openapi_url,
     root_path=ROOT_PATH,
     lifespan=lifespan,
 )

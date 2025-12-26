@@ -16,15 +16,13 @@
   "updated_at": "2025-12-25T21:15:00Z",
 
   "current_feature": {
-    "id": "F004",
-    "name": "dynamic-providers-list",
-    "title": "Динамический список провайдеров во всех сервисах",
-    "created": "2025-12-25",
-    "stage": "DEPLOYED",
+    "id": "F005",
+    "name": "openapi-docs-fix",
+    "title": "Исправление OpenAPI Docs и Web UI навигации",
+    "created": "2025-12-26",
+    "stage": "IMPLEMENTING",
     "artifacts": {
-      "prd": "prd/2025-12-25_F004_dynamic-providers-list-prd.md",
-      "research": "research/2025-12-25_F004_dynamic-providers-list-research.md",
-      "plan": "plans/2025-12-25_F004_dynamic-providers-list-plan.md"
+      "prd": "prd/2025-12-26_F005_openapi-docs-fix-prd.md"
     }
   },
 
@@ -163,8 +161,16 @@
       "created": "2025-12-25",
       "status": "DEPLOYED",
       "services": ["free-ai-selector-telegram-bot", "free-ai-selector-business-api", "free-ai-selector-health-worker"]
+    },
+    "F005": {
+      "name": "openapi-docs-fix",
+      "title": "Исправление OpenAPI Docs и Web UI навигации",
+      "description": "Исправление путей для работы за nginx-proxy: openapi_url и ссылка API Docs",
+      "created": "2025-12-26",
+      "status": "IMPLEMENTING",
+      "services": ["free-ai-selector-business-api"]
     }
   },
 
-  "next_feature_id": 5
+  "next_feature_id": 6
 }
