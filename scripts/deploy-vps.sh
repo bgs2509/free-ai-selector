@@ -62,7 +62,7 @@ header() {
 check_env() {
     if [ ! -f "$PROJECT_DIR/.env" ]; then
         log_error "Файл .env не найден!"
-        log_info "Создайте его из шаблона: cp .env.vps.example .env"
+        log_info "Создайте его из шаблона: cp .env.example .env"
         exit 1
     fi
 }
