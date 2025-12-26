@@ -11,6 +11,7 @@ import time
 from typing import Any, Optional
 
 from app.domain.models import AIModelInfo
+from app.utils.security import sanitize_error_message
 from app.infrastructure.ai_providers.base import AIProviderBase
 from app.infrastructure.ai_providers.cerebras import CerebrasProvider
 from app.infrastructure.ai_providers.cloudflare import CloudflareProvider
@@ -143,7 +144,7 @@ class TestAllProvidersUseCase:
             logger.warning(f"No model found in database for provider: {provider_name}")
             return None
         except Exception as e:
-            logger.error(f"Failed to get model for provider {provider_name}: {str(e)}")
+            logger.error(f"Failed to get model for provider {provider_name}: {sanitize_error_message(e)}")
             return None
 
     async def _test_provider(
@@ -195,7 +196,8 @@ class TestAllProvidersUseCase:
 
         except Exception as e:
             error_type = type(e).__name__
-            error_message = str(e)
+            # БЕЗОПАСНОСТЬ: Sanitize сообщения об ошибках для скрытия API ключей
+            error_message = sanitize_error_message(e)
 
             result["status"] = "error"
             result["error"] = f"{error_type}: {error_message}"
