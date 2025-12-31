@@ -229,7 +229,7 @@ class TestAllProvidersUseCase:
 
         try:
             if test_result["status"] == "success":
-                response_time = test_result.get("response_time", 0.0)
+                response_time = test_result.get("response_time") or 0.0
                 await self.data_api_client.increment_success(
                     model_id=model.id, response_time=response_time
                 )
@@ -238,7 +238,7 @@ class TestAllProvidersUseCase:
                 )
             else:
                 # For failures, use 0.0 as response time or a default timeout value
-                response_time = test_result.get("response_time", 0.0)
+                response_time = test_result.get("response_time") or 0.0
                 await self.data_api_client.increment_failure(
                     model_id=model.id, response_time=response_time
                 )
