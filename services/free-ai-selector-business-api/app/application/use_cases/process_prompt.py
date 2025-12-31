@@ -1,5 +1,3 @@
-from app.utils.security import sanitize_error_message
-
 """
 Process Prompt Use Case
 
@@ -11,10 +9,13 @@ Core business logic for AI Manager Platform:
 5. Record prompt history
 """
 
-import logging
 import time
 from decimal import Decimal
 from typing import Optional
+
+from app.utils.logger import get_logger
+from app.utils.log_helpers import log_decision
+from app.utils.security import sanitize_error_message
 
 from app.domain.models import AIModelInfo, PromptRequest, PromptResponse
 from app.infrastructure.ai_providers.base import AIProviderBase
@@ -36,7 +37,7 @@ from app.infrastructure.ai_providers.sambanova import SambanovaProvider
 from app.infrastructure.ai_providers.scaleway import ScalewayProvider
 from app.infrastructure.http_clients.data_api_client import DataAPIClient
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ProcessPromptUseCase:
@@ -96,19 +97,29 @@ class ProcessPromptUseCase:
         Raises:
             Exception: If all providers fail
         """
-        logger.info(f"Processing prompt for user {request.user_id}")
+        logger.info("processing_prompt", prompt_length=len(request.prompt_text))
 
         # Step 1: Fetch active models from Data API
         models = await self.data_api_client.get_all_models(active_only=True)
 
         if not models:
-            logger.error("No active AI models available")
+            logger.error("no_active_models_available")
             raise Exception("No active AI models available")
 
         # Step 2: Select best model based on reliability score
         best_model = self._select_best_model(models)
-        logger.info(
-            f"Selected model: {best_model.name} (reliability: {best_model.reliability_score:.3f})"
+
+        # Log the model selection decision
+        log_decision(
+            logger,
+            decision="ACCEPT",
+            reason="highest_reliability_score",
+            evaluated_conditions={
+                "models_count": len(models),
+                "selected_model": best_model.name,
+                "selected_provider": best_model.provider,
+                "reliability_score": float(best_model.reliability_score),
+            },
         )
 
         # Step 3: Try to generate with selected model
@@ -121,26 +132,53 @@ class ProcessPromptUseCase:
             provider = self._get_provider_for_model(best_model)
             response_text = await provider.generate(request.prompt_text)
             success = True
-            logger.info(f"Successfully generated response with {best_model.name}")
+            logger.info(
+                "generation_success",
+                model=best_model.name,
+                provider=best_model.provider,
+            )
 
         except Exception as e:
             error_message = sanitize_error_message(e)
-            logger.error(f"Failed to generate with {best_model.name}: {error_message}")
+            logger.error(
+                "generation_failed",
+                model=best_model.name,
+                provider=best_model.provider,
+                error=error_message,
+            )
 
             # Try fallback to next best model
             fallback_model = self._select_fallback_model(models, best_model)
             if fallback_model:
-                logger.info(f"Trying fallback model: {fallback_model.name}")
+                # Log fallback decision
+                log_decision(
+                    logger,
+                    decision="FALLBACK",
+                    reason="primary_model_failed",
+                    evaluated_conditions={
+                        "failed_model": best_model.name,
+                        "fallback_model": fallback_model.name,
+                        "fallback_reliability": float(fallback_model.reliability_score),
+                    },
+                )
                 try:
                     fallback_provider = self._get_provider_for_model(fallback_model)
                     response_text = await fallback_provider.generate(request.prompt_text)
                     success = True
                     best_model = fallback_model  # Use fallback model for stats
                     error_message = None
-                    logger.info(f"Fallback successful with {best_model.name}")
+                    logger.info(
+                        "fallback_success",
+                        model=best_model.name,
+                        provider=best_model.provider,
+                    )
 
                 except Exception as fallback_error:
-                    logger.error(f"Fallback also failed: {str(fallback_error)}")
+                    logger.error(
+                        "fallback_failed",
+                        model=fallback_model.name,
+                        error=sanitize_error_message(fallback_error),
+                    )
 
         response_time = Decimal(str(time.time() - start_time))
 
@@ -155,7 +193,11 @@ class ProcessPromptUseCase:
                     model_id=best_model.id, response_time=float(response_time)
                 )
         except Exception as stats_error:
-            logger.error(f"Failed to update model statistics: {str(stats_error)}")
+            logger.error(
+                "stats_update_failed",
+                model=best_model.name,
+                error=sanitize_error_message(stats_error),
+            )
 
         # Step 5: Record prompt history
         try:
@@ -169,7 +211,10 @@ class ProcessPromptUseCase:
                 error_message=error_message,
             )
         except Exception as history_error:
-            logger.error(f"Failed to record history: {str(history_error)}")
+            logger.error(
+                "history_record_failed",
+                error=sanitize_error_message(history_error),
+            )
 
         # Return response
         if not success:

@@ -5,15 +5,23 @@ FastAPI application providing business logic and AI provider integration.
 Level 2 (Development Ready) maturity.
 """
 
-import logging
-from app.utils.security import sanitize_error_message
 import os
-import uuid
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 import httpx
 from fastapi import FastAPI, Request, status
+
+from app.utils.logger import setup_logging, get_logger
+from app.utils.request_id import (
+    setup_tracing_context,
+    clear_tracing_context,
+    generate_id,
+    REQUEST_ID_HEADER,
+    CORRELATION_ID_HEADER,
+)
+from app.utils.log_helpers import log_request_started, log_request_completed
+from app.utils.security import sanitize_error_message
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -31,8 +39,6 @@ from app.api.v1.schemas import HealthCheckResponse
 SERVICE_NAME = "free-ai-selector-business-api"
 SERVICE_VERSION = "1.0.0"
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
-LOG_LEVEL = os.getenv("BUSINESS_API_LOG_LEVEL", "INFO")
-REQUEST_ID_HEADER = os.getenv("REQUEST_ID_HEADER", "X-Request-ID")
 
 # Data API configuration
 DATA_API_URL = os.getenv("DATA_API_URL", "http://localhost:8001")
@@ -50,18 +56,11 @@ RATE_LIMIT_PERIOD = int(os.getenv("RATE_LIMIT_PERIOD", "60"))
 ROOT_PATH = os.getenv("ROOT_PATH", "")
 
 # =============================================================================
-# Logging Configuration (Level 2: JSON logging)
+# Logging Configuration (AIDD Framework: structlog)
 # =============================================================================
 
-logging.basicConfig(
-    level=LOG_LEVEL,
-    format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", "service": "'
-    + SERVICE_NAME
-    + '", "message": "%(message)s"}',
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-
-logger = logging.getLogger(__name__)
+setup_logging(SERVICE_NAME)
+logger = get_logger(__name__)
 
 # =============================================================================
 # Rate Limiter
@@ -89,7 +88,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     """
     # Startup
     logger.info(
-        f"Starting {SERVICE_NAME} v{SERVICE_VERSION} (Environment: {ENVIRONMENT})"
+        "service_starting",
+        version=SERVICE_VERSION,
+        environment=ENVIRONMENT,
     )
 
     # Verify Data API connection
@@ -97,19 +98,24 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.get(f"{DATA_API_URL}/health")
             if response.status_code == 200:
-                logger.info("Data API connection verified successfully")
+                logger.info("data_api_connected", status="healthy")
             else:
                 logger.warning(
-                    f"Data API health check returned status {response.status_code}"
+                    "data_api_connected",
+                    status="unhealthy",
+                    status_code=response.status_code,
                 )
     except Exception as e:
-        logger.error(f"Data API connection failed: {sanitize_error_message(e)}")
-        logger.warning("Service will start but may encounter errors")
+        logger.error(
+            "data_api_connection_failed",
+            error=sanitize_error_message(e),
+        )
+        logger.warning("service_starting_with_errors")
 
     yield
 
     # Shutdown
-    logger.info(f"Shutting down {SERVICE_NAME}")
+    logger.info("service_stopping")
 
 
 # =============================================================================
@@ -165,35 +171,45 @@ app.add_middleware(
 @app.middleware("http")
 async def add_request_id_middleware(request: Request, call_next):
     """
-    Middleware to add request ID to all requests.
+    Middleware to add request ID and correlation ID to all requests.
 
-    Level 2 requirement: Request ID tracking for observability.
+    AIDD Framework: ContextVars-based tracing with structlog.
     """
-    # Get or generate request ID
-    request_id = request.headers.get(REQUEST_ID_HEADER, str(uuid.uuid4()))
+    # Get or generate IDs
+    request_id = request.headers.get(REQUEST_ID_HEADER, generate_id())
+    correlation_id = request.headers.get(CORRELATION_ID_HEADER, request_id)
 
-    # Add request ID to request state
+    # Setup tracing context (ContextVars + structlog binding)
+    setup_tracing_context(request_id=request_id, correlation_id=correlation_id)
+
+    # Add request ID to request state (for backwards compatibility)
     request.state.request_id = request_id
 
-    # Log incoming request
-    logger.info(
-        f'{{"request_id": "{request_id}", "method": "{request.method}", '
-        f'"path": "{request.url.path}", "event": "request_started"}}'
+    # Log incoming request with duration tracking
+    start_time = log_request_started(
+        logger, method=request.method, path=request.url.path
     )
 
-    # Process request
-    response = await call_next(request)
+    try:
+        # Process request
+        response = await call_next(request)
 
-    # Add request ID to response headers
-    response.headers[REQUEST_ID_HEADER] = request_id
+        # Add IDs to response headers
+        response.headers[REQUEST_ID_HEADER] = request_id
 
-    # Log response
-    logger.info(
-        f'{{"request_id": "{request_id}", "status_code": {response.status_code}, '
-        f'"event": "request_completed"}}'
-    )
+        # Log response with duration_ms
+        log_request_completed(
+            logger,
+            method=request.method,
+            path=request.url.path,
+            start_time=start_time,
+            status_code=response.status_code,
+        )
 
-    return response
+        return response
+    finally:
+        # Clear context after request
+        clear_tracing_context()
 
 
 @app.middleware("http")
@@ -208,8 +224,9 @@ async def error_handling_middleware(request: Request, call_next):
     except Exception as e:
         request_id = getattr(request.state, "request_id", "unknown")
         logger.error(
-            f'{{"request_id": "{request_id}", "error": "{sanitize_error_message(e)}", '
-            f'"error_type": "{type(e).__name__}", "event": "unhandled_exception"}}'
+            "unhandled_exception",
+            error=sanitize_error_message(e),
+            error_type=type(e).__name__,
         )
 
         return JSONResponse(
@@ -255,7 +272,9 @@ async def health_check() -> HealthCheckResponse:
     except Exception as e:
         data_api_status = f"unhealthy: {sanitize_error_message(e)}"
         logger.error(
-            f"Health check failed: Data API connection error - {sanitize_error_message(e)}"
+            "health_check_failed",
+            error=sanitize_error_message(e),
+            external_service="data_api",
         )
 
     return HealthCheckResponse(

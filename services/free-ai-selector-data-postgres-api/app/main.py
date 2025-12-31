@@ -5,14 +5,22 @@ FastAPI application providing data layer access to AI models and prompt history.
 Level 2 (Development Ready) maturity.
 """
 
-import logging
-from app.utils.security import sanitize_error_message
 import os
-import uuid
+import time
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request, status
+
+from app.utils.logger import setup_logging, get_logger
+from app.utils.request_id import (
+    setup_tracing_context,
+    clear_tracing_context,
+    generate_id,
+    REQUEST_ID_HEADER,
+    CORRELATION_ID_HEADER,
+)
+from app.utils.security import sanitize_error_message
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,22 +36,13 @@ from app.infrastructure.database.connection import AsyncSessionLocal, engine
 SERVICE_NAME = "free-ai-selector-data-postgres-api"
 SERVICE_VERSION = "1.0.0"
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
-LOG_LEVEL = os.getenv("DATA_API_LOG_LEVEL", "INFO")
-REQUEST_ID_HEADER = os.getenv("REQUEST_ID_HEADER", "X-Request-ID")
 
 # =============================================================================
-# Logging Configuration (Level 2: JSON logging)
+# Logging Configuration (AIDD Framework: structlog)
 # =============================================================================
 
-logging.basicConfig(
-    level=LOG_LEVEL,
-    format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", "service": "'
-    + SERVICE_NAME
-    + '", "message": "%(message)s"}',
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-
-logger = logging.getLogger(__name__)
+setup_logging(SERVICE_NAME)
+logger = get_logger(__name__)
 
 
 # =============================================================================
@@ -65,21 +64,28 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         - Log service shutdown
     """
     # Startup
-    logger.info(f"Starting {SERVICE_NAME} v{SERVICE_VERSION} (Environment: {ENVIRONMENT})")
+    logger.info(
+        "service_starting",
+        version=SERVICE_VERSION,
+        environment=ENVIRONMENT,
+    )
 
     # Verify database connection
     try:
         async with AsyncSessionLocal() as session:
             await session.execute(text("SELECT 1"))
-        logger.info("Database connection verified successfully")
+        logger.info("database_connected", status="healthy")
     except Exception as e:
-        logger.error(f"Database connection failed: {sanitize_error_message(e)}")
+        logger.error(
+            "database_connection_failed",
+            error=sanitize_error_message(e),
+        )
         raise
 
     yield
 
     # Shutdown
-    logger.info(f"Shutting down {SERVICE_NAME}")
+    logger.info("service_stopping")
     await engine.dispose()
 
 
@@ -106,35 +112,45 @@ app = FastAPI(
 @app.middleware("http")
 async def add_request_id_middleware(request: Request, call_next):
     """
-    Middleware to add request ID to all requests.
+    Middleware to add request ID and correlation ID to all requests.
 
-    Level 2 requirement: Request ID tracking for observability.
+    AIDD Framework: ContextVars-based tracing with structlog.
     """
-    # Get or generate request ID
-    request_id = request.headers.get(REQUEST_ID_HEADER, str(uuid.uuid4()))
+    # Get or generate IDs
+    request_id = request.headers.get(REQUEST_ID_HEADER, generate_id())
+    correlation_id = request.headers.get(CORRELATION_ID_HEADER, request_id)
 
-    # Add request ID to request state
+    # Setup tracing context (ContextVars + structlog binding)
+    setup_tracing_context(request_id=request_id, correlation_id=correlation_id)
+
+    # Add request ID to request state (for backwards compatibility)
     request.state.request_id = request_id
 
-    # Log incoming request
-    logger.info(
-        f'{{"request_id": "{request_id}", "method": "{request.method}", '
-        f'"path": "{request.url.path}", "event": "request_started"}}'
-    )
+    # Log incoming request with duration tracking
+    start_time = time.perf_counter()
+    logger.info("request_started", method=request.method, path=request.url.path)
 
-    # Process request
-    response = await call_next(request)
+    try:
+        # Process request
+        response = await call_next(request)
 
-    # Add request ID to response headers
-    response.headers[REQUEST_ID_HEADER] = request_id
+        # Add IDs to response headers
+        response.headers[REQUEST_ID_HEADER] = request_id
 
-    # Log response
-    logger.info(
-        f'{{"request_id": "{request_id}", "status_code": {response.status_code}, '
-        f'"event": "request_completed"}}'
-    )
+        # Log response with duration_ms
+        duration_ms = (time.perf_counter() - start_time) * 1000
+        logger.info(
+            "request_completed",
+            method=request.method,
+            path=request.url.path,
+            status_code=response.status_code,
+            duration_ms=round(duration_ms, 2),
+        )
 
-    return response
+        return response
+    finally:
+        # Clear context after request
+        clear_tracing_context()
 
 
 @app.middleware("http")
@@ -149,8 +165,9 @@ async def error_handling_middleware(request: Request, call_next):
     except Exception as e:
         request_id = getattr(request.state, "request_id", "unknown")
         logger.error(
-            f'{{"request_id": "{request_id}", "error": "{sanitize_error_message(e)}", '
-            f'"error_type": "{type(e).__name__}", "event": "unhandled_exception"}}'
+            "unhandled_exception",
+            error=sanitize_error_message(e),
+            error_type=type(e).__name__,
         )
 
         return JSONResponse(
@@ -193,7 +210,11 @@ async def health_check() -> HealthCheckResponse:
             await session.execute(text("SELECT 1"))
     except Exception as e:
         db_status = f"unhealthy: {sanitize_error_message(e)}"
-        logger.error(f"Health check failed: database connection error - {sanitize_error_message(e)}")
+        logger.error(
+            "health_check_failed",
+            error=sanitize_error_message(e),
+            component="database",
+        )
 
     return HealthCheckResponse(
         status="healthy" if db_status == "healthy" else "unhealthy",

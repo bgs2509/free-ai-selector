@@ -9,6 +9,9 @@ aiogram==3.13.1
 # HTTP client for Business API communication
 httpx==0.27.2
 
+# Structured logging (AIDD Framework)
+structlog==24.4.0
+
 # Utilities
 python-dotenv==1.0.1
 

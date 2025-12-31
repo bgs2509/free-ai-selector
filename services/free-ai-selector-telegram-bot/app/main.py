@@ -7,13 +7,20 @@ User interface in Russian.
 """
 
 import asyncio
-import logging
 import os
 from typing import Optional
 
 import httpx
-from app.utils.security import sanitize_error_message
 from aiogram import Bot, Dispatcher, F, Router
+
+from app.utils.logger import setup_logging, get_logger
+from app.utils.request_id import (
+    setup_tracing_context,
+    clear_tracing_context,
+    create_tracing_headers,
+    generate_id,
+)
+from app.utils.security import sanitize_error_message
 from aiogram.filters import Command
 from aiogram.types import Message
 
@@ -28,18 +35,11 @@ LOG_LEVEL = os.getenv("TELEGRAM_BOT_LOG_LEVEL", "INFO")
 BOT_MAX_MESSAGE_LENGTH = int(os.getenv("BOT_MAX_MESSAGE_LENGTH", "4000"))
 
 # =============================================================================
-# Logging Configuration (Level 2: JSON logging)
+# Logging Configuration (AIDD Framework: structlog)
 # =============================================================================
 
-logging.basicConfig(
-    level=LOG_LEVEL,
-    format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", "service": "'
-    + SERVICE_NAME
-    + '", "message": "%(message)s"}',
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-
-logger = logging.getLogger(__name__)
+setup_logging(SERVICE_NAME)
+logger = get_logger(__name__)
 
 # =============================================================================
 # HTTP Client for Business API
@@ -57,16 +57,19 @@ async def call_business_api(prompt: str) -> Optional[dict]:
         Response dict with AI-generated text, or None if failed
     """
     try:
+        # Передаём correlation_id для трассировки через сервисы
+        headers = create_tracing_headers()
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 f"{BUSINESS_API_URL}/api/v1/prompts/process",
                 json={"prompt": prompt},
+                headers=headers,
             )
             response.raise_for_status()
             return response.json()
 
     except httpx.HTTPError as e:
-        logger.error(f"Business API call failed: {sanitize_error_message(e)}")
+        logger.error("business_api_call_failed", error=sanitize_error_message(e))
         return None
 
 
@@ -78,13 +81,17 @@ async def get_models_stats() -> Optional[dict]:
         Stats dict with models info, or None if failed
     """
     try:
+        headers = create_tracing_headers()
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(f"{BUSINESS_API_URL}/api/v1/models/stats")
+            response = await client.get(
+                f"{BUSINESS_API_URL}/api/v1/models/stats",
+                headers=headers,
+            )
             response.raise_for_status()
             return response.json()
 
     except httpx.HTTPError as e:
-        logger.error(f"Failed to fetch models stats: {sanitize_error_message(e)}")
+        logger.error("models_stats_fetch_failed", error=sanitize_error_message(e))
         return None
 
 
@@ -96,13 +103,17 @@ async def test_all_providers() -> Optional[dict]:
         Test results dict with provider statuses, or None if failed
     """
     try:
+        headers = create_tracing_headers()
         async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(f"{BUSINESS_API_URL}/api/v1/providers/test")
+            response = await client.post(
+                f"{BUSINESS_API_URL}/api/v1/providers/test",
+                headers=headers,
+            )
             response.raise_for_status()
             return response.json()
 
     except httpx.HTTPError as e:
-        logger.error(f"Failed to test providers: {sanitize_error_message(e)}")
+        logger.error("providers_test_failed", error=sanitize_error_message(e))
         return None
 
 
@@ -130,6 +141,10 @@ async def cmd_start(message: Message):
     Russian: Приветствие и краткая информация о боте.
     Динамически загружает список провайдеров из API.
     """
+    user_id = str(message.from_user.id)
+    # Устанавливаем контекст трассировки для этого запроса
+    setup_tracing_context(user_id=user_id)
+
     # Получаем актуальный список моделей из API
     stats = await get_models_stats()
 
@@ -173,7 +188,8 @@ async def cmd_start(message: Message):
 Начните прямо сейчас — просто отправьте мне сообщение!
 """
     await message.answer(welcome_text, parse_mode="HTML")
-    logger.info(f"User {message.from_user.id} started the bot")
+    logger.info("user_started_bot", command="start")
+    clear_tracing_context()
 
 
 @router.message(Command("help"))
@@ -183,6 +199,9 @@ async def cmd_help(message: Message):
 
     Russian: Подробная справка о командах и функциях.
     """
+    user_id = str(message.from_user.id)
+    setup_tracing_context(user_id=user_id)
+
     help_text = """
 📚 <b>Справка по Free AI Selector</b>
 
@@ -215,7 +234,8 @@ reliability_score = (success_rate × 0.6) + (speed_score × 0.4)
 💡 <b>Совет:</b> Чем конкретнее запрос, тем лучше результат!
 """
     await message.answer(help_text, parse_mode="HTML")
-    logger.info(f"User {message.from_user.id} requested help")
+    logger.info("user_requested_help", command="help")
+    clear_tracing_context()
 
 
 @router.message(Command("stats"))
@@ -225,6 +245,9 @@ async def cmd_stats(message: Message):
 
     Russian: Показать статистику AI моделей.
     """
+    user_id = str(message.from_user.id)
+    setup_tracing_context(user_id=user_id)
+
     await message.answer("📊 Загружаю статистику моделей...")
 
     stats = await get_models_stats()
@@ -262,7 +285,8 @@ async def cmd_stats(message: Message):
         stats_text += f"   Надёжность: {reliability:.3f} {status_icon}\n\n"
 
     await message.answer(stats_text, parse_mode="HTML")
-    logger.info(f"User {message.from_user.id} requested stats")
+    logger.info("user_requested_stats", command="stats", models_count=total)
+    clear_tracing_context()
 
 
 @router.message(Command("test"))
@@ -273,6 +297,9 @@ async def cmd_test(message: Message):
     Russian: Проверить работу всех AI провайдеров.
     Tests all AI providers and returns response time or error details.
     """
+    user_id = str(message.from_user.id)
+    setup_tracing_context(user_id=user_id)
+
     await message.answer("🧪 <b>Тестирую AI провайдеры...</b>\n\nОтправляю тестовый запрос ко всем моделям. Это может занять 10-30 секунд.", parse_mode="HTML")
 
     test_results = await test_all_providers()
@@ -323,7 +350,14 @@ async def cmd_test(message: Message):
         test_text += f"⚡ <b>Самый быстрый:</b> {fastest.get('provider')} ({fastest.get('response_time'):.2f} сек)"
 
     await message.answer(test_text, parse_mode="HTML")
-    logger.info(f"User {message.from_user.id} tested providers: {successful}/{total} successful")
+    logger.info(
+        "user_tested_providers",
+        command="test",
+        total_providers=total,
+        successful=successful,
+        failed=failed,
+    )
+    clear_tracing_context()
 
 
 # =============================================================================
@@ -341,7 +375,10 @@ async def handle_text_message(message: Message):
     user_prompt = message.text
     user_id = str(message.from_user.id)
 
-    logger.info(f"Processing prompt from user {user_id}: {user_prompt[:50]}...")
+    # Устанавливаем контекст трассировки для этого запроса
+    setup_tracing_context(user_id=user_id)
+
+    logger.info("processing_prompt", prompt_length=len(user_prompt))
 
     # Send "typing" action
     await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
@@ -388,9 +425,12 @@ async def handle_text_message(message: Message):
         await message.answer(response_text, parse_mode="HTML")
 
     logger.info(
-        f"Successfully processed prompt for user {user_id} "
-        f"with {model_name} in {float(response_time):.2f}s"
+        "prompt_processed",
+        model=model_name,
+        provider=provider,
+        response_time_seconds=float(response_time),
     )
+    clear_tracing_context()
 
 
 # =============================================================================
@@ -406,26 +446,29 @@ async def main():
 
     Starts polling and handles graceful shutdown.
     """
-    logger.info(f"Starting {SERVICE_NAME}")
-    logger.info(f"Business API URL: {BUSINESS_API_URL}")
+    logger.info("service_starting", business_api_url=BUSINESS_API_URL)
 
     # Verify Business API connection
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.get(f"{BUSINESS_API_URL}/health")
             if response.status_code == 200:
-                logger.info("Business API connection verified")
+                logger.info("business_api_connected", status="healthy")
             else:
-                logger.warning(f"Business API health check returned {response.status_code}")
+                logger.warning(
+                    "business_api_connected",
+                    status="unhealthy",
+                    status_code=response.status_code,
+                )
     except Exception as e:
-        logger.error(f"Business API connection failed: {sanitize_error_message(e)}")
-        logger.warning("Bot will start but may encounter errors")
+        logger.error("business_api_connection_failed", error=sanitize_error_message(e))
+        logger.warning("service_starting_with_errors")
 
     try:
         await dp.start_polling(bot)
     finally:
         await bot.session.close()
-        logger.info(f"Shutting down {SERVICE_NAME}")
+        logger.info("service_stopping")
 
 
 if __name__ == "__main__":

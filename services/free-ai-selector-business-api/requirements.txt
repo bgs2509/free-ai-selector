@@ -27,5 +27,8 @@ ruff==0.6.8
 mypy==1.11.2
 bandit==1.7.10
 
+# Structured logging (AIDD Framework)
+structlog==24.4.0
+
 # Utilities
 python-dotenv==1.0.1

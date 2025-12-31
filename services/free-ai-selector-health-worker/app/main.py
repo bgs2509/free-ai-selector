@@ -25,14 +25,15 @@ Supports 16 verified free-tier AI providers (no credit card required):
 """
 
 import asyncio
-import logging
 import os
 import time
+import uuid
 
 import httpx
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
+from app.utils.logger import setup_logging, get_logger
 from app.utils.security import sanitize_error_message
 
 # =============================================================================
@@ -67,18 +68,11 @@ KLUSTER_API_KEY = os.getenv("KLUSTER_API_KEY", "")
 NEBIUS_API_KEY = os.getenv("NEBIUS_API_KEY", "")
 
 # =============================================================================
-# Logging Configuration
+# Logging Configuration (AIDD Framework: structlog)
 # =============================================================================
 
-logging.basicConfig(
-    level=LOG_LEVEL,
-    format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", "service": "'
-    + SERVICE_NAME
-    + '", "message": "%(message)s"}',
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-
-logger = logging.getLogger(__name__)
+setup_logging(SERVICE_NAME)
+logger = get_logger(__name__)
 
 # =============================================================================
 # Health Check Functions
@@ -93,7 +87,7 @@ async def check_google_gemini(endpoint: str) -> tuple[bool, float]:
     Free tier: 10 RPM, 250 RPD, no credit card required.
     """
     if not GOOGLE_AI_STUDIO_API_KEY:
-        logger.warning("Google AI Studio API key not configured")
+        logger.warning("provider_api_key_missing", provider="GoogleGemini")
         return False, 0.0
 
     start_time = time.time()
@@ -115,7 +109,7 @@ async def check_google_gemini(endpoint: str) -> tuple[bool, float]:
             # Success if 200 OK
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Google Gemini health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="GoogleGemini", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
@@ -127,7 +121,7 @@ async def check_groq(endpoint: str) -> tuple[bool, float]:
     Free tier: 20 RPM, 14,400 RPD, 1,800 tokens/sec, no credit card required.
     """
     if not GROQ_API_KEY:
-        logger.warning("Groq API key not configured")
+        logger.warning("provider_api_key_missing", provider="Groq")
         return False, 0.0
 
     start_time = time.time()
@@ -150,7 +144,7 @@ async def check_groq(endpoint: str) -> tuple[bool, float]:
             # Success if 200 OK
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Groq health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="Groq", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
@@ -162,7 +156,7 @@ async def check_cerebras(endpoint: str) -> tuple[bool, float]:
     Free tier: 1M tokens/day, 30 RPM, 2,500+ tokens/sec, no credit card required.
     """
     if not CEREBRAS_API_KEY:
-        logger.warning("Cerebras API key not configured")
+        logger.warning("provider_api_key_missing", provider="Cerebras")
         return False, 0.0
 
     start_time = time.time()
@@ -185,7 +179,7 @@ async def check_cerebras(endpoint: str) -> tuple[bool, float]:
             # Success if 200 OK
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Cerebras health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="Cerebras", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
@@ -197,7 +191,7 @@ async def check_sambanova(endpoint: str) -> tuple[bool, float]:
     Free tier: 20 RPM, 430 tokens/sec, no credit card required.
     """
     if not SAMBANOVA_API_KEY:
-        logger.warning("SambaNova API key not configured")
+        logger.warning("provider_api_key_missing", provider="SambaNova")
         return False, 0.0
 
     start_time = time.time()
@@ -220,7 +214,7 @@ async def check_sambanova(endpoint: str) -> tuple[bool, float]:
             # Success if 200 OK
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"SambaNova health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="SambaNova", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
@@ -232,7 +226,7 @@ async def check_huggingface(endpoint: str) -> tuple[bool, float]:
     Free tier: Rate limited, no credit card required.
     """
     if not HUGGINGFACE_API_KEY:
-        logger.warning("HuggingFace API key not configured")
+        logger.warning("provider_api_key_missing", provider="HuggingFace")
         return False, 0.0
 
     start_time = time.time()
@@ -250,7 +244,7 @@ async def check_huggingface(endpoint: str) -> tuple[bool, float]:
             # 200 OK or 503 (model loading) both indicate API is responding
             return response.status_code in [200, 503], response_time
     except Exception as e:
-        logger.error(f"HuggingFace health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="HuggingFace", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
@@ -262,10 +256,10 @@ async def check_cloudflare(endpoint: str) -> tuple[bool, float]:
     Free tier: 10,000 Neurons/day, no credit card required.
     """
     if not CLOUDFLARE_API_TOKEN:
-        logger.warning("Cloudflare API token not configured")
+        logger.warning("provider_api_key_missing", provider="Cloudflare", key_type="api_token")
         return False, 0.0
     if not CLOUDFLARE_ACCOUNT_ID:
-        logger.warning("Cloudflare account ID not configured")
+        logger.warning("provider_api_key_missing", provider="Cloudflare", key_type="account_id")
         return False, 0.0
 
     start_time = time.time()
@@ -290,7 +284,7 @@ async def check_cloudflare(endpoint: str) -> tuple[bool, float]:
             # Success if 200 OK
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Cloudflare health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="Cloudflare", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
@@ -302,7 +296,7 @@ async def check_cloudflare(endpoint: str) -> tuple[bool, float]:
 async def check_deepseek(endpoint: str) -> tuple[bool, float]:
     """Check DeepSeek API health. OpenAI-compatible format."""
     if not DEEPSEEK_API_KEY:
-        logger.warning("DeepSeek API key not configured")
+        logger.warning("provider_api_key_missing", provider="DeepSeek")
         return False, 0.0
 
     start_time = time.time()
@@ -321,14 +315,14 @@ async def check_deepseek(endpoint: str) -> tuple[bool, float]:
             response_time = time.time() - start_time
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"DeepSeek health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="DeepSeek", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
 async def check_cohere(endpoint: str) -> tuple[bool, float]:
     """Check Cohere API health. Cohere v2 format."""
     if not COHERE_API_KEY:
-        logger.warning("Cohere API key not configured")
+        logger.warning("provider_api_key_missing", provider="Cohere")
         return False, 0.0
 
     start_time = time.time()
@@ -348,14 +342,14 @@ async def check_cohere(endpoint: str) -> tuple[bool, float]:
             response_time = time.time() - start_time
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Cohere health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="Cohere", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
 async def check_openrouter(endpoint: str) -> tuple[bool, float]:
     """Check OpenRouter API health. OpenAI-compatible format."""
     if not OPENROUTER_API_KEY:
-        logger.warning("OpenRouter API key not configured")
+        logger.warning("provider_api_key_missing", provider="OpenRouter")
         return False, 0.0
 
     start_time = time.time()
@@ -375,14 +369,14 @@ async def check_openrouter(endpoint: str) -> tuple[bool, float]:
             response_time = time.time() - start_time
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"OpenRouter health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="OpenRouter", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
 async def check_github_models(endpoint: str) -> tuple[bool, float]:
     """Check GitHub Models API health. OpenAI-compatible format."""
     if not GITHUB_TOKEN:
-        logger.warning("GitHub Token not configured")
+        logger.warning("provider_api_key_missing", provider="GitHubModels")
         return False, 0.0
 
     start_time = time.time()
@@ -401,14 +395,14 @@ async def check_github_models(endpoint: str) -> tuple[bool, float]:
             response_time = time.time() - start_time
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"GitHub Models health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="GitHubModels", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
 async def check_fireworks(endpoint: str) -> tuple[bool, float]:
     """Check Fireworks API health. OpenAI-compatible format."""
     if not FIREWORKS_API_KEY:
-        logger.warning("Fireworks API key not configured")
+        logger.warning("provider_api_key_missing", provider="Fireworks")
         return False, 0.0
 
     start_time = time.time()
@@ -427,14 +421,14 @@ async def check_fireworks(endpoint: str) -> tuple[bool, float]:
             response_time = time.time() - start_time
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Fireworks health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="Fireworks", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
 async def check_hyperbolic(endpoint: str) -> tuple[bool, float]:
     """Check Hyperbolic API health. OpenAI-compatible format."""
     if not HYPERBOLIC_API_KEY:
-        logger.warning("Hyperbolic API key not configured")
+        logger.warning("provider_api_key_missing", provider="Hyperbolic")
         return False, 0.0
 
     start_time = time.time()
@@ -453,14 +447,14 @@ async def check_hyperbolic(endpoint: str) -> tuple[bool, float]:
             response_time = time.time() - start_time
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Hyperbolic health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="Hyperbolic", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
 async def check_novita(endpoint: str) -> tuple[bool, float]:
     """Check Novita API health. OpenAI-compatible format."""
     if not NOVITA_API_KEY:
-        logger.warning("Novita API key not configured")
+        logger.warning("provider_api_key_missing", provider="Novita")
         return False, 0.0
 
     start_time = time.time()
@@ -479,14 +473,14 @@ async def check_novita(endpoint: str) -> tuple[bool, float]:
             response_time = time.time() - start_time
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Novita health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="Novita", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
 async def check_scaleway(endpoint: str) -> tuple[bool, float]:
     """Check Scaleway API health. OpenAI-compatible format."""
     if not SCALEWAY_API_KEY:
-        logger.warning("Scaleway API key not configured")
+        logger.warning("provider_api_key_missing", provider="Scaleway")
         return False, 0.0
 
     start_time = time.time()
@@ -505,14 +499,14 @@ async def check_scaleway(endpoint: str) -> tuple[bool, float]:
             response_time = time.time() - start_time
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Scaleway health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="Scaleway", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
 async def check_kluster(endpoint: str) -> tuple[bool, float]:
     """Check Kluster API health. OpenAI-compatible format."""
     if not KLUSTER_API_KEY:
-        logger.warning("Kluster API key not configured")
+        logger.warning("provider_api_key_missing", provider="Kluster")
         return False, 0.0
 
     start_time = time.time()
@@ -531,14 +525,14 @@ async def check_kluster(endpoint: str) -> tuple[bool, float]:
             response_time = time.time() - start_time
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Kluster health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="Kluster", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
 async def check_nebius(endpoint: str) -> tuple[bool, float]:
     """Check Nebius API health. OpenAI-compatible format."""
     if not NEBIUS_API_KEY:
-        logger.warning("Nebius API key not configured")
+        logger.warning("provider_api_key_missing", provider="Nebius")
         return False, 0.0
 
     start_time = time.time()
@@ -557,7 +551,7 @@ async def check_nebius(endpoint: str) -> tuple[bool, float]:
             response_time = time.time() - start_time
             return response.status_code == 200, response_time
     except Exception as e:
-        logger.error(f"Nebius health check failed: {sanitize_error_message(e)}")
+        logger.error("health_check_failed", provider="Nebius", error=sanitize_error_message(e))
         return False, time.time() - start_time
 
 
@@ -599,7 +593,9 @@ async def run_health_checks():
     Fetches models from Data API, checks each provider,
     and updates statistics based on results.
     """
-    logger.info("Starting synthetic health checks...")
+    # Генерируем job_id для этого цикла проверок
+    job_id = uuid.uuid4().hex[:12]
+    logger.info("health_check_job_started", job_id=job_id)
 
     try:
         # Fetch all active models from Data API
@@ -608,7 +604,10 @@ async def run_health_checks():
             response.raise_for_status()
             models = response.json()
 
-        logger.info(f"Checking health of {len(models)} models")
+        logger.info("fetched_models_for_check", job_id=job_id, models_count=len(models))
+
+        healthy_count = 0
+        unhealthy_count = 0
 
         # Check each model
         for model in models:
@@ -617,40 +616,62 @@ async def run_health_checks():
             provider = model["provider"]
             endpoint = model["api_endpoint"]
 
-            logger.info(f"Checking {model_name} ({provider})...")
+            logger.info("checking_model", job_id=job_id, model=model_name, provider=provider)
 
             # Run provider-specific health check using dispatch dictionary
             check_func = PROVIDER_CHECK_FUNCTIONS.get(provider)
             if check_func:
                 is_healthy, response_time = await check_func(endpoint)
             else:
-                logger.warning(f"Unknown provider: {provider}, skipping health check")
+                logger.warning("unknown_provider_skipped", job_id=job_id, provider=provider)
                 continue
 
             # Update model statistics in Data API
             try:
                 async with httpx.AsyncClient(timeout=10.0) as client:
                     if is_healthy:
+                        healthy_count += 1
                         logger.info(
-                            f"{model_name}: ✅ Healthy (response time: {response_time:.2f}s)"
+                            "model_healthy",
+                            job_id=job_id,
+                            model=model_name,
+                            provider=provider,
+                            response_time_seconds=round(response_time, 2),
                         )
                         await client.post(
                             f"{DATA_API_URL}/api/v1/models/{model_id}/increment-success",
                             params={"response_time": response_time},
                         )
                     else:
-                        logger.warning(f"{model_name}: ❌ Unhealthy")
+                        unhealthy_count += 1
+                        logger.warning(
+                            "model_unhealthy",
+                            job_id=job_id,
+                            model=model_name,
+                            provider=provider,
+                        )
                         await client.post(
                             f"{DATA_API_URL}/api/v1/models/{model_id}/increment-failure",
                             params={"response_time": response_time},
                         )
             except Exception as update_error:
-                logger.error(f"Failed to update stats for {model_name}: {sanitize_error_message(update_error)}")
+                logger.error(
+                    "stats_update_failed",
+                    job_id=job_id,
+                    model=model_name,
+                    error=sanitize_error_message(update_error),
+                )
 
-        logger.info("Health checks completed successfully")
+        logger.info(
+            "health_check_job_completed",
+            job_id=job_id,
+            healthy=healthy_count,
+            unhealthy=unhealthy_count,
+            total=len(models),
+        )
 
     except Exception as e:
-        logger.error(f"Health check job failed: {sanitize_error_message(e)}")
+        logger.error("health_check_job_failed", job_id=job_id, error=sanitize_error_message(e))
 
 
 # =============================================================================
@@ -664,9 +685,11 @@ async def main():
 
     Sets up scheduler and runs health checks at configured interval.
     """
-    logger.info(f"Starting {SERVICE_NAME}")
-    logger.info(f"Data API URL: {DATA_API_URL}")
-    logger.info(f"Health check interval: {HEALTH_CHECK_INTERVAL} seconds")
+    logger.info(
+        "service_starting",
+        data_api_url=DATA_API_URL,
+        health_check_interval_seconds=HEALTH_CHECK_INTERVAL,
+    )
 
     # Log configured providers
     configured_providers = []
@@ -705,25 +728,34 @@ async def main():
     if NEBIUS_API_KEY:
         configured_providers.append("Nebius")
 
-    logger.info(f"Configured providers ({len(configured_providers)}/16): {', '.join(configured_providers)}")
+    logger.info(
+        "configured_providers",
+        count=len(configured_providers),
+        total=16,
+        providers=configured_providers,
+    )
 
     if len(configured_providers) == 0:
-        logger.warning("No AI provider API keys configured! Health checks will fail.")
+        logger.warning("no_providers_configured")
 
     # Verify Data API connection
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.get(f"{DATA_API_URL}/health")
             if response.status_code == 200:
-                logger.info("Data API connection verified")
+                logger.info("data_api_connected", status="healthy")
             else:
-                logger.warning(f"Data API health check returned {response.status_code}")
+                logger.warning(
+                    "data_api_connected",
+                    status="unhealthy",
+                    status_code=response.status_code,
+                )
     except Exception as e:
-        logger.error(f"Data API connection failed: {sanitize_error_message(e)}")
+        logger.error("data_api_connection_failed", error=sanitize_error_message(e))
         raise
 
     # Run initial health check
-    logger.info("Running initial health check...")
+    logger.info("running_initial_health_check")
     await run_health_checks()
 
     # Setup scheduler for periodic checks
@@ -737,16 +769,16 @@ async def main():
     )
 
     scheduler.start()
-    logger.info(f"Scheduler started. Next check in {HEALTH_CHECK_INTERVAL} seconds")
+    logger.info("scheduler_started", next_check_in_seconds=HEALTH_CHECK_INTERVAL)
 
     # Keep worker running
     try:
         while True:
             await asyncio.sleep(60)
     except (KeyboardInterrupt, SystemExit):
-        logger.info("Shutting down scheduler...")
+        logger.info("scheduler_shutting_down")
         scheduler.shutdown()
-        logger.info(f"{SERVICE_NAME} stopped")
+        logger.info("service_stopped")
 
 
 if __name__ == "__main__":
