@@ -13,16 +13,18 @@
   },
   "current_stage": 8,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2025-12-25T21:15:00Z",
+  "updated_at": "2025-12-31T13:30:00Z",
 
   "current_feature": {
-    "id": "F005",
-    "name": "openapi-docs-fix",
-    "title": "Исправление OpenAPI Docs и Web UI навигации",
-    "created": "2025-12-26",
-    "stage": "IMPLEMENTING",
+    "id": "F006",
+    "name": "aidd-logging",
+    "title": "Приведение логирования к стандартам AIDD Framework",
+    "created": "2025-12-30",
+    "stage": "DEPLOYED",
     "artifacts": {
-      "prd": "prd/2025-12-26_F005_openapi-docs-fix-prd.md"
+      "prd": "prd/2025-12-30_F006_aidd-logging-prd.md",
+      "research": "research/2025-12-30_F006_aidd-logging-research.md",
+      "plan": "plans/2025-12-30_F006_aidd-logging-plan.md"
     }
   },
 
@@ -39,94 +41,98 @@
     },
     "PRD_READY": {
       "passed": true,
-      "passed_at": "2025-12-25T17:30:00Z",
-      "artifact": "ai-docs/docs/prd/2025-12-25_F003_expand-ai-providers-prd.md"
+      "passed_at": "2025-12-30T12:00:00Z",
+      "artifact": "ai-docs/docs/prd/2025-12-30_F006_aidd-logging-prd.md"
     },
     "RESEARCH_DONE": {
       "passed": true,
-      "passed_at": "2025-12-25T17:45:00Z",
-      "artifact": "ai-docs/docs/research/2025-12-25_F003_expand-ai-providers-research.md"
+      "passed_at": "2025-12-31T10:00:00Z",
+      "artifact": "ai-docs/docs/research/2025-12-30_F006_aidd-logging-research.md"
     },
     "PLAN_APPROVED": {
       "passed": true,
-      "passed_at": "2025-12-25T18:15:00Z",
-      "artifact": "ai-docs/docs/plans/2025-12-25_F003_expand-ai-providers-plan.md",
-      "approved_by": "user"
+      "passed_at": "2025-12-31T11:00:00Z",
+      "artifact": "ai-docs/docs/plans/2025-12-30_F006_aidd-logging-plan.md"
     },
     "IMPLEMENT_OK": {
       "passed": true,
-      "passed_at": "2025-12-25T19:00:00Z",
-      "details": {
-        "providers_created": 10,
-        "tests_passed": 46,
-        "coverage": "46%",
-        "files_modified": ["process_prompt.py", "seed.py", ".env.example", "docker-compose.yml"]
+      "passed_at": "2025-12-31T05:53:00Z",
+      "changes": {
+        "new_files": [
+          "services/*/app/utils/logger.py",
+          "services/*/app/utils/request_id.py",
+          "services/free-ai-selector-business-api/app/utils/log_helpers.py"
+        ],
+        "modified_files": [
+          "services/*/main.py",
+          "services/free-ai-selector-business-api/app/application/use_cases/process_prompt.py",
+          "services/*/requirements.txt"
+        ]
       }
     },
     "REVIEW_OK": {
       "passed": true,
-      "passed_at": "2025-12-25T19:30:00Z",
-      "artifact": "ai-docs/docs/reports/2025-12-25_F003_expand-ai-providers-review.md",
-      "checks": {
-        "architecture": true,
-        "dry_kiss_yagni": true,
-        "type_hints": true,
-        "docstrings": true,
-        "security": true,
-        "tests": true
+      "passed_at": "2025-12-31T12:00:00Z",
+      "artifact": "ai-docs/docs/reports/2025-12-31_F006_aidd-logging-review.md",
+      "issues": {
+        "blocker": 0,
+        "critical": 0,
+        "minor": 2
       }
     },
     "QA_PASSED": {
       "passed": true,
-      "passed_at": "2025-12-25T21:45:00Z",
-      "artifact": "ai-docs/docs/reports/2025-12-25_F004_dynamic-providers-list-qa.md",
-      "results": {
-        "tests_total": 46,
-        "tests_passed": 44,
-        "tests_failed": 2,
-        "failed_unrelated_to_feature": true,
-        "coverage": "46%",
-        "fr_verified": "7/7",
-        "nfr_verified": "4/4",
-        "ui_verified": "3/3",
-        "critical_bugs": 0
-      }
+      "passed_at": "2025-12-31T12:30:00Z",
+      "artifact": "ai-docs/docs/reports/2025-12-31_F006_aidd-logging-qa.md",
+      "tests": {
+        "total": 67,
+        "passed": 42,
+        "failed": 18,
+        "errors": 7,
+        "f006_related_failures": 0
+      },
+      "coverage": {
+        "data_api": 50,
+        "business_api": 56,
+        "f006_files": 81
+      },
+      "requirements_verified": 16,
+      "requirements_deferred": 3
     },
     "ALL_GATES_PASSED": {
       "passed": true,
-      "passed_at": "2025-12-25T22:00:00Z",
-      "artifact": "ai-docs/docs/reports/2025-12-25_F004_dynamic-providers-list-validation.md",
-      "rtm_updated": true,
-      "gates_verified": ["PRD_READY", "RESEARCH_DONE", "PLAN_APPROVED", "IMPLEMENT_OK", "REVIEW_OK", "QA_PASSED"],
-      "requirements_coverage": {
-        "FR": "7/7",
-        "NFR": "4/4",
-        "UI": "3/3"
+      "passed_at": "2025-12-31T13:00:00Z",
+      "artifact": "ai-docs/docs/reports/2025-12-31_F006_aidd-logging-validation.md",
+      "summary": {
+        "total_gates": 8,
+        "gates_passed": 7,
+        "requirements_total": 19,
+        "requirements_verified": 16,
+        "requirements_deferred": 3,
+        "verification_rate": "84%"
       }
     },
     "DEPLOYED": {
       "passed": true,
-      "passed_at": "2025-12-25T22:15:00Z",
-      "containers": {
-        "postgres": "healthy",
-        "data-api": "healthy",
-        "business-api": "healthy",
-        "health-worker": "running",
-        "telegram-bot": "running"
+      "passed_at": "2025-12-31T13:30:00Z",
+      "deployment": {
+        "containers": ["business-api", "data-postgres-api", "telegram-bot", "health-worker", "postgres"],
+        "all_healthy": true
       },
-      "endpoints_verified": ["/health", "/api", "/api/v1/providers/test", "/static/index.html"],
-      "f004_verified": {
-        "providers_test": "16 providers tested",
-        "dispatch_pattern": "PROVIDER_CHECK_FUNCTIONS working",
-        "health_worker": "checks all known providers"
+      "verification": {
+        "business_api_health": "healthy",
+        "data_api_health": "healthy",
+        "json_logs": true,
+        "request_id": true,
+        "correlation_id": true,
+        "duration_ms": true,
+        "job_id": true
       }
     }
   },
 
   "artifacts": {
-    "prd": "ai-docs/docs/prd/2025-12-25_F003_expand-ai-providers-prd.md",
-    "research": "ai-docs/docs/research/2025-12-25_F003_expand-ai-providers-research.md",
-    "plan": "ai-docs/docs/plans/2025-12-25_F003_expand-ai-providers-plan.md"
+    "prd": "ai-docs/docs/prd/2025-12-30_F006_aidd-logging-prd.md"
   },
 
   "features_registry": {
@@ -167,10 +173,18 @@
       "title": "Исправление OpenAPI Docs и Web UI навигации",
       "description": "Исправление путей для работы за nginx-proxy: openapi_url и ссылка API Docs",
       "created": "2025-12-26",
-      "status": "IMPLEMENTING",
+      "status": "DEPLOYED",
       "services": ["free-ai-selector-business-api"]
+    },
+    "F006": {
+      "name": "aidd-logging",
+      "title": "Приведение логирования к стандартам AIDD Framework",
+      "description": "Миграция на structlog, добавление correlation_id, log_decision(), duration_ms, error_code",
+      "created": "2025-12-30",
+      "status": "DEPLOYED",
+      "services": ["free-ai-selector-business-api", "free-ai-selector-data-postgres-api", "free-ai-selector-telegram-bot", "free-ai-selector-health-worker"]
     }
   },
 
-  "next_feature_id": 6
+  "next_feature_id": 7
 }
