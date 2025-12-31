@@ -284,6 +284,8 @@ def _model_to_response(model: AIModel) -> AIModelResponse:
         is_active=model.is_active,
         created_at=model.created_at,
         updated_at=model.updated_at,
+        api_format=model.api_format,
+        env_var=model.env_var,
         success_rate=model.success_rate,
         average_response_time=model.average_response_time,
         speed_score=model.speed_score,

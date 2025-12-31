@@ -33,6 +33,9 @@ class AIModel:
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    # F008 SSOT fields
+    api_format: str = "openai"  # Discriminator for health check dispatch
+    env_var: str = ""  # ENV variable name for API key lookup
 
     @property
     def success_rate(self) -> float:

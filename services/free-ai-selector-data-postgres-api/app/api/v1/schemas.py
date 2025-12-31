@@ -66,6 +66,13 @@ class AIModelResponse(AIModelBase):
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
+    # F008 SSOT fields
+    api_format: str = Field(
+        default="openai",
+        description="API format for health check dispatch (openai, gemini, cohere, huggingface, cloudflare)",
+    )
+    env_var: str = Field(default="", description="ENV variable name for API key lookup")
+
     # Computed fields
     success_rate: float = Field(..., ge=0.0, le=1.0, description="Success rate (0.0 - 1.0)")
     average_response_time: float = Field(..., ge=0.0, description="Average response time in seconds")

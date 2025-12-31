@@ -26,6 +26,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initial AI models configuration - 16 verified free-tier providers (no credit card required)
+# F008 SSOT: This is the SINGLE SOURCE OF TRUTH for provider configuration
 SEED_MODELS = [
     # ═══════════════════════════════════════════════════════════════════════════
     # Существующие провайдеры (6 шт.)
@@ -35,36 +36,48 @@ SEED_MODELS = [
         "provider": "GoogleGemini",
         "api_endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
         "is_active": True,
+        "api_format": "gemini",
+        "env_var": "GOOGLE_AI_STUDIO_API_KEY",
     },
     {
         "name": "Llama 3.3 70B Versatile",
         "provider": "Groq",
         "api_endpoint": "https://api.groq.com/openai/v1/chat/completions",
         "is_active": True,
+        "api_format": "openai",
+        "env_var": "GROQ_API_KEY",
     },
     {
         "name": "Llama 3.3 70B",
         "provider": "Cerebras",
         "api_endpoint": "https://api.cerebras.ai/v1/chat/completions",
         "is_active": True,
+        "api_format": "openai",
+        "env_var": "CEREBRAS_API_KEY",
     },
     {
         "name": "Meta-Llama-3.3-70B-Instruct",
         "provider": "SambaNova",
         "api_endpoint": "https://api.sambanova.ai/v1/chat/completions",
         "is_active": True,
+        "api_format": "openai",
+        "env_var": "SAMBANOVA_API_KEY",
     },
     {
         "name": "Meta-Llama-3-8B-Instruct",
         "provider": "HuggingFace",
         "api_endpoint": "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
         "is_active": True,
+        "api_format": "huggingface",
+        "env_var": "HUGGINGFACE_API_KEY",
     },
     {
         "name": "Llama 3.3 70B Instruct FP8 Fast",
         "provider": "Cloudflare",
         "api_endpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
         "is_active": True,
+        "api_format": "cloudflare",
+        "env_var": "CLOUDFLARE_API_KEY",
     },
     # ═══════════════════════════════════════════════════════════════════════════
     # Новые провайдеры F003 — Фаза 1: Приоритетные (4 шт.)
@@ -74,24 +87,32 @@ SEED_MODELS = [
         "provider": "DeepSeek",
         "api_endpoint": "https://api.deepseek.com/v1/chat/completions",
         "is_active": True,
+        "api_format": "openai",
+        "env_var": "DEEPSEEK_API_KEY",
     },
     {
         "name": "Command R+",
         "provider": "Cohere",
         "api_endpoint": "https://api.cohere.com/v2/chat",
         "is_active": True,
+        "api_format": "cohere",
+        "env_var": "COHERE_API_KEY",
     },
     {
         "name": "DeepSeek R1 (OpenRouter)",
         "provider": "OpenRouter",
         "api_endpoint": "https://openrouter.ai/api/v1/chat/completions",
         "is_active": True,
+        "api_format": "openai",
+        "env_var": "OPENROUTER_API_KEY",
     },
     {
         "name": "GPT-4o Mini (GitHub)",
         "provider": "GitHubModels",
         "api_endpoint": "https://models.inference.ai.azure.com/chat/completions",
         "is_active": True,
+        "api_format": "openai",
+        "env_var": "GITHUB_TOKEN",
     },
     # ═══════════════════════════════════════════════════════════════════════════
     # Новые провайдеры F003 — Фаза 2: Дополнительные (4 шт.)
@@ -101,24 +122,32 @@ SEED_MODELS = [
         "provider": "Fireworks",
         "api_endpoint": "https://api.fireworks.ai/inference/v1/chat/completions",
         "is_active": True,
+        "api_format": "openai",
+        "env_var": "FIREWORKS_API_KEY",
     },
     {
         "name": "Llama 3.3 70B (Hyperbolic)",
         "provider": "Hyperbolic",
         "api_endpoint": "https://api.hyperbolic.xyz/v1/chat/completions",
         "is_active": True,
+        "api_format": "openai",
+        "env_var": "HYPERBOLIC_API_KEY",
     },
     {
         "name": "Llama 3.1 70B (Novita)",
         "provider": "Novita",
         "api_endpoint": "https://api.novita.ai/v3/openai/chat/completions",
         "is_active": True,
+        "api_format": "openai",
+        "env_var": "NOVITA_API_KEY",
     },
     {
         "name": "Llama 3.1 70B (Scaleway)",
         "provider": "Scaleway",
         "api_endpoint": "https://api.scaleway.ai/v1/chat/completions",
         "is_active": True,
+        "api_format": "openai",
+        "env_var": "SCALEWAY_API_KEY",
     },
     # ═══════════════════════════════════════════════════════════════════════════
     # Новые провайдеры F003 — Фаза 3: Резервные (2 шт.)
@@ -128,12 +157,16 @@ SEED_MODELS = [
         "provider": "Kluster",
         "api_endpoint": "https://api.kluster.ai/v1/chat/completions",
         "is_active": True,
+        "api_format": "openai",
+        "env_var": "KLUSTER_API_KEY",
     },
     {
         "name": "Llama 3.1 70B (Nebius)",
         "provider": "Nebius",
         "api_endpoint": "https://api.studio.nebius.ai/v1/chat/completions",
         "is_active": True,
+        "api_format": "openai",
+        "env_var": "NEBIUS_API_KEY",
     },
 ]
 
@@ -169,6 +202,8 @@ async def seed_database() -> None:
                     request_count=0,
                     last_checked=None,
                     is_active=model_data["is_active"],
+                    api_format=model_data.get("api_format", "openai"),
+                    env_var=model_data.get("env_var", ""),
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow(),
                 )

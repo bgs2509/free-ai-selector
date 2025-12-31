@@ -254,4 +254,6 @@ class AIModelRepository:
             is_active=orm_model.is_active,
             created_at=orm_model.created_at,
             updated_at=orm_model.updated_at,
+            api_format=orm_model.api_format,
+            env_var=orm_model.env_var,
         )

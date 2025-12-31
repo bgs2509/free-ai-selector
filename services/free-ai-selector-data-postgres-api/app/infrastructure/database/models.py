@@ -43,6 +43,12 @@ class AIModelORM(Base):
     request_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     last_checked: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Provider configuration (F008 SSOT)
+    api_format: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="openai", index=True
+    )
+    env_var: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+
     # Status
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
 
@@ -57,7 +63,7 @@ class AIModelORM(Base):
     def __repr__(self) -> str:
         return (
             f"<AIModelORM(id={self.id}, name='{self.name}', provider='{self.provider}', "
-            f"is_active={self.is_active})>"
+            f"api_format='{self.api_format}', is_active={self.is_active})>"
         )
 
 
