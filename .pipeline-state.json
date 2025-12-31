@@ -13,18 +13,49 @@
   },
   "current_stage": 8,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2025-12-31T13:30:00Z",
+  "updated_at": "2025-12-31T16:00:00Z",
 
   "current_feature": {
-    "id": "F006",
-    "name": "aidd-logging",
-    "title": "Приведение логирования к стандартам AIDD Framework",
-    "created": "2025-12-30",
+    "id": "F008",
+    "name": "provider-registry-ssot",
+    "title": "Provider Registry SSOT — Единый источник правды для провайдеров",
+    "created": "2025-12-31",
     "stage": "DEPLOYED",
     "artifacts": {
-      "prd": "prd/2025-12-30_F006_aidd-logging-prd.md",
-      "research": "research/2025-12-30_F006_aidd-logging-research.md",
-      "plan": "plans/2025-12-30_F006_aidd-logging-plan.md"
+      "prd": "prd/2025-12-31_F008_provider-registry-ssot-prd.md",
+      "research": "research/2025-12-31_F008_provider-registry-ssot-research.md",
+      "plan": "plans/2025-12-31_F008_provider-registry-ssot-plan.md"
+    },
+    "implementation": {
+      "completed_at": "2025-12-31T11:30:00Z",
+      "stages_completed": [
+        "Stage 1: DB migration + seed.py with api_format, env_var",
+        "Stage 2: ProviderRegistry + refactor process_prompt.py, test_all_providers.py",
+        "Stage 3: Universal health checker in health-worker",
+        "Stage 4: Tests verified"
+      ],
+      "key_changes": {
+        "new_files": [
+          "services/free-ai-selector-business-api/app/infrastructure/ai_providers/registry.py",
+          "services/free-ai-selector-data-postgres-api/alembic/versions/20251231_0002_add_api_format_env_var.py"
+        ],
+        "modified_files": [
+          "services/free-ai-selector-data-postgres-api/app/infrastructure/database/models.py",
+          "services/free-ai-selector-data-postgres-api/app/infrastructure/database/seed.py",
+          "services/free-ai-selector-data-postgres-api/app/domain/models.py",
+          "services/free-ai-selector-data-postgres-api/app/api/v1/schemas.py",
+          "services/free-ai-selector-data-postgres-api/app/api/v1/models.py",
+          "services/free-ai-selector-data-postgres-api/app/infrastructure/repositories/ai_model_repository.py",
+          "services/free-ai-selector-business-api/app/domain/models.py",
+          "services/free-ai-selector-business-api/app/infrastructure/http_clients/data_api_client.py",
+          "services/free-ai-selector-business-api/app/application/use_cases/process_prompt.py",
+          "services/free-ai-selector-business-api/app/application/use_cases/test_all_providers.py",
+          "services/free-ai-selector-health-worker/app/main.py"
+        ]
+      },
+      "hardcoded_reduced_from": 8,
+      "hardcoded_reduced_to": 2,
+      "ssot_pattern": "seed.py → PostgreSQL → Data API → all services"
     }
   },
 
@@ -183,8 +214,24 @@
       "created": "2025-12-30",
       "status": "DEPLOYED",
       "services": ["free-ai-selector-business-api", "free-ai-selector-data-postgres-api", "free-ai-selector-telegram-bot", "free-ai-selector-health-worker"]
+    },
+    "F007": {
+      "name": "response-time-none-fix",
+      "title": "Исправление бага response_time=None в /test",
+      "description": "Fix dict.get() returning None instead of 0.0 for response_time, causing 422 errors on statistics update",
+      "created": "2025-12-31",
+      "status": "RESEARCH_DONE",
+      "services": ["free-ai-selector-business-api"]
+    },
+    "F008": {
+      "name": "provider-registry-ssot",
+      "title": "Provider Registry SSOT — Единый источник правды для провайдеров",
+      "description": "Замена 8 hardcoded источников провайдеров на PostgreSQL как SSOT (seed.py → DB → Data API)",
+      "created": "2025-12-31",
+      "status": "DEPLOYED",
+      "services": ["free-ai-selector-business-api", "free-ai-selector-health-worker", "free-ai-selector-data-postgres-api"]
     }
   },
 
-  "next_feature_id": 7
+  "next_feature_id": 9
 }

@@ -89,13 +89,13 @@ class TestProcessPromptUseCase:
 
         assert fallback is None
 
-    @patch("app.application.use_cases.process_prompt.HuggingFaceProvider")
-    async def test_execute_success(self, mock_provider_class, mock_data_api_client):
-        """Test successful prompt processing."""
-        # Mock AI provider
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_execute_success(self, mock_registry, mock_data_api_client):
+        """Test successful prompt processing (F008 SSOT via ProviderRegistry)."""
+        # Mock AI provider from registry
         mock_provider = AsyncMock()
         mock_provider.generate.return_value = "Generated response"
-        mock_provider_class.return_value = mock_provider
+        mock_registry.get_provider.return_value = mock_provider
 
         # Mock models returned from Data API
         mock_data_api_client.get_all_models.return_value = [
@@ -118,6 +118,8 @@ class TestProcessPromptUseCase:
         assert response.response_text == "Generated response"
         assert response.selected_model_name == "HuggingFace Test Model"
         mock_data_api_client.increment_success.assert_called_once()
+        # F008: Verify provider was fetched from registry
+        mock_registry.get_provider.assert_called_with("HuggingFace")
 
     async def test_execute_no_active_models(self, mock_data_api_client):
         """Test error when no active models available."""
