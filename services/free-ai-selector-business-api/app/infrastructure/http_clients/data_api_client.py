@@ -86,6 +86,8 @@ class DataAPIClient:
                     api_endpoint=model["api_endpoint"],
                     reliability_score=model["reliability_score"],
                     is_active=model["is_active"],
+                    api_format=model.get("api_format", "openai"),
+                    env_var=model.get("env_var", ""),
                 )
                 for model in models_data
             ]
@@ -125,6 +127,8 @@ class DataAPIClient:
                 api_endpoint=model_data["api_endpoint"],
                 reliability_score=model_data["reliability_score"],
                 is_active=model_data["is_active"],
+                api_format=model_data.get("api_format", "openai"),
+                env_var=model_data.get("env_var", ""),
             )
 
         except httpx.HTTPError as e:

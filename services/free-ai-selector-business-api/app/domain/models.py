@@ -23,6 +23,9 @@ class AIModelInfo:
     api_endpoint: str
     reliability_score: float
     is_active: bool
+    # F008 SSOT fields
+    api_format: str = "openai"  # Discriminator for health check dispatch
+    env_var: str = ""  # ENV variable name for API key lookup
 
 
 @dataclass
