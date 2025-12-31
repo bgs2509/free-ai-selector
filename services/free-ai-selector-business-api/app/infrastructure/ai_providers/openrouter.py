@@ -33,10 +33,10 @@ class OpenRouterProvider(AIProviderBase):
 
         Args:
             api_key: OpenRouter API ключ (по умолчанию из OPENROUTER_API_KEY)
-            model: Название модели (по умолчанию deepseek/deepseek-r1:free)
+            model: Название модели (по умолчанию deepseek/deepseek-r1-0528:free)
         """
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY", "")
-        self.model = model or "deepseek/deepseek-r1:free"
+        self.model = model or "deepseek/deepseek-r1-0528:free"
         self.api_url = "https://openrouter.ai/api/v1/chat/completions"
         self.timeout = 30.0  # секунды
 
