@@ -147,12 +147,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # =============================================================================
 
 # Монтируем статические файлы для веб-интерфейса
-# Два маршрута: для прямого доступа и через nginx-proxy
+# ROOT_PATH в FastAPI автоматически обрабатывает prefix для nginx reverse proxy
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
-    # Для nginx-proxy который передаёт полный путь /free-ai-selector/static/
-    app.mount("/free-ai-selector/static", StaticFiles(directory=static_dir), name="static-proxy")
 
 # =============================================================================
 # Middleware

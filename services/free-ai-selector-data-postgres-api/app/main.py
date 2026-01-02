@@ -36,6 +36,7 @@ from app.infrastructure.database.connection import AsyncSessionLocal, engine
 SERVICE_NAME = "free-ai-selector-data-postgres-api"
 SERVICE_VERSION = "1.0.0"
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+ROOT_PATH = os.getenv("ROOT_PATH", "")
 
 # =============================================================================
 # Logging Configuration (AIDD Framework: structlog)
@@ -100,6 +101,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
+    root_path=ROOT_PATH,
     lifespan=lifespan,
 )
 

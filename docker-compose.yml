@@ -47,6 +47,7 @@ services:
       DATA_API_LOG_LEVEL: ${DATA_API_LOG_LEVEL}
       ENVIRONMENT: ${ENVIRONMENT}
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
+      ROOT_PATH: ${DATA_API_ROOT_PATH:-}
     # ports убраны — API доступен только внутри Docker-сети
     depends_on:
       postgres:
