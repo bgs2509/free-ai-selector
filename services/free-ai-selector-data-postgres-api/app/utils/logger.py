@@ -5,6 +5,8 @@ from typing import Any
 
 import structlog
 
+from app.utils.sensitive_filter import sanitize_sensitive_data
+
 # Константы
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 LOG_FORMAT = os.getenv("LOG_FORMAT", "json")  # json или console
@@ -21,6 +23,7 @@ def setup_logging(service_name: str) -> None:
 
     shared_processors: list[structlog.types.Processor] = [
         structlog.contextvars.merge_contextvars,
+        sanitize_sensitive_data,  # Defensive-in-depth: автофильтрация секретов
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
     ]
