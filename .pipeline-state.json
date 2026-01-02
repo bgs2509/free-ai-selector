@@ -11,51 +11,18 @@
     ".claude/": "kept_existing",
     ".claude/commands/": "copied_10_commands"
   },
-  "current_stage": 8,
+  "current_stage": 3,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2025-12-31T16:00:00Z",
+  "updated_at": "2026-01-02T12:00:00Z",
 
   "current_feature": {
-    "id": "F008",
-    "name": "provider-registry-ssot",
-    "title": "Provider Registry SSOT — Единый источник правды для провайдеров",
-    "created": "2025-12-31",
-    "stage": "DEPLOYED",
+    "id": "F010",
+    "name": "rolling-window-reliability",
+    "title": "Rolling Window Reliability Score",
+    "created": "2026-01-02",
+    "stage": "PRD_READY",
     "artifacts": {
-      "prd": "prd/2025-12-31_F008_provider-registry-ssot-prd.md",
-      "research": "research/2025-12-31_F008_provider-registry-ssot-research.md",
-      "plan": "plans/2025-12-31_F008_provider-registry-ssot-plan.md"
-    },
-    "implementation": {
-      "completed_at": "2025-12-31T11:30:00Z",
-      "stages_completed": [
-        "Stage 1: DB migration + seed.py with api_format, env_var",
-        "Stage 2: ProviderRegistry + refactor process_prompt.py, test_all_providers.py",
-        "Stage 3: Universal health checker in health-worker",
-        "Stage 4: Tests verified"
-      ],
-      "key_changes": {
-        "new_files": [
-          "services/free-ai-selector-business-api/app/infrastructure/ai_providers/registry.py",
-          "services/free-ai-selector-data-postgres-api/alembic/versions/20251231_0002_add_api_format_env_var.py"
-        ],
-        "modified_files": [
-          "services/free-ai-selector-data-postgres-api/app/infrastructure/database/models.py",
-          "services/free-ai-selector-data-postgres-api/app/infrastructure/database/seed.py",
-          "services/free-ai-selector-data-postgres-api/app/domain/models.py",
-          "services/free-ai-selector-data-postgres-api/app/api/v1/schemas.py",
-          "services/free-ai-selector-data-postgres-api/app/api/v1/models.py",
-          "services/free-ai-selector-data-postgres-api/app/infrastructure/repositories/ai_model_repository.py",
-          "services/free-ai-selector-business-api/app/domain/models.py",
-          "services/free-ai-selector-business-api/app/infrastructure/http_clients/data_api_client.py",
-          "services/free-ai-selector-business-api/app/application/use_cases/process_prompt.py",
-          "services/free-ai-selector-business-api/app/application/use_cases/test_all_providers.py",
-          "services/free-ai-selector-health-worker/app/main.py"
-        ]
-      },
-      "hardcoded_reduced_from": 8,
-      "hardcoded_reduced_to": 2,
-      "ssot_pattern": "seed.py → PostgreSQL → Data API → all services"
+      "prd": "prd/2026-01-02_F010_rolling-window-reliability-prd.md"
     }
   },
 
@@ -72,98 +39,34 @@
     },
     "PRD_READY": {
       "passed": true,
-      "passed_at": "2025-12-30T12:00:00Z",
-      "artifact": "ai-docs/docs/prd/2025-12-30_F006_aidd-logging-prd.md"
+      "passed_at": "2026-01-02T12:00:00Z",
+      "artifact": "ai-docs/docs/prd/2026-01-02_F010_rolling-window-reliability-prd.md"
     },
     "RESEARCH_DONE": {
-      "passed": true,
-      "passed_at": "2025-12-31T10:00:00Z",
-      "artifact": "ai-docs/docs/research/2025-12-30_F006_aidd-logging-research.md"
+      "passed": false
     },
     "PLAN_APPROVED": {
-      "passed": true,
-      "passed_at": "2025-12-31T11:00:00Z",
-      "artifact": "ai-docs/docs/plans/2025-12-30_F006_aidd-logging-plan.md"
+      "passed": false
     },
     "IMPLEMENT_OK": {
-      "passed": true,
-      "passed_at": "2025-12-31T05:53:00Z",
-      "changes": {
-        "new_files": [
-          "services/*/app/utils/logger.py",
-          "services/*/app/utils/request_id.py",
-          "services/free-ai-selector-business-api/app/utils/log_helpers.py"
-        ],
-        "modified_files": [
-          "services/*/main.py",
-          "services/free-ai-selector-business-api/app/application/use_cases/process_prompt.py",
-          "services/*/requirements.txt"
-        ]
-      }
+      "passed": false
     },
     "REVIEW_OK": {
-      "passed": true,
-      "passed_at": "2025-12-31T12:00:00Z",
-      "artifact": "ai-docs/docs/reports/2025-12-31_F006_aidd-logging-review.md",
-      "issues": {
-        "blocker": 0,
-        "critical": 0,
-        "minor": 2
-      }
+      "passed": false
     },
     "QA_PASSED": {
-      "passed": true,
-      "passed_at": "2025-12-31T12:30:00Z",
-      "artifact": "ai-docs/docs/reports/2025-12-31_F006_aidd-logging-qa.md",
-      "tests": {
-        "total": 67,
-        "passed": 42,
-        "failed": 18,
-        "errors": 7,
-        "f006_related_failures": 0
-      },
-      "coverage": {
-        "data_api": 50,
-        "business_api": 56,
-        "f006_files": 81
-      },
-      "requirements_verified": 16,
-      "requirements_deferred": 3
+      "passed": false
     },
     "ALL_GATES_PASSED": {
-      "passed": true,
-      "passed_at": "2025-12-31T13:00:00Z",
-      "artifact": "ai-docs/docs/reports/2025-12-31_F006_aidd-logging-validation.md",
-      "summary": {
-        "total_gates": 8,
-        "gates_passed": 7,
-        "requirements_total": 19,
-        "requirements_verified": 16,
-        "requirements_deferred": 3,
-        "verification_rate": "84%"
-      }
+      "passed": false
     },
     "DEPLOYED": {
-      "passed": true,
-      "passed_at": "2025-12-31T13:30:00Z",
-      "deployment": {
-        "containers": ["business-api", "data-postgres-api", "telegram-bot", "health-worker", "postgres"],
-        "all_healthy": true
-      },
-      "verification": {
-        "business_api_health": "healthy",
-        "data_api_health": "healthy",
-        "json_logs": true,
-        "request_id": true,
-        "correlation_id": true,
-        "duration_ms": true,
-        "job_id": true
-      }
+      "passed": false
     }
   },
 
   "artifacts": {
-    "prd": "ai-docs/docs/prd/2025-12-30_F006_aidd-logging-prd.md"
+    "prd": "ai-docs/docs/prd/2026-01-02_F010_rolling-window-reliability-prd.md"
   },
 
   "features_registry": {
@@ -230,8 +133,24 @@
       "created": "2025-12-31",
       "status": "DEPLOYED",
       "services": ["free-ai-selector-business-api", "free-ai-selector-health-worker", "free-ai-selector-data-postgres-api"]
+    },
+    "F009": {
+      "name": "security-logging-hardening",
+      "title": "Security Hardening & Reverse Proxy Alignment",
+      "description": "SensitiveDataFilter в structlog для автоматической фильтрации секретов, ROOT_PATH для Data API, удаление hardcoded mount",
+      "created": "2026-01-01",
+      "status": "DEPLOYED",
+      "services": ["free-ai-selector-business-api", "free-ai-selector-data-postgres-api", "free-ai-selector-telegram-bot", "free-ai-selector-health-worker"]
+    },
+    "F010": {
+      "name": "rolling-window-reliability",
+      "title": "Rolling Window Reliability Score",
+      "description": "Расчёт reliability_score на основе данных за последние 7 дней из prompt_history для актуального выбора AI модели",
+      "created": "2026-01-02",
+      "status": "PRD_READY",
+      "services": ["free-ai-selector-data-postgres-api", "free-ai-selector-business-api"]
     }
   },
 
-  "next_feature_id": 9
+  "next_feature_id": 11
 }
