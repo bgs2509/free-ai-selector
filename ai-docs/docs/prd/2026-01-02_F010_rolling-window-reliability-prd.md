@@ -6,17 +6,22 @@ created: "2026-01-02"
 author: "AI (Analyst)"
 type: "prd"
 status: "PRD_READY"
-version: 1
+version: 2
 mode: "FEATURE"
 related_features: ["F008"]
 services: ["free-ai-selector-data-postgres-api", "free-ai-selector-business-api"]
-requirements_count: 14
+requirements_count: 17
+pipelines:
+  business: true
+  data: true
+  integration: true
+  modified: ["model-selection", "statistics-calculation"]
 ---
 
 # PRD: Rolling Window Reliability Score
 
 **Feature ID**: F010
-**Версия**: 1.0
+**Версия**: 2.0
 **Дата**: 2026-01-02
 **Автор**: AI Agent (Аналитик)
 **Статус**: PRD_READY
@@ -145,23 +150,262 @@ else:
 
 ---
 
-## 4. Нефункциональные требования
+## 4. Пайплайны
 
-### 4.1 Производительность
+### 4.0 Тип изменений
+
+| Параметр | Значение |
+|----------|----------|
+| Режим | FEATURE (изменение существующего функционала) |
+| Затрагиваемые пайплайны | model-selection, statistics-calculation |
+
+### 4.1 Бизнес-пайплайн
+
+> Модификация пайплайна выбора AI-модели
+
+**Основной flow (изменённый):**
+
+```
+[Пользовательский запрос] → [Получение списка моделей с recent metrics]
+                                          ↓
+                          [Расчёт effective_reliability_score]
+                                          ↓
+                       [Выбор модели с max(effective_score)]
+                                          ↓
+                          [Отправка запроса к AI провайдеру]
+                                          ↓
+                          [Логирование решения с причиной]
+```
+
+**Детализация этапов:**
+
+| # | Этап | Описание | Условия перехода | Результат |
+|---|------|----------|------------------|-----------|
+| 1 | Получение моделей | Business API запрашивает модели с `include_recent=true` | Всегда | Список моделей с recent метриками |
+| 2 | Расчёт effective score | Для каждой модели: если `recent_request_count >= 3` → `recent_reliability_score`, иначе → `reliability_score` | Для всех активных моделей | effective_reliability_score |
+| 3 | Выбор лучшей | `max(models, key=effective_reliability_score)` | Есть хотя бы 1 активная модель | Выбранная модель |
+| 4 | Логирование | Запись причины выбора: `recent_score` или `fallback` | После выбора | Лог-запись с decision_reason |
+
+**Состояния сущности AIModel (расширение):**
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| reliability_score | float | Долгосрочный score (существующий) |
+| recent_reliability_score | float | Score за последние 7 дней (новый) |
+| effective_reliability_score | float | Основной score для выбора (новый) |
+| recent_request_count | int | Количество запросов за период (новый) |
+
+### 4.2 Data Pipeline
+
+> Поток данных для расчёта recent metrics
+
+**Диаграмма потока данных:**
+
+```
+┌─────────────┐  GET /models?include_recent=true  ┌─────────────────┐
+│ Business API│ ─────────────────────────────────▶│    Data API     │
+└─────────────┘                                   └────────┬────────┘
+      ▲                                                    │
+      │                                                    │ 1. get_all()
+      │                                                    │ 2. get_recent_stats()
+      │                                                    ▼
+      │                                           ┌─────────────────┐
+      │ AIModelResponse[]                         │   Repository    │
+      │ с recent полями                           │                 │
+      │                                           │ SQL: SELECT     │
+      │                                           │ FROM prompt_    │
+      │                                           │ history WHERE   │
+      └───────────────────────────────────────────│ created_at >    │
+                                                  │ NOW() - 7 days  │
+                                                  └────────┬────────┘
+                                                           │
+                                                           ▼
+                                                  ┌─────────────────┐
+                                                  │   PostgreSQL    │
+                                                  │                 │
+                                                  │ ┌─────────────┐ │
+                                                  │ │prompt_history│ │
+                                                  │ │(существует) │ │
+                                                  │ └─────────────┘ │
+                                                  │ ┌─────────────┐ │
+                                                  │ │  ai_models  │ │
+                                                  │ │(существует) │ │
+                                                  │ └─────────────┘ │
+                                                  └─────────────────┘
+```
+
+**Потоки данных:**
+
+| # | Источник | Назначение | Данные | Формат | Синхронность |
+|---|----------|------------|--------|--------|--------------|
+| 1 | Business API | Data API | Запрос моделей с recent | HTTP GET + query params | sync |
+| 2 | Data API | PostgreSQL | SQL запрос recent stats | SQL | sync |
+| 3 | PostgreSQL | Data API | Агрегированные метрики | Rows | sync |
+| 4 | Data API | Business API | Модели с recent полями | JSON | sync |
+
+**Трансформации данных:**
+
+| # | Точка | Входные данные | Преобразование | Выходные данные |
+|---|-------|----------------|----------------|-----------------|
+| 1 | Repository | prompt_history rows | SQL GROUP BY model_id, COUNT, AVG | {model_id: {success_count, request_count, avg_response_time}} |
+| 2 | Domain Model | recent_stats dict | Формула: (success_rate × 0.6) + (speed_score × 0.4) | recent_reliability_score |
+| 3 | Domain Model | recent_request_count, MIN_REQUESTS | if count >= 3: recent else long-term | effective_reliability_score |
+| 4 | Schema | AIModel + recent_stats | Маппинг в response | AIModelResponse с recent полями |
+
+### 4.3 Интеграционный пайплайн
+
+> Изменения в контрактах API между сервисами
+
+**Карта сервисов (изменения выделены):**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         СИСТЕМА                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────────────┐       ┌──────────────────┐                │
+│  │  Business API    │◄─────►│     Data API     │                │
+│  │                  │       │                  │                │
+│  │ [ИЗМЕНЕНО]       │       │ [ИЗМЕНЕНО]       │                │
+│  │ _select_best()   │       │ get_all_models() │                │
+│  │ использует       │       │ +include_recent  │                │
+│  │ effective_score  │       │ +window_days     │                │
+│  └──────────────────┘       └──────────────────┘                │
+│                                                                  │
+│  ┌──────────────────┐       ┌──────────────────┐                │
+│  │  Telegram Bot    │       │  Health Worker   │                │
+│  │  (без изменений) │       │  (без изменений) │                │
+│  └──────────────────┘       └──────────────────┘                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Точки интеграции (изменения):**
+
+| ID | От | К | Протокол | Endpoint | Изменение |
+|----|----|----|----------|----------|-----------|
+| INT-001 | Business API | Data API | HTTP/REST | GET /api/v1/models | Новые query params: `include_recent`, `window_days` |
+| INT-002 | Business API | Data API | HTTP/REST | GET /api/v1/models | Новые поля в response: `recent_*`, `effective_*` |
+
+**Контракты API (изменения):**
+
+| Интеграция | Request (изменение) | Response (изменение) | Ошибки |
+|------------|---------------------|----------------------|--------|
+| INT-001 | `?include_recent=true&window_days=7` | — | 400 (invalid params) |
+| INT-002 | — | `+recent_success_rate`, `+recent_request_count`, `+recent_reliability_score`, `+effective_reliability_score` | — |
+
+**Новые API параметры:**
+
+```yaml
+# GET /api/v1/models
+parameters:
+  - name: include_recent
+    in: query
+    type: boolean
+    default: false
+    description: Включить recent метрики в ответ
+  - name: window_days
+    in: query
+    type: integer
+    default: 7
+    description: Размер окна в днях для recent расчётов
+```
+
+**Новые поля в AIModelResponse:**
+
+```yaml
+AIModelResponse:
+  # ... существующие поля ...
+  recent_success_rate:
+    type: number
+    format: float
+    minimum: 0.0
+    maximum: 1.0
+  recent_request_count:
+    type: integer
+    minimum: 0
+  recent_reliability_score:
+    type: number
+    format: float
+    minimum: 0.0
+    maximum: 1.0
+  effective_reliability_score:
+    type: number
+    format: float
+    minimum: 0.0
+    maximum: 1.0
+```
+
+### 4.4 Влияние на существующие пайплайны
+
+> FEATURE режим — модификация существующих пайплайнов
+
+**Режим:** FEATURE
+
+| Пайплайн | Тип изменения | Затрагиваемые этапы | Обратная совместимость |
+|----------|---------------|---------------------|------------------------|
+| model-selection | modify | Выбор лучшей модели | Да — по умолчанию `include_recent=false` |
+| statistics-calculation | add | Новый метод get_recent_stats | Да — существующие методы не изменены |
+| API response | add | Новые поля в AIModelResponse | Да — поля опциональные, default values |
+
+**Breaking changes:**
+- [x] Нет breaking changes
+- Все изменения аддитивные
+- Существующие клиенты продолжат работать без изменений
+- Новые поля имеют значения по умолчанию (0.0, 0)
+
+**План обратной совместимости:**
+
+```python
+# Без include_recent — поведение не меняется
+GET /api/v1/models
+→ возвращает модели БЕЗ recent полей (или с defaults)
+
+# С include_recent — новое поведение
+GET /api/v1/models?include_recent=true
+→ возвращает модели С recent полями
+```
+
+---
+
+## 5. UI/UX требования
+
+### 5.1 Экраны и интерфейсы
+
+| ID | Экран | Описание | Приоритет |
+|----|-------|----------|-----------|
+| UI-001 | Web UI Statistics | Отображение `effective_reliability_score` вместо `reliability_score` | Must |
+| UI-002 | Web UI Model Details | Показ обеих метрик (recent и long-term) | Should |
+
+### 5.2 User Flows
+
+**Flow 1: Просмотр статистики моделей**
+
+```
+[Открыть /static/index.html] → [Нажать "Statistics"]
+                                        ↓
+                     [Таблица с effective_reliability_score]
+                                        ↓
+                     [Сортировка по effective_reliability_score]
+```
+
+---
+
+## 6. Нефункциональные требования
+
+### 6.1 Производительность
 
 | ID | Метрика | Требование | Измерение |
 |----|---------|------------|-----------|
 | NF-001 | Время расчёта recent stats | < 100ms | SQL EXPLAIN ANALYZE |
 | NF-002 | Влияние на выбор модели | + < 50ms к текущему времени | Prometheus metrics |
 
-### 4.2 Совместимость
+### 6.2 Совместимость
 
 | ID | Требование | Описание |
 |----|------------|----------|
 | NF-010 | Backward Compatibility | Старое поле `reliability_score` сохраняется и работает |
 | NF-011 | API Compatibility | Без `include_recent` API возвращает тот же ответ что и раньше |
 
-### 4.3 Надёжность
+### 6.3 Надёжность
 
 | ID | Требование | Описание |
 |----|------------|----------|
@@ -170,15 +414,15 @@ else:
 
 ---
 
-## 5. Технические ограничения
+## 7. Технические ограничения
 
-### 5.1 Обязательные технологии
+### 7.1 Обязательные технологии
 
 - **Backend**: Python 3.11+, FastAPI
 - **Database**: PostgreSQL 16 (существующая)
 - **ORM**: SQLAlchemy 2.x (async)
 
-### 5.2 Существующие ресурсы
+### 7.2 Существующие ресурсы
 
 | Ресурс | Описание | Готовность |
 |--------|----------|------------|
@@ -186,23 +430,23 @@ else:
 | `ix_prompt_history_created_at` | Индекс для временных запросов | ✅ Существует |
 | `AIModel` domain model | Доменная модель с вычисляемыми свойствами | ✅ Нужно расширить |
 
-### 5.3 Ограничения
+### 7.3 Ограничения
 
 - **Нет миграций БД** — используем существующую структуру `prompt_history`
 - **HTTP-only архитектура** — Business API получает данные через Data API
 
 ---
 
-## 6. Допущения и риски
+## 8. Допущения и риски
 
-### 6.1 Допущения
+### 8.1 Допущения
 
 | # | Допущение | Влияние если неверно |
 |---|-----------|---------------------|
 | 1 | `prompt_history` содержит достаточно данных за 7 дней | Нужно увеличить окно или уменьшить min_requests |
 | 2 | Индекс `created_at` достаточно эффективен | Возможно потребуется составной индекс |
 
-### 6.2 Риски
+### 8.2 Риски
 
 | # | Риск | Вероятность | Влияние | Митигация |
 |---|------|-------------|---------|-----------|
@@ -211,7 +455,7 @@ else:
 
 ---
 
-## 7. Открытые вопросы
+## 9. Открытые вопросы
 
 | # | Вопрос | Статус | Решение |
 |---|--------|--------|---------|
@@ -220,7 +464,7 @@ else:
 
 ---
 
-## 8. Глоссарий
+## 10. Глоссарий
 
 | Термин | Определение |
 |--------|-------------|
@@ -230,11 +474,12 @@ else:
 
 ---
 
-## 9. История изменений
+## 11. История изменений
 
 | Версия | Дата | Автор | Изменения |
 |--------|------|-------|-----------|
 | 1.0 | 2026-01-02 | AI Analyst | Первоначальная версия |
+| 2.0 | 2026-01-03 | AI Analyst | Добавлена секция 4 (Пайплайны), INT-* требования |
 
 ---
 
@@ -243,8 +488,12 @@ else:
 ### PRD_READY Checklist
 
 - [x] Все секции заполнены
-- [x] Требования имеют уникальные ID (FR-*, NF-*)
+- [x] Требования имеют уникальные ID (FR-*, NF-*, UI-*, INT-*)
 - [x] Критерии приёмки определены для каждого требования
 - [x] User stories связаны с требованиями
+- [x] Бизнес-пайплайн описан (основной flow, состояния сущностей)
+- [x] Data Pipeline описан (диаграмма потоков, трансформации данных)
+- [x] Интеграционный пайплайн описан (карта сервисов, точки интеграции, контракты)
+- [x] Раздел "Влияние на существующие пайплайны" заполнен
 - [x] Нет блокирующих открытых вопросов
 - [x] Риски идентифицированы и имеют план митигации
