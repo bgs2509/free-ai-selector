@@ -1,17 +1,17 @@
 ---
 title: "Requirements Traceability Matrix (RTM)"
 created: "2025-12-23"
-updated: "2026-01-01"
+updated: "2026-01-03"
 author: "AI (Validator)"
 type: "rtm"
 status: "VALIDATED"
-version: 7
-features: ["F001", "F002", "F003", "F004", "F005", "F006", "F008", "F009"]
+version: 8
+features: ["F001", "F002", "F003", "F004", "F005", "F006", "F008", "F009", "F010"]
 ---
 
 # Requirements Traceability Matrix (RTM)
 
-**Последнее обновление**: 2026-01-01
+**Последнее обновление**: 2026-01-03
 **Проект**: Free AI Selector
 **Статус**: ✅ VALIDATED
 
@@ -789,3 +789,126 @@ REDACTED = "***REDACTED***"
 | REVIEW_OK | 2026-01-01 16:00 | ✅ |
 | QA_PASSED | 2026-01-01 17:00 | ✅ |
 | ALL_GATES_PASSED | 2026-01-01 17:30 | ✅ |
+
+---
+
+# F010 — Rolling Window Reliability Score
+
+**Описание**: Расчёт reliability_score на основе данных за последние 7 дней из prompt_history для актуального выбора AI модели.
+
+**Дата создания**: 2026-01-02
+
+**Сервисы**: free-ai-selector-data-postgres-api, free-ai-selector-business-api
+
+---
+
+## Функциональные требования F010
+
+### Core Features (Must Have)
+
+| ID | Название | Описание | Реализация | Тест | Статус |
+|----|----------|----------|------------|------|--------|
+| FR-001 | Recent Stats Calculation | Data API рассчитывает статистику из `prompt_history` за последние N дней | `prompt_history_repository.py:get_recent_stats_for_all_models()` | API возвращает recent поля | ✅ |
+| FR-002 | Recent Reliability Score | Domain Model вычисляет `recent_reliability_score` по формуле | `models.py:_calculate_recent_metrics()` | Тест корректности расчёта | ✅ |
+| FR-003 | Effective Score with Fallback | `effective_reliability_score` возвращает recent или fallback | `process_prompt.py:_select_best_model()` | `test_select_best_model_fallback_to_longterm` | ✅ |
+| FR-004 | API Parameter include_recent | `GET /api/v1/models?include_recent=true` | `models.py:get_all_models()` | cURL запрос с параметром | ✅ |
+| FR-005 | Model Selection by Effective Score | Business API выбирает модель по `effective_reliability_score` | `process_prompt.py:_select_best_model()` | `test_select_best_model_by_effective_score` | ✅ |
+
+### Important Features (Should Have)
+
+| ID | Название | Описание | Реализация | Тест | Статус |
+|----|----------|----------|------------|------|--------|
+| FR-010 | Configurable Window | Параметр `window_days` в API (default: 7) | `models.py:window_days` query param | API принимает `window_days=3` | ✅ |
+| FR-011 | Recent Metrics in Response | `AIModelResponse` включает 5 новых полей | `schemas.py:AIModelResponse` | Swagger показывает новые поля | ✅ |
+| FR-012 | Logging Selection Decision | Логировать почему выбрана модель | `log_helpers.py:log_decision()` | Лог содержит `decision_reason` | ✅ |
+
+### Nice to Have (Could Have)
+
+| ID | Название | Описание | Реализация | Тест | Статус |
+|----|----------|----------|------------|------|--------|
+| FR-020 | Configurable Min Requests | Параметр `min_requests` | Не реализовано (Could Have) | — | ⏳ |
+
+---
+
+## Интеграционные требования F010
+
+| ID | Описание | Реализация | Статус |
+|----|----------|------------|--------|
+| INT-001 | Новые query params `include_recent`, `window_days` | `GET /api/v1/models?include_recent=true&window_days=7` | ✅ |
+| INT-002 | Новые поля в response: `recent_*`, `effective_*`, `decision_reason` | 5 полей в `AIModelResponse` | ✅ |
+
+---
+
+## Нефункциональные требования F010
+
+| ID | Требование | Описание | Реализация | Статус |
+|----|------------|----------|------------|--------|
+| NF-010 | Backward Compatibility | Старое поле `reliability_score` сохраняется | Без `include_recent` API работает как раньше | ✅ |
+| NF-011 | API Compatibility | Новые поля имеют default values | `recent_*=None`, `effective_*=reliability_score` | ✅ |
+| NF-020 | Graceful Fallback | При `recent_request_count < 3` — использовать long-term | `decision_reason: fallback` | ✅ |
+
+---
+
+## Артефакты F010
+
+| Тип | Файл | Дата |
+|-----|------|------|
+| PRD | `ai-docs/docs/prd/2026-01-02_F010_rolling-window-reliability-prd.md` | 2026-01-02 |
+| Research | `ai-docs/docs/research/2026-01-02_F010_rolling-window-reliability-research.md` | 2026-01-03 |
+| Plan | `ai-docs/docs/plans/2026-01-02_F010_rolling-window-reliability-plan.md` | 2026-01-03 |
+| Review | `ai-docs/docs/reports/2026-01-03_F010_rolling-window-reliability-review.md` | 2026-01-03 |
+| QA | `ai-docs/docs/reports/2026-01-03_F010_rolling-window-reliability-qa.md` | 2026-01-03 |
+| Validation | `ai-docs/docs/reports/2026-01-03_F010_rolling-window-reliability-validation.md` | 2026-01-03 |
+
+---
+
+## Изменённые файлы F010
+
+### Data API (3 файла)
+
+| Файл | Изменение |
+|------|-----------|
+| `app/infrastructure/repositories/prompt_history_repository.py` | Метод `get_recent_stats_for_all_models()` |
+| `app/api/v1/schemas.py` | 5 новых полей в `AIModelResponse` |
+| `app/api/v1/models.py` | `_calculate_recent_metrics()`, `_model_to_response_with_recent()`, query params |
+
+### Business API (5 файлов)
+
+| Файл | Изменение |
+|------|-----------|
+| `app/domain/models.py` | 3 новых поля в `AIModelInfo` |
+| `app/infrastructure/http_clients/data_api_client.py` | Парсинг новых полей |
+| `app/application/use_cases/process_prompt.py` | `_select_best_model()` по `effective_reliability_score` |
+| `tests/conftest.py` | Mock fixtures с F010 полями |
+| `tests/unit/test_process_prompt_use_case.py` | 8 новых тестов F010 |
+
+---
+
+## Тесты F010
+
+| # | Тест | Описание | Результат |
+|---|------|----------|-----------|
+| 1 | `test_select_best_model_by_effective_score` | Выбор модели по effective_score | ✅ Pass |
+| 2 | `test_select_best_model_fallback_to_longterm` | Fallback на long-term при малом трафике | ✅ Pass |
+| 3 | `test_select_fallback_model_by_effective_score` | Fallback модель по effective_score | ✅ Pass |
+| 4 | `test_no_fallback_when_only_one_model` | Нет fallback при одной модели | ✅ Pass |
+| 5 | `test_execute_success` | Успешная обработка промпта | ✅ Pass |
+| 6 | `test_execute_no_active_models` | Ошибка при отсутствии моделей | ✅ Pass |
+| 7 | `test_effective_score_overrides_longterm` | effective > long-term при recent деградации | ✅ Pass |
+| 8 | `test_fallback_uses_longterm_score` | Fallback использует long-term score | ✅ Pass |
+
+**Итого F010 тестов**: 8/8 passed (100%)
+
+---
+
+## Ворота качества F010
+
+| Ворота | Дата | Статус |
+|--------|------|--------|
+| PRD_READY | 2026-01-03 10:00 | ✅ |
+| RESEARCH_DONE | 2026-01-03 11:00 | ✅ |
+| PLAN_APPROVED | 2026-01-03 12:00 | ✅ |
+| IMPLEMENT_OK | 2026-01-03 18:00 | ✅ |
+| REVIEW_OK | 2026-01-03 18:30 | ✅ |
+| QA_PASSED | 2026-01-03 19:00 | ✅ |
+| ALL_GATES_PASSED | 2026-01-03 20:00 | ✅ |
