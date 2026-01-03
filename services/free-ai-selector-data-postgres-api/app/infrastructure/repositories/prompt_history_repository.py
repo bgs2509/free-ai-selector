@@ -5,10 +5,10 @@ Implements repository pattern for prompt history CRUD operations.
 Uses SQLAlchemy 2.0 async patterns.
 """
 
-from datetime import datetime
-from typing import List, Optional
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy import desc, select
+from sqlalchemy import case, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.models import PromptHistory
@@ -148,6 +148,55 @@ class PromptHistoryRepository:
         orm_histories = result.scalars().all()
 
         return [self._to_domain(orm_history) for orm_history in orm_histories]
+
+    async def get_recent_stats_for_all_models(
+        self, window_days: int = 7
+    ) -> Dict[int, Dict[str, Any]]:
+        """
+        Get aggregated statistics for all models within a time window.
+
+        Uses SQL GROUP BY for efficient aggregation instead of loading all records.
+        Leverages existing index ix_prompt_history_created_at.
+
+        Args:
+            window_days: Number of days to look back (default: 7)
+
+        Returns:
+            Dict mapping model_id to stats dict:
+            {
+                model_id: {
+                    "request_count": int,
+                    "success_count": int,
+                    "avg_response_time": float
+                }
+            }
+        """
+        cutoff_date = datetime.utcnow() - timedelta(days=window_days)
+
+        query = (
+            select(
+                PromptHistoryORM.selected_model_id,
+                func.count().label("request_count"),
+                func.sum(
+                    case((PromptHistoryORM.success == True, 1), else_=0)  # noqa: E712
+                ).label("success_count"),
+                func.avg(PromptHistoryORM.response_time).label("avg_response_time"),
+            )
+            .where(PromptHistoryORM.created_at > cutoff_date)
+            .group_by(PromptHistoryORM.selected_model_id)
+        )
+
+        result = await self.session.execute(query)
+        rows = result.all()
+
+        return {
+            row.selected_model_id: {
+                "request_count": row.request_count,
+                "success_count": row.success_count,
+                "avg_response_time": float(row.avg_response_time or 0.0),
+            }
+            for row in rows
+        }
 
     async def get_statistics_for_period(
         self, start_date: datetime, end_date: datetime, model_id: Optional[int] = None

@@ -73,11 +73,28 @@ class AIModelResponse(AIModelBase):
     )
     env_var: str = Field(default="", description="ENV variable name for API key lookup")
 
-    # Computed fields
+    # Computed fields (long-term / cumulative)
     success_rate: float = Field(..., ge=0.0, le=1.0, description="Success rate (0.0 - 1.0)")
     average_response_time: float = Field(..., ge=0.0, description="Average response time in seconds")
     speed_score: float = Field(..., ge=0.0, le=1.0, description="Speed score (0.0 - 1.0)")
     reliability_score: float = Field(..., ge=0.0, le=1.0, description="Reliability score (0.0 - 1.0)")
+
+    # F010: Recent metrics (rolling window)
+    recent_success_rate: Optional[float] = Field(
+        None, ge=0.0, le=1.0, description="Success rate for recent period (null if no data)"
+    )
+    recent_request_count: Optional[int] = Field(
+        None, ge=0, description="Request count in recent period"
+    )
+    recent_reliability_score: Optional[float] = Field(
+        None, ge=0.0, le=1.0, description="Reliability score for recent period"
+    )
+    effective_reliability_score: Optional[float] = Field(
+        None, ge=0.0, le=1.0, description="Score used for model selection (recent or fallback)"
+    )
+    decision_reason: Optional[str] = Field(
+        None, description="Why effective score was chosen: 'recent_score' or 'fallback'"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
