@@ -75,19 +75,22 @@ class ProcessPromptUseCase:
             logger.error("no_active_models_available")
             raise Exception("No active AI models available")
 
-        # Step 2: Select best model based on reliability score
+        # Step 2: Select best model based on effective reliability score (F010)
         best_model = self._select_best_model(models)
 
-        # Log the model selection decision
+        # Log the model selection decision with F010 fields
         log_decision(
             logger,
             decision="ACCEPT",
-            reason="highest_reliability_score",
+            reason="highest_effective_reliability_score",
             evaluated_conditions={
                 "models_count": len(models),
                 "selected_model": best_model.name,
                 "selected_provider": best_model.provider,
-                "reliability_score": float(best_model.reliability_score),
+                "effective_score": float(best_model.effective_reliability_score),
+                "long_term_score": float(best_model.reliability_score),
+                "decision_reason": best_model.decision_reason,
+                "recent_request_count": best_model.recent_request_count,
             },
         )
 
@@ -119,7 +122,7 @@ class ProcessPromptUseCase:
             # Try fallback to next best model
             fallback_model = self._select_fallback_model(models, best_model)
             if fallback_model:
-                # Log fallback decision
+                # Log fallback decision with F010 fields
                 log_decision(
                     logger,
                     decision="FALLBACK",
@@ -127,7 +130,8 @@ class ProcessPromptUseCase:
                     evaluated_conditions={
                         "failed_model": best_model.name,
                         "fallback_model": fallback_model.name,
-                        "fallback_reliability": float(fallback_model.reliability_score),
+                        "fallback_effective_score": float(fallback_model.effective_reliability_score),
+                        "fallback_decision_reason": fallback_model.decision_reason,
                     },
                 )
                 try:
@@ -201,21 +205,25 @@ class ProcessPromptUseCase:
 
     def _select_best_model(self, models: list[AIModelInfo]) -> AIModelInfo:
         """
-        Select best model based on reliability score.
+        Select best model based on effective reliability score (F010).
+
+        Uses effective_reliability_score which is either:
+        - recent_reliability_score (if >= 3 requests in 7-day window)
+        - reliability_score (fallback for cold start)
 
         Args:
             models: List of active models
 
         Returns:
-            Model with highest reliability score
+            Model with highest effective reliability score
         """
-        return max(models, key=lambda m: m.reliability_score)
+        return max(models, key=lambda m: m.effective_reliability_score)
 
     def _select_fallback_model(
         self, models: list[AIModelInfo], failed_model: AIModelInfo
     ) -> Optional[AIModelInfo]:
         """
-        Select fallback model (second best).
+        Select fallback model (second best) based on effective reliability score (F010).
 
         Args:
             models: List of active models
@@ -227,7 +235,7 @@ class ProcessPromptUseCase:
         available_models = [m for m in models if m.id != failed_model.id]
         if not available_models:
             return None
-        return max(available_models, key=lambda m: m.reliability_score)
+        return max(available_models, key=lambda m: m.effective_reliability_score)
 
     def _get_provider_for_model(self, model: AIModelInfo) -> AIProviderBase:
         """

@@ -26,6 +26,10 @@ class AIModelInfo:
     # F008 SSOT fields
     api_format: str = "openai"  # Discriminator for health check dispatch
     env_var: str = ""  # ENV variable name for API key lookup
+    # F010: Rolling window reliability fields
+    effective_reliability_score: float = 0.0  # Score used for model selection
+    recent_request_count: int = 0  # Requests in recent window
+    decision_reason: str = "fallback"  # "recent_score" or "fallback"
 
 
 @dataclass

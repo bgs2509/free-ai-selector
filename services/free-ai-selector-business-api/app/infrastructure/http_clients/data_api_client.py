@@ -56,15 +56,18 @@ class DataAPIClient:
             headers["X-Request-ID"] = self.request_id
         return headers
 
-    async def get_all_models(self, active_only: bool = True) -> List[AIModelInfo]:
+    async def get_all_models(
+        self, active_only: bool = True, include_recent: bool = True
+    ) -> List[AIModelInfo]:
         """
         Get all AI models from Data API.
 
         Args:
             active_only: If True, return only active models (default: True)
+            include_recent: If True, include recent metrics for F010 (default: True)
 
         Returns:
-            List of AIModelInfo objects
+            List of AIModelInfo objects with effective_reliability_score for model selection
 
         Raises:
             httpx.HTTPError: If request fails
@@ -72,7 +75,11 @@ class DataAPIClient:
         try:
             response = await self.client.get(
                 f"{self.base_url}/api/v1/models",
-                params={"active_only": active_only},
+                params={
+                    "active_only": active_only,
+                    "include_recent": include_recent,
+                    "window_days": 7,
+                },
                 headers=self._get_headers(),
             )
             response.raise_for_status()
@@ -88,6 +95,12 @@ class DataAPIClient:
                     is_active=model["is_active"],
                     api_format=model.get("api_format", "openai"),
                     env_var=model.get("env_var", ""),
+                    # F010: Use effective_score for selection, fallback to reliability_score
+                    effective_reliability_score=model.get(
+                        "effective_reliability_score"
+                    ) or model["reliability_score"],
+                    recent_request_count=model.get("recent_request_count") or 0,
+                    decision_reason=model.get("decision_reason") or "fallback",
                 )
                 for model in models_data
             ]
