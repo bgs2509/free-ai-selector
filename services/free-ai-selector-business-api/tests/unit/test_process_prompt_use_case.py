@@ -14,8 +14,41 @@ from app.domain.models import AIModelInfo, PromptRequest
 class TestProcessPromptUseCase:
     """Test ProcessPrompt use case."""
 
-    async def test_select_best_model(self, mock_data_api_client):
-        """Test best model selection based on reliability score."""
+    async def test_select_best_model_by_effective_score(self, mock_data_api_client):
+        """Test best model selection based on effective_reliability_score (F010)."""
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+
+        models = [
+            AIModelInfo(
+                id=1,
+                name="Model A",
+                provider="Provider A",
+                api_endpoint="https://a.com",
+                reliability_score=0.9,  # High long-term score
+                is_active=True,
+                effective_reliability_score=0.7,  # But lower effective (recent degraded)
+                recent_request_count=10,
+                decision_reason="recent_score",
+            ),
+            AIModelInfo(
+                id=2,
+                name="Model B",
+                provider="Provider B",
+                api_endpoint="https://b.com",
+                reliability_score=0.7,  # Lower long-term score
+                is_active=True,
+                effective_reliability_score=0.85,  # But higher effective (recent good)
+                recent_request_count=15,
+                decision_reason="recent_score",
+            ),
+        ]
+
+        best_model = use_case._select_best_model(models)
+        # F010: Model B should be selected because of higher effective_reliability_score
+        assert best_model.id == 2
+
+    async def test_select_best_model_fallback_to_longterm(self, mock_data_api_client):
+        """Test model selection uses fallback when no recent data (F010)."""
         use_case = ProcessPromptUseCase(mock_data_api_client)
 
         models = [
@@ -26,6 +59,9 @@ class TestProcessPromptUseCase:
                 api_endpoint="https://a.com",
                 reliability_score=0.8,
                 is_active=True,
+                effective_reliability_score=0.8,  # Fallback to long-term
+                recent_request_count=2,  # Less than threshold
+                decision_reason="fallback",
             ),
             AIModelInfo(
                 id=2,
@@ -34,14 +70,18 @@ class TestProcessPromptUseCase:
                 api_endpoint="https://b.com",
                 reliability_score=0.9,
                 is_active=True,
+                effective_reliability_score=0.9,  # Fallback to long-term
+                recent_request_count=1,  # Less than threshold
+                decision_reason="fallback",
             ),
         ]
 
         best_model = use_case._select_best_model(models)
-        assert best_model.id == 2  # Model B has higher reliability
+        # Model B has higher effective_reliability_score (fallback to long-term)
+        assert best_model.id == 2
 
-    async def test_select_fallback_model(self, mock_data_api_client):
-        """Test fallback model selection."""
+    async def test_select_fallback_model_by_effective_score(self, mock_data_api_client):
+        """Test fallback model selection uses effective_reliability_score (F010)."""
         use_case = ProcessPromptUseCase(mock_data_api_client)
 
         models = [
@@ -52,6 +92,9 @@ class TestProcessPromptUseCase:
                 api_endpoint="https://a.com",
                 reliability_score=0.9,
                 is_active=True,
+                effective_reliability_score=0.9,
+                recent_request_count=10,
+                decision_reason="recent_score",
             ),
             AIModelInfo(
                 id=2,
@@ -60,6 +103,9 @@ class TestProcessPromptUseCase:
                 api_endpoint="https://b.com",
                 reliability_score=0.7,
                 is_active=True,
+                effective_reliability_score=0.75,
+                recent_request_count=5,
+                decision_reason="recent_score",
             ),
         ]
 
@@ -81,6 +127,9 @@ class TestProcessPromptUseCase:
                 api_endpoint="https://a.com",
                 reliability_score=0.9,
                 is_active=True,
+                effective_reliability_score=0.9,
+                recent_request_count=10,
+                decision_reason="recent_score",
             ),
         ]
 
@@ -97,7 +146,7 @@ class TestProcessPromptUseCase:
         mock_provider.generate.return_value = "Generated response"
         mock_registry.get_provider.return_value = mock_provider
 
-        # Mock models returned from Data API
+        # Mock models returned from Data API with F010 fields
         mock_data_api_client.get_all_models.return_value = [
             AIModelInfo(
                 id=1,
@@ -106,6 +155,9 @@ class TestProcessPromptUseCase:
                 api_endpoint="https://api.test.com",
                 reliability_score=0.9,
                 is_active=True,
+                effective_reliability_score=0.9,
+                recent_request_count=0,
+                decision_reason="fallback",
             ),
         ]
 
@@ -136,25 +188,65 @@ class TestProcessPromptUseCase:
 class TestModelSelection:
     """Test model selection logic."""
 
-    def test_reliability_score_comparison(self):
-        """Test that higher reliability score is preferred."""
+    def test_effective_score_overrides_longterm(self):
+        """Test that effective_reliability_score overrides long-term score (F010)."""
+        # Model with high long-term but degraded recently
         model1 = AIModelInfo(
             id=1,
-            name="Fast but unreliable",
+            name="Degraded recently",
             provider="Provider A",
             api_endpoint="https://a.com",
-            reliability_score=0.5,  # Low reliability
+            reliability_score=0.95,  # High long-term
             is_active=True,
+            effective_reliability_score=0.6,  # Low recent (degraded)
+            recent_request_count=10,
+            decision_reason="recent_score",
+        )
+
+        # Model with lower long-term but improved recently
+        model2 = AIModelInfo(
+            id=2,
+            name="Improved recently",
+            provider="Provider B",
+            api_endpoint="https://b.com",
+            reliability_score=0.7,  # Lower long-term
+            is_active=True,
+            effective_reliability_score=0.88,  # High recent (improved)
+            recent_request_count=15,
+            decision_reason="recent_score",
+        )
+
+        # F010: Model 2 should be selected based on effective score
+        assert model2.effective_reliability_score > model1.effective_reliability_score
+
+    def test_fallback_uses_longterm_score(self):
+        """Test that fallback uses reliability_score when no recent data (F010)."""
+        # Model with cold start (no recent data)
+        model1 = AIModelInfo(
+            id=1,
+            name="New model",
+            provider="Provider A",
+            api_endpoint="https://a.com",
+            reliability_score=0.8,
+            is_active=True,
+            effective_reliability_score=0.8,  # Fallback to long-term
+            recent_request_count=1,  # Not enough for recent
+            decision_reason="fallback",
         )
 
         model2 = AIModelInfo(
             id=2,
-            name="Reliable model",
+            name="Another new model",
             provider="Provider B",
             api_endpoint="https://b.com",
-            reliability_score=0.9,  # High reliability
+            reliability_score=0.9,
             is_active=True,
+            effective_reliability_score=0.9,  # Fallback to long-term
+            recent_request_count=2,  # Not enough for recent
+            decision_reason="fallback",
         )
 
-        # Model 2 should be selected
-        assert model2.reliability_score > model1.reliability_score
+        # F010: Both use fallback, model2 has higher effective_score
+        assert model1.decision_reason == "fallback"
+        assert model2.decision_reason == "fallback"
+        assert model2.effective_reliability_score > model1.effective_reliability_score

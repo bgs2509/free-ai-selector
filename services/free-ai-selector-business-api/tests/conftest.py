@@ -18,7 +18,7 @@ def mock_data_api_client(monkeypatch):
 
     mock_client = AsyncMock()
 
-    # Mock get_all_models to return test models
+    # Mock get_all_models to return test models with F010 fields
     mock_client.get_all_models.return_value = [
         AIModelInfo(
             id=1,
@@ -27,6 +27,9 @@ def mock_data_api_client(monkeypatch):
             api_endpoint="https://api1.test.com",
             reliability_score=0.9,
             is_active=True,
+            effective_reliability_score=0.9,
+            recent_request_count=0,
+            decision_reason="fallback",
         ),
         AIModelInfo(
             id=2,
@@ -35,6 +38,9 @@ def mock_data_api_client(monkeypatch):
             api_endpoint="https://api2.test.com",
             reliability_score=0.7,
             is_active=True,
+            effective_reliability_score=0.7,
+            recent_request_count=0,
+            decision_reason="fallback",
         ),
     ]
 
