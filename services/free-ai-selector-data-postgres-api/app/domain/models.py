@@ -70,7 +70,11 @@ class AIModel:
         """
         Calculate reliability score (0.0 - 1.0).
         Formula: reliability_score = (success_rate × 0.6) + (speed_score × 0.4)
+
+        Note: If success_rate = 0, returns 0.0 (F011 fix).
         """
+        if self.success_rate == 0.0:
+            return 0.0
         return (self.success_rate * 0.6) + (self.speed_score * 0.4)
 
 

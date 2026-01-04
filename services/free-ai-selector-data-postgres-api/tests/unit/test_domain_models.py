@@ -130,6 +130,48 @@ class TestAIModel:
         expected_reliability = (0.9 * 0.6) + (0.8 * 0.4)
         assert abs(model.reliability_score - expected_reliability) < 0.001
 
+    def test_reliability_score_zero_when_no_success(self):
+        """Test that reliability_score = 0 when success_rate = 0 (F011)."""
+        model = AIModel(
+            id=1,
+            name="Broken Model",
+            provider="BrokenProvider",
+            api_endpoint="https://api.broken.com",
+            success_count=0,
+            failure_count=10,  # 10 failures, 0 successes
+            total_response_time=Decimal("50.0"),  # 5s avg (would give speed_score=0.5)
+            request_count=10,
+            last_checked=datetime.utcnow(),
+            is_active=True,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+
+        assert model.success_rate == 0.0
+        # F011: reliability_score must be 0.0, not 0.5 * 0.4 = 0.20
+        assert model.reliability_score == 0.0
+
+    def test_reliability_score_zero_when_no_requests(self):
+        """Test that reliability_score = 0 for new models with no requests (F011)."""
+        model = AIModel(
+            id=1,
+            name="New Model",
+            provider="NewProvider",
+            api_endpoint="https://api.new.com",
+            success_count=0,
+            failure_count=0,
+            total_response_time=Decimal("0.0"),
+            request_count=0,
+            last_checked=None,
+            is_active=True,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+
+        assert model.success_rate == 0.0
+        # F011: reliability_score must be 0.0, not 0.40 (from speed_score=1.0)
+        assert model.reliability_score == 0.0
+
 
 class TestPromptHistory:
     """Test PromptHistory domain entity."""
