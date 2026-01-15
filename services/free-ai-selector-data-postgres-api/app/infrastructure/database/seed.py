@@ -4,7 +4,6 @@ from app.utils.security import sanitize_error_message
 Database seed script for AI Manager Platform - Data API Service
 
 Seeds the database with initial AI models for verified free-tier providers (no credit card required):
-- Google Gemini (Gemini 2.5 Flash) - 10 RPM, 250 RPD
 - Groq (Llama 3.3 70B) - 20 RPM, 14,400 RPD, 1,800 tokens/sec
 - Cerebras (Llama 3.3 70B) - 1M tokens/day, 30 RPM, 2,500+ tokens/sec
 - SambaNova (Meta-Llama-3.3-70B-Instruct) - 20 RPM, 430 tokens/sec
@@ -25,20 +24,12 @@ from app.infrastructure.database.models import AIModelORM
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initial AI models configuration - 16 verified free-tier providers (no credit card required)
+# Initial AI models configuration - 14 verified free-tier providers (no credit card required)
 # F008 SSOT: This is the SINGLE SOURCE OF TRUTH for provider configuration
 SEED_MODELS = [
     # ═══════════════════════════════════════════════════════════════════════════
-    # Существующие провайдеры (6 шт.)
+    # Существующие провайдеры (5 шт.)
     # ═══════════════════════════════════════════════════════════════════════════
-    {
-        "name": "Gemini 2.5 Flash",
-        "provider": "GoogleGemini",
-        "api_endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
-        "is_active": True,
-        "api_format": "gemini",
-        "env_var": "GOOGLE_AI_STUDIO_API_KEY",
-    },
     {
         "name": "Llama 3.3 70B Versatile",
         "provider": "Groq",
@@ -80,7 +71,7 @@ SEED_MODELS = [
         "env_var": "CLOUDFLARE_API_KEY",
     },
     # ═══════════════════════════════════════════════════════════════════════════
-    # Новые провайдеры F003 — Фаза 1: Приоритетные (4 шт.)
+    # Новые провайдеры F003 — Фаза 1: Приоритетные (3 шт.)
     # ═══════════════════════════════════════════════════════════════════════════
     {
         "name": "DeepSeek Chat",
@@ -89,14 +80,6 @@ SEED_MODELS = [
         "is_active": True,
         "api_format": "openai",
         "env_var": "DEEPSEEK_API_KEY",
-    },
-    {
-        "name": "Command R+",
-        "provider": "Cohere",
-        "api_endpoint": "https://api.cohere.com/v2/chat",
-        "is_active": True,
-        "api_format": "cohere",
-        "env_var": "COHERE_API_KEY",
     },
     {
         "name": "DeepSeek R1 (OpenRouter)",
