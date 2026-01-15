@@ -18,6 +18,19 @@ class ProcessPromptRequest(BaseModel):
 
     prompt: str = Field(..., min_length=1, max_length=10000, description="User's prompt text")
 
+    # NEW: F011-B - System Prompts & JSON Response Support
+    system_prompt: Optional[str] = Field(
+        None,
+        max_length=5000,
+        description="Optional system prompt to guide AI behavior (OpenAI-compatible providers only)"
+    )
+
+    # NEW: F011-B - System Prompts & JSON Response Support
+    response_format: Optional[dict] = Field(
+        None,
+        description="Optional response format specification. Example: {'type': 'json_object'}"
+    )
+
 
 class ProcessPromptResponse(BaseModel):
     """Schema for prompt processing response."""

@@ -66,7 +66,13 @@ class ProcessPromptUseCase:
         Raises:
             Exception: If all providers fail
         """
-        logger.info("processing_prompt", prompt_length=len(request.prompt_text))
+        # F011-B: Log system_prompt and response_format presence
+        logger.info(
+            "processing_prompt",
+            prompt_length=len(request.prompt_text),
+            has_system_prompt=request.system_prompt is not None,
+            has_response_format=request.response_format is not None,
+        )
 
         # Step 1: Fetch active models from Data API
         models = await self.data_api_client.get_all_models(active_only=True)
@@ -102,7 +108,12 @@ class ProcessPromptUseCase:
 
         try:
             provider = self._get_provider_for_model(best_model)
-            response_text = await provider.generate(request.prompt_text)
+            # F011-B: Pass system_prompt and response_format to provider
+            response_text = await provider.generate(
+                request.prompt_text,
+                system_prompt=request.system_prompt,
+                response_format=request.response_format,
+            )
             success = True
             logger.info(
                 "generation_success",
@@ -136,7 +147,12 @@ class ProcessPromptUseCase:
                 )
                 try:
                     fallback_provider = self._get_provider_for_model(fallback_model)
-                    response_text = await fallback_provider.generate(request.prompt_text)
+                    # F011-B: Pass system_prompt and response_format to fallback provider
+                    response_text = await fallback_provider.generate(
+                        request.prompt_text,
+                        system_prompt=request.system_prompt,
+                        response_format=request.response_format,
+                    )
                     success = True
                     best_model = fallback_model  # Use fallback model for stats
                     error_message = None

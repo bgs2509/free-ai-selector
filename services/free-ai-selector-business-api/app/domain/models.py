@@ -43,6 +43,10 @@ class PromptRequest:
     user_id: str
     prompt_text: str
 
+    # NEW: F011-B - System Prompts & JSON Response Support
+    system_prompt: Optional[str] = None  # System prompt for AI guidance
+    response_format: Optional[dict] = None  # Structured output specification
+
 
 @dataclass
 class PromptResponse:
