@@ -116,12 +116,20 @@ class CloudflareProvider(AIProviderBase):
 
                     # Handle response field (text generation models)
                     if "response" in result_data:
-                        return result_data["response"].strip()
+                        response = result_data["response"]
+                        # Handle both string and list responses
+                        if isinstance(response, list):
+                            response = " ".join(str(item) for item in response)
+                        return str(response).strip()
 
                     # Handle choices format (OpenAI-compatible)
                     if "choices" in result_data and len(result_data["choices"]) > 0:
                         message = result_data["choices"][0].get("message", {})
-                        return message.get("content", "").strip()
+                        content = message.get("content", "")
+                        # Handle both string and list content
+                        if isinstance(content, list):
+                            content = " ".join(str(item) for item in content)
+                        return str(content).strip()
 
                 logger.error(f"Unexpected Cloudflare response format: {sanitize_error_message(str(result))}")
                 raise ValueError("Invalid response format from Cloudflare Workers AI")
