@@ -1,4 +1,6 @@
 {
+  "$schema": "pipeline-state-schema",
+  "version": "2.0",
   "project_name": "free-ai-selector",
   "mode": "FEATURE",
   "init_mode": "EXISTING_PROJECT",
@@ -11,26 +13,10 @@
     ".claude/": "kept_existing",
     ".claude/commands/": "copied_10_commands"
   },
-  "current_stage": 8,
+  "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-01-15T18:00:00Z",
-
-  "current_feature": {
-    "id": "F011-A",
-    "name": "remove-non-openai-providers",
-    "title": "Удаление нестандартных AI провайдеров (GoogleGemini и Cohere)",
-    "created": "2026-01-15",
-    "stage": "DEPLOYED",
-    "deployed": "2026-01-15",
-    "artifacts": {
-      "prd": "prd/2026-01-15_F011-A_remove-non-openai-providers-prd.md",
-      "research": "research/2026-01-15_F011-A_remove-non-openai-providers-research.md",
-      "plan": "plans/2026-01-15_F011-A_remove-non-openai-providers-plan.md",
-      "completion": "reports/2026-01-15_F011-A_remove-non-openai-providers-completion.md"
-    }
-  },
-
-  "gates": {
+  "updated_at": "2026-01-15T19:00:00Z",
+  "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
       "passed_at": "2025-12-23T10:30:00Z",
@@ -40,104 +26,186 @@
         "python": "3.12.6",
         "docker": "28.4.0"
       }
-    },
-    "PRD_READY": {
-      "passed": true,
-      "passed_at": "2026-01-03T10:00:00Z",
-      "artifact": "ai-docs/docs/prd/2026-01-02_F010_rolling-window-reliability-prd.md",
-      "version": 2,
-      "notes": "Updated with Section 4 (Pipelines) per AIDD framework v2"
-    },
-    "RESEARCH_DONE": {
-      "passed": true,
-      "passed_at": "2026-01-03T11:00:00Z",
-      "artifact": "ai-docs/docs/research/2026-01-02_F010_rolling-window-reliability-research.md",
-      "findings": {
-        "extension_points_data_api": 4,
-        "extension_points_business_api": 4,
-        "migration_required": false,
-        "index_exists": "ix_prompt_history_created_at"
-      }
-    },
-    "PLAN_APPROVED": {
-      "passed": true,
-      "passed_at": "2026-01-03T12:00:00Z",
-      "artifact": "ai-docs/docs/plans/2026-01-02_F010_rolling-window-reliability-plan.md",
-      "approved_by": "user",
-      "summary": {
-        "data_api_changes": 4,
-        "business_api_changes": 4,
-        "new_lines": 200,
-        "modified_lines": 75,
-        "migration_required": false
-      }
-    },
-    "IMPLEMENT_OK": {
-      "passed": true,
-      "passed_at": "2026-01-03T18:00:00Z",
-      "files_changed": [
-        "services/free-ai-selector-data-postgres-api/app/infrastructure/repositories/prompt_history_repository.py",
-        "services/free-ai-selector-data-postgres-api/app/api/v1/schemas.py",
-        "services/free-ai-selector-data-postgres-api/app/api/v1/models.py",
-        "services/free-ai-selector-business-api/app/domain/models.py",
-        "services/free-ai-selector-business-api/app/infrastructure/http_clients/data_api_client.py",
-        "services/free-ai-selector-business-api/app/application/use_cases/process_prompt.py",
-        "services/free-ai-selector-business-api/tests/conftest.py",
-        "services/free-ai-selector-business-api/tests/unit/test_process_prompt_use_case.py"
-      ],
-      "tests": {
-        "f010_specific": "8/8 passed",
-        "business_api_total": "63/75 passed (pre-existing failures)"
-      }
-    },
-    "REVIEW_OK": {
-      "passed": true,
-      "passed_at": "2026-01-15T16:30:00Z",
-      "artifact": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-review.md",
-      "decision": "APPROVED_WITH_COMMENTS",
-      "blocker_issues": 0,
-      "critical_issues": 0,
-      "minor_issues": 3,
-      "notes": "Clean implementation. F008 SSOT maintained. 3 minor cosmetic issues (non-blocking). Safe to merge."
-    },
-    "QA_PASSED": {
-      "passed": true,
-      "passed_at": "2026-01-15T17:00:00Z",
-      "artifact": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-qa.md",
-      "tests_executed": 95,
-      "tests_passed": 70,
-      "tests_failed": 18,
-      "f011a_specific_failures": 0,
-      "coverage_data_api": "55.26%",
-      "coverage_business_api": "56.74%",
-      "pre_existing_issues": 18,
-      "notes": "QA PASSED with conditions: All F011-A requirements verified. 0 F011-A failures. 18 pre-existing test failures tracked separately as technical debt. Coverage below 75% is pre-existing issue."
-    },
-    "ALL_GATES_PASSED": {
-      "passed": true,
-      "passed_at": "2026-01-15T17:30:00Z",
-      "artifacts": {
-        "rtm": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-rtm.md",
-        "validation": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-validation.md"
-      },
-      "requirements_coverage": "100%",
-      "gates_passed": 8,
-      "notes": "All requirements traced and verified. 100% implementation, testing, and verification coverage. Ready for deployment."
-    },
-    "DEPLOYED": {
-      "passed": true,
-      "passed_at": "2026-01-15T18:00:00Z",
-      "deployment_method": "make build && make up",
-      "health_checks": "OK",
-      "providers_active": 14,
-      "notes": "F011-A deployed successfully. 14 OpenAI-compatible providers active. GoogleGemini and Cohere removed. Completion Report created."
     }
   },
-
-  "artifacts": {
-    "prd": "ai-docs/docs/prd/2026-01-15_F011-A_remove-non-openai-providers-prd.md"
+  "active_pipelines": {
+    "F011-A": {
+      "branch": "feature/F011-A-remove-non-openai-providers",
+      "name": "remove-non-openai-providers",
+      "title": "Удаление нестандартных AI провайдеров (GoogleGemini и Cohere)",
+      "stage": "DEPLOYED",
+      "created": "2026-01-15",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-01-03T10:00:00Z",
+          "artifact": "ai-docs/docs/prd/2026-01-02_F010_rolling-window-reliability-prd.md",
+          "version": 2,
+          "notes": "Updated with Section 4 (Pipelines) per AIDD framework v2"
+        },
+        "RESEARCH_DONE": {
+          "passed": true,
+          "passed_at": "2026-01-03T11:00:00Z",
+          "artifact": "ai-docs/docs/research/2026-01-02_F010_rolling-window-reliability-research.md",
+          "findings": {
+            "extension_points_data_api": 4,
+            "extension_points_business_api": 4,
+            "migration_required": false,
+            "index_exists": "ix_prompt_history_created_at"
+          }
+        },
+        "PLAN_APPROVED": {
+          "passed": true,
+          "passed_at": "2026-01-03T12:00:00Z",
+          "artifact": "ai-docs/docs/plans/2026-01-02_F010_rolling-window-reliability-plan.md",
+          "approved_by": "user",
+          "summary": {
+            "data_api_changes": 4,
+            "business_api_changes": 4,
+            "new_lines": 200,
+            "modified_lines": 75,
+            "migration_required": false
+          }
+        },
+        "IMPLEMENT_OK": {
+          "passed": true,
+          "passed_at": "2026-01-03T18:00:00Z",
+          "files_changed": [
+            "services/free-ai-selector-data-postgres-api/app/infrastructure/repositories/prompt_history_repository.py",
+            "services/free-ai-selector-data-postgres-api/app/api/v1/schemas.py",
+            "services/free-ai-selector-data-postgres-api/app/api/v1/models.py",
+            "services/free-ai-selector-business-api/app/domain/models.py",
+            "services/free-ai-selector-business-api/app/infrastructure/http_clients/data_api_client.py",
+            "services/free-ai-selector-business-api/app/application/use_cases/process_prompt.py",
+            "services/free-ai-selector-business-api/tests/conftest.py",
+            "services/free-ai-selector-business-api/tests/unit/test_process_prompt_use_case.py"
+          ],
+          "tests": {
+            "f010_specific": "8/8 passed",
+            "business_api_total": "63/75 passed (pre-existing failures)"
+          }
+        },
+        "REVIEW_OK": {
+          "passed": true,
+          "passed_at": "2026-01-15T16:30:00Z",
+          "artifact": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-review.md",
+          "decision": "APPROVED_WITH_COMMENTS",
+          "blocker_issues": 0,
+          "critical_issues": 0,
+          "minor_issues": 3,
+          "notes": "Clean implementation. F008 SSOT maintained. 3 minor cosmetic issues (non-blocking). Safe to merge."
+        },
+        "QA_PASSED": {
+          "passed": true,
+          "passed_at": "2026-01-15T17:00:00Z",
+          "artifact": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-qa.md",
+          "tests_executed": 95,
+          "tests_passed": 70,
+          "tests_failed": 18,
+          "f011a_specific_failures": 0,
+          "coverage_data_api": "55.26%",
+          "coverage_business_api": "56.74%",
+          "pre_existing_issues": 18,
+          "notes": "QA PASSED with conditions: All F011-A requirements verified. 0 F011-A failures. 18 pre-existing test failures tracked separately as technical debt. Coverage below 75% is pre-existing issue."
+        },
+        "ALL_GATES_PASSED": {
+          "passed": true,
+          "passed_at": "2026-01-15T17:30:00Z",
+          "artifacts": {
+            "rtm": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-rtm.md",
+            "validation": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-validation.md"
+          },
+          "requirements_coverage": "100%",
+          "gates_passed": 8,
+          "notes": "All requirements traced and verified. 100% implementation, testing, and verification coverage. Ready for deployment."
+        },
+        "DEPLOYED": {
+          "passed": true,
+          "passed_at": "2026-01-15T18:00:00Z",
+          "deployment_method": "make build && make up",
+          "health_checks": "OK",
+          "providers_active": 14,
+          "notes": "F011-A deployed successfully. 14 OpenAI-compatible providers active. GoogleGemini and Cohere removed. Completion Report created."
+        }
+      },
+      "artifacts": {
+        "prd": "prd/2026-01-15_F011-A_remove-non-openai-providers-prd.md",
+        "research": "research/2026-01-15_F011-A_remove-non-openai-providers-research.md",
+        "plan": "plans/2026-01-15_F011-A_remove-non-openai-providers-plan.md",
+        "completion": "reports/2026-01-15_F011-A_remove-non-openai-providers-completion.md"
+      }
+    },
+    "F011-B": {
+      "branch": "feature/F011-B-system-prompts-json-response",
+      "name": "system-prompts-json-response",
+      "title": "System Prompts & JSON Response Support",
+      "stage": "REVIEW",
+      "created": "2026-01-15",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-01-15T14:00:00Z",
+          "artifact": "ai-docs/docs/prd/2026-01-15_F011-B_system-prompts-json-response-prd.md"
+        },
+        "RESEARCH_DONE": {
+          "passed": true,
+          "passed_at": "2026-01-15T14:55:00Z",
+          "artifact": "ai-docs/docs/research/2026-01-15_F011-B_system-prompts-json-response-research.md"
+        },
+        "PLAN_APPROVED": {
+          "passed": true,
+          "passed_at": "2026-01-15T15:30:00Z",
+          "artifact": "ai-docs/docs/plans/2026-01-15_F011-B_system-prompts-json-response-plan.md",
+          "approved_by": "user",
+          "summary": {
+            "files_to_modify": 18,
+            "files_to_create": 2,
+            "providers_affected": 14,
+            "breaking_changes": false,
+            "db_migrations_required": false,
+            "estimated_hours": "4-5"
+          }
+        },
+        "IMPLEMENT_OK": {
+          "passed": true,
+          "passed_at": "2026-01-15T19:00:00Z",
+          "files_changed": [
+            "services/free-ai-selector-business-api/app/api/v1/schemas.py",
+            "services/free-ai-selector-business-api/app/domain/models.py",
+            "services/free-ai-selector-business-api/app/application/use_cases/process_prompt.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/base.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/groq.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/cerebras.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/sambanova.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/huggingface.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/cloudflare.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/deepseek.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/openrouter.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/github_models.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/fireworks.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/hyperbolic.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/novita.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/scaleway.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/kluster.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/nebius.py",
+            "services/free-ai-selector-business-api/tests/unit/test_process_prompt_use_case.py",
+            "services/free-ai-selector-business-api/tests/unit/test_f011b_schemas.py"
+          ],
+          "tests": {
+            "f011b_specific": "11 tests created (5 use_case + 6 schemas)",
+            "implementation_status": "Complete: API layer, Domain layer, Application layer, Infrastructure layer (14 providers), Tests",
+            "type_hints_coverage": "100%",
+            "backward_compatible": true
+          }
+        }
+      },
+      "artifacts": {
+        "prd": "prd/2026-01-15_F011-B_system-prompts-json-response-prd.md",
+        "research": "research/2026-01-15_F011-B_system-prompts-json-response-research.md",
+        "plan": "plans/2026-01-15_F011-B_system-prompts-json-response-plan.md"
+      }
+    }
   },
-
   "features_registry": {
     "F001": {
       "name": "project-cleanup-audit",
@@ -153,7 +221,9 @@
       "description": "Минимальный веб-интерфейс с чатом AI, статистикой моделей и тестированием провайдеров",
       "created": "2025-12-25",
       "status": "DEPLOYED",
-      "services": ["free-ai-selector-business-api"]
+      "services": [
+        "free-ai-selector-business-api"
+      ]
     },
     "F003": {
       "name": "expand-ai-providers",
@@ -161,7 +231,10 @@
       "description": "Добавление 10 новых AI провайдеров без требования кредитной карты и верификации телефона",
       "created": "2025-12-25",
       "status": "DEPLOYED",
-      "services": ["free-ai-selector-business-api", "free-ai-selector-data-postgres-api"]
+      "services": [
+        "free-ai-selector-business-api",
+        "free-ai-selector-data-postgres-api"
+      ]
     },
     "F004": {
       "name": "dynamic-providers-list",
@@ -169,7 +242,11 @@
       "description": "Замена захардкоженных списков провайдеров на динамические во всех сервисах: TG бот, test_all_providers, health-worker",
       "created": "2025-12-25",
       "status": "DEPLOYED",
-      "services": ["free-ai-selector-telegram-bot", "free-ai-selector-business-api", "free-ai-selector-health-worker"]
+      "services": [
+        "free-ai-selector-telegram-bot",
+        "free-ai-selector-business-api",
+        "free-ai-selector-health-worker"
+      ]
     },
     "F005": {
       "name": "openapi-docs-fix",
@@ -177,7 +254,9 @@
       "description": "Исправление путей для работы за nginx-proxy: openapi_url и ссылка API Docs",
       "created": "2025-12-26",
       "status": "DEPLOYED",
-      "services": ["free-ai-selector-business-api"]
+      "services": [
+        "free-ai-selector-business-api"
+      ]
     },
     "F006": {
       "name": "aidd-logging",
@@ -185,7 +264,12 @@
       "description": "Миграция на structlog, добавление correlation_id, log_decision(), duration_ms, error_code",
       "created": "2025-12-30",
       "status": "DEPLOYED",
-      "services": ["free-ai-selector-business-api", "free-ai-selector-data-postgres-api", "free-ai-selector-telegram-bot", "free-ai-selector-health-worker"]
+      "services": [
+        "free-ai-selector-business-api",
+        "free-ai-selector-data-postgres-api",
+        "free-ai-selector-telegram-bot",
+        "free-ai-selector-health-worker"
+      ]
     },
     "F007": {
       "name": "response-time-none-fix",
@@ -193,7 +277,9 @@
       "description": "Fix dict.get() returning None instead of 0.0 for response_time, causing 422 errors on statistics update",
       "created": "2025-12-31",
       "status": "RESEARCH_DONE",
-      "services": ["free-ai-selector-business-api"]
+      "services": [
+        "free-ai-selector-business-api"
+      ]
     },
     "F008": {
       "name": "provider-registry-ssot",
@@ -201,7 +287,11 @@
       "description": "Замена 8 hardcoded источников провайдеров на PostgreSQL как SSOT (seed.py → DB → Data API)",
       "created": "2025-12-31",
       "status": "DEPLOYED",
-      "services": ["free-ai-selector-business-api", "free-ai-selector-health-worker", "free-ai-selector-data-postgres-api"]
+      "services": [
+        "free-ai-selector-business-api",
+        "free-ai-selector-health-worker",
+        "free-ai-selector-data-postgres-api"
+      ]
     },
     "F009": {
       "name": "security-logging-hardening",
@@ -209,7 +299,12 @@
       "description": "SensitiveDataFilter в structlog для автоматической фильтрации секретов, ROOT_PATH для Data API, удаление hardcoded mount",
       "created": "2026-01-01",
       "status": "DEPLOYED",
-      "services": ["free-ai-selector-business-api", "free-ai-selector-data-postgres-api", "free-ai-selector-telegram-bot", "free-ai-selector-health-worker"]
+      "services": [
+        "free-ai-selector-business-api",
+        "free-ai-selector-data-postgres-api",
+        "free-ai-selector-telegram-bot",
+        "free-ai-selector-health-worker"
+      ]
     },
     "F010": {
       "name": "rolling-window-reliability",
@@ -217,7 +312,10 @@
       "description": "Расчёт reliability_score на основе данных за последние 7 дней из prompt_history для актуального выбора AI модели",
       "created": "2026-01-02",
       "status": "DEPLOYED",
-      "services": ["free-ai-selector-data-postgres-api", "free-ai-selector-business-api"]
+      "services": [
+        "free-ai-selector-data-postgres-api",
+        "free-ai-selector-business-api"
+      ]
     },
     "F011-A": {
       "name": "remove-non-openai-providers",
@@ -226,8 +324,13 @@
       "created": "2026-01-15",
       "status": "DEPLOYED",
       "deployed": "2026-01-15",
-      "services": ["free-ai-selector-business-api", "free-ai-selector-data-postgres-api"],
-      "blocks": ["F011-B"],
+      "services": [
+        "free-ai-selector-business-api",
+        "free-ai-selector-data-postgres-api"
+      ],
+      "blocks": [
+        "F011-B"
+      ],
       "artifacts": {
         "prd": "prd/2026-01-15_F011-A_remove-non-openai-providers-prd.md",
         "research": "research/2026-01-15_F011-A_remove-non-openai-providers-research.md",
@@ -243,12 +346,17 @@
       "title": "System Prompts & JSON Response Support",
       "description": "Поддержка system prompts и response_format параметров для 14 OpenAI-compatible провайдеров",
       "created": "2026-01-15",
-      "status": "ALL_GATES_PASSED",
-      "services": ["free-ai-selector-business-api"],
-      "blocked_by": ["F011-A"],
+      "status": "IMPLEMENT_OK",
+      "services": [
+        "free-ai-selector-business-api"
+      ],
+      "blocked_by": [
+        "F011-A"
+      ],
       "artifacts": {
         "prd": "prd/2026-01-15_F011-B_system-prompts-json-response-prd.md",
-        "research": "research/2026-01-15_F011-B_system-prompts-json-response-research.md"
+        "research": "research/2026-01-15_F011-B_system-prompts-json-response-research.md",
+        "plan": "plans/2026-01-15_F011-B_system-prompts-json-response-plan.md"
       }
     },
     "F011-C": {
@@ -283,6 +391,6 @@
       }
     }
   },
-
-  "next_feature_id": 12
+  "next_feature_id": 12,
+  "services": []
 }

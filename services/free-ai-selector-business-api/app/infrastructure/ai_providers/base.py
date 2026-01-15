@@ -24,6 +24,11 @@ class AIProviderBase(ABC):
         Args:
             prompt: User's prompt text
             **kwargs: Additional provider-specific parameters
+                - system_prompt (str, optional): System prompt for AI guidance (F011-B)
+                - response_format (dict, optional): Response format specification (F011-B)
+                    Example: {"type": "json_object"}
+                - max_tokens (int, optional): Maximum tokens to generate
+                - temperature (float, optional): Sampling temperature
 
         Returns:
             Generated response text

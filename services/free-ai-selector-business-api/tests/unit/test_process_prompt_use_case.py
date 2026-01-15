@@ -250,3 +250,189 @@ class TestModelSelection:
         assert model1.decision_reason == "fallback"
         assert model2.decision_reason == "fallback"
         assert model2.effective_reliability_score > model1.effective_reliability_score
+
+
+@pytest.mark.unit
+class TestF011BSystemPromptsAndResponseFormat:
+    """Test F011-B: System Prompts & JSON Response Support."""
+
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_system_prompt_passed_to_provider(self, mock_registry, mock_data_api_client):
+        """Test that system_prompt is correctly passed to AI provider (F011-B)."""
+        # Mock AI provider from registry
+        mock_provider = AsyncMock()
+        mock_provider.generate.return_value = "Generated response"
+        mock_registry.get_provider.return_value = mock_provider
+
+        # Mock models returned from Data API
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Test Model",
+                provider="Groq",
+                api_endpoint="https://api.test.com",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+                recent_request_count=0,
+                decision_reason="fallback",
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(
+            user_id="test_user",
+            prompt_text="Test prompt",
+            system_prompt="You are a helpful assistant.",  # F011-B
+        )
+
+        response = await use_case.execute(request)
+
+        assert response.success is True
+        # Verify system_prompt was passed to provider.generate()
+        mock_provider.generate.assert_called_once()
+        call_args = mock_provider.generate.call_args
+        assert call_args[0][0] == "Test prompt"  # First positional arg is prompt
+        assert call_args[1]["system_prompt"] == "You are a helpful assistant."  # F011-B kwarg
+
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_response_format_passed_to_provider(self, mock_registry, mock_data_api_client):
+        """Test that response_format is correctly passed to AI provider (F011-B)."""
+        # Mock AI provider from registry
+        mock_provider = AsyncMock()
+        mock_provider.generate.return_value = '{"result": "test"}'
+        mock_registry.get_provider.return_value = mock_provider
+
+        # Mock models returned from Data API
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Test Model",
+                provider="SambaNova",
+                api_endpoint="https://api.test.com",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+                recent_request_count=0,
+                decision_reason="fallback",
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(
+            user_id="test_user",
+            prompt_text="Test prompt",
+            response_format={"type": "json_object"},  # F011-B
+        )
+
+        response = await use_case.execute(request)
+
+        assert response.success is True
+        # Verify response_format was passed to provider.generate()
+        mock_provider.generate.assert_called_once()
+        call_args = mock_provider.generate.call_args
+        assert call_args[0][0] == "Test prompt"  # First positional arg is prompt
+        assert call_args[1]["response_format"] == {"type": "json_object"}  # F011-B kwarg
+
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_both_system_prompt_and_response_format(self, mock_registry, mock_data_api_client):
+        """Test that both system_prompt and response_format are passed together (F011-B)."""
+        # Mock AI provider from registry
+        mock_provider = AsyncMock()
+        mock_provider.generate.return_value = '{"answer": "42"}'
+        mock_registry.get_provider.return_value = mock_provider
+
+        # Mock models returned from Data API
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Test Model",
+                provider="Cloudflare",
+                api_endpoint="https://api.test.com",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+                recent_request_count=0,
+                decision_reason="fallback",
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(
+            user_id="test_user",
+            prompt_text="What is the answer?",
+            system_prompt="You are a JSON-only assistant.",  # F011-B
+            response_format={"type": "json_object"},  # F011-B
+        )
+
+        response = await use_case.execute(request)
+
+        assert response.success is True
+        # Verify both parameters were passed to provider.generate()
+        mock_provider.generate.assert_called_once()
+        call_args = mock_provider.generate.call_args
+        assert call_args[0][0] == "What is the answer?"
+        assert call_args[1]["system_prompt"] == "You are a JSON-only assistant."
+        assert call_args[1]["response_format"] == {"type": "json_object"}
+
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_fallback_preserves_system_prompt_and_response_format(
+        self, mock_registry, mock_data_api_client
+    ):
+        """Test that system_prompt and response_format are passed to fallback provider (F011-B)."""
+        # Mock primary provider (fails)
+        mock_primary_provider = AsyncMock()
+        mock_primary_provider.generate.side_effect = Exception("API Error")
+
+        # Mock fallback provider (succeeds)
+        mock_fallback_provider = AsyncMock()
+        mock_fallback_provider.generate.return_value = "Fallback response"
+
+        # Registry returns different providers for primary and fallback
+        mock_registry.get_provider.side_effect = [mock_primary_provider, mock_fallback_provider]
+
+        # Mock models returned from Data API (2 models for fallback)
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Primary Model",
+                provider="Groq",
+                api_endpoint="https://api1.test.com",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+                recent_request_count=0,
+                decision_reason="fallback",
+            ),
+            AIModelInfo(
+                id=2,
+                name="Fallback Model",
+                provider="Cerebras",
+                api_endpoint="https://api2.test.com",
+                reliability_score=0.85,
+                is_active=True,
+                effective_reliability_score=0.85,
+                recent_request_count=0,
+                decision_reason="fallback",
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(
+            user_id="test_user",
+            prompt_text="Test prompt",
+            system_prompt="Test system",  # F011-B
+            response_format={"type": "json_object"},  # F011-B
+        )
+
+        response = await use_case.execute(request)
+
+        assert response.success is True
+        assert response.response_text == "Fallback response"
+
+        # Verify fallback provider received the same parameters
+        assert mock_fallback_provider.generate.call_count == 1
+        fallback_call_args = mock_fallback_provider.generate.call_args
+        assert fallback_call_args[0][0] == "Test prompt"
+        assert fallback_call_args[1]["system_prompt"] == "Test system"
+        assert fallback_call_args[1]["response_format"] == {"type": "json_object"}

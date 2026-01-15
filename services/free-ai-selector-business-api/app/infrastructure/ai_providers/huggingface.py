@@ -44,7 +44,11 @@ class HuggingFaceProvider(AIProviderBase):
 
         Args:
             prompt: User's prompt text
-            **kwargs: Additional parameters (max_tokens, temperature, etc.)
+            **kwargs: Additional parameters
+                - system_prompt (str, optional): System prompt for AI guidance (F011-B)
+                - response_format (dict, optional): Response format specification (F011-B)
+                - max_tokens (int, optional): Maximum tokens to generate
+                - temperature (float, optional): Sampling temperature
 
         Returns:
             Generated response text
@@ -56,16 +60,37 @@ class HuggingFaceProvider(AIProviderBase):
         if not self.api_key:
             raise ValueError("HuggingFace API key is required")
 
+        # F011-B: Extract new kwargs
+        system_prompt = kwargs.get("system_prompt")
+        response_format = kwargs.get("response_format")
+
         headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+
+        # F011-B: Build messages array (OpenAI format)
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
 
         # OpenAI-compatible format
         payload = {
             "model": self.model,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": messages,
             "max_tokens": kwargs.get("max_tokens", 512),
             "temperature": kwargs.get("temperature", 0.7),
             "top_p": kwargs.get("top_p", 0.9),
         }
+
+        # F011-B: Add response_format if supported and provided
+        if response_format:
+            if self._supports_response_format():
+                payload["response_format"] = response_format
+            else:
+                logger.warning(
+                    "response_format_not_supported",
+                    provider=self.get_provider_name(),
+                    requested_format=response_format,
+                )
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             try:
@@ -115,3 +140,12 @@ class HuggingFaceProvider(AIProviderBase):
     def get_provider_name(self) -> str:
         """Get provider name."""
         return "HuggingFace"
+
+    def _supports_response_format(self) -> bool:
+        """
+        Check if provider supports response_format parameter.
+
+        F011-B: HuggingFace support for response_format is TBD.
+        Using graceful degradation (returns False).
+        """
+        return False
