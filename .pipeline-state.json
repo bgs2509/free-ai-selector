@@ -13,18 +13,20 @@
   },
   "current_stage": 8,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-01-15T17:30:00Z",
+  "updated_at": "2026-01-15T18:00:00Z",
 
   "current_feature": {
     "id": "F011-A",
     "name": "remove-non-openai-providers",
     "title": "Удаление нестандартных AI провайдеров (GoogleGemini и Cohere)",
     "created": "2026-01-15",
-    "stage": "ALL_GATES_PASSED",
+    "stage": "DEPLOYED",
+    "deployed": "2026-01-15",
     "artifacts": {
       "prd": "prd/2026-01-15_F011-A_remove-non-openai-providers-prd.md",
       "research": "research/2026-01-15_F011-A_remove-non-openai-providers-research.md",
-      "plan": "plans/2026-01-15_F011-A_remove-non-openai-providers-plan.md"
+      "plan": "plans/2026-01-15_F011-A_remove-non-openai-providers-plan.md",
+      "completion": "reports/2026-01-15_F011-A_remove-non-openai-providers-completion.md"
     }
   },
 
@@ -124,21 +126,11 @@
     },
     "DEPLOYED": {
       "passed": true,
-      "passed_at": "2026-01-03T21:00:00Z",
-      "containers": {
-        "postgres": "healthy",
-        "data-postgres-api": "healthy",
-        "business-api": "healthy",
-        "telegram-bot": "running",
-        "health-worker": "running"
-      },
-      "verification": {
-        "health_check": "OK",
-        "f010_include_recent": "OK",
-        "f010_window_days": "OK",
-        "f010_effective_score": "OK",
-        "f010_decision_reason": "OK"
-      }
+      "passed_at": "2026-01-15T18:00:00Z",
+      "deployment_method": "make build && make up",
+      "health_checks": "OK",
+      "providers_active": 14,
+      "notes": "F011-A deployed successfully. 14 OpenAI-compatible providers active. GoogleGemini and Cohere removed. Completion Report created."
     }
   },
 
@@ -232,13 +224,18 @@
       "title": "Удаление нестандартных AI провайдеров (GoogleGemini и Cohere)",
       "description": "Удаление GoogleGemini и Cohere провайдеров для упрощения кодовой базы перед добавлением system prompts и response_format",
       "created": "2026-01-15",
-      "status": "VALIDATED",
+      "status": "DEPLOYED",
+      "deployed": "2026-01-15",
       "services": ["free-ai-selector-business-api", "free-ai-selector-data-postgres-api"],
       "blocks": ["F011-B"],
       "artifacts": {
         "prd": "prd/2026-01-15_F011-A_remove-non-openai-providers-prd.md",
         "research": "research/2026-01-15_F011-A_remove-non-openai-providers-research.md",
-        "plan": "plans/2026-01-15_F011-A_remove-non-openai-providers-plan.md"
+        "plan": "plans/2026-01-15_F011-A_remove-non-openai-providers-plan.md",
+        "review": "reports/2026-01-15_F011-A_remove-non-openai-providers-review.md",
+        "qa": "reports/2026-01-15_F011-A_remove-non-openai-providers-qa.md",
+        "validation": "reports/2026-01-15_F011-A_remove-non-openai-providers-validation.md",
+        "completion": "reports/2026-01-15_F011-A_remove-non-openai-providers-completion.md"
       }
     },
     "F011-B": {
