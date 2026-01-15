@@ -243,15 +243,46 @@
       "title": "System Prompts & JSON Response Support",
       "description": "Поддержка system prompts и response_format параметров для 14 OpenAI-compatible провайдеров",
       "created": "2026-01-15",
-      "status": "RESEARCH_DONE",
+      "status": "ALL_GATES_PASSED",
       "services": ["free-ai-selector-business-api"],
       "blocked_by": ["F011-A"],
       "artifacts": {
         "prd": "prd/2026-01-15_F011-B_system-prompts-json-response-prd.md",
         "research": "research/2026-01-15_F011-B_system-prompts-json-response-research.md"
       }
+    },
+    "F011-C": {
+      "name": "web-ui-advanced-params",
+      "title": "Веб-интерфейс: добавление system_prompt и response_format",
+      "description": "Добавление поддержки system_prompt и response_format в веб-интерфейс (index.html)",
+      "created": "2026-01-15",
+      "status": "IMPLEMENT_OK",
+      "services": ["free-ai-selector-business-api"],
+      "blocked_by": ["F011-B"],
+      "artifacts": {
+        "prd": "prd/2026-01-15_F011-C_web-ui-advanced-params-prd.md",
+        "research": "research/2026-01-15_F011-C_web-ui-advanced-params-research.md",
+        "plan": "plans/2026-01-15_F011-C_web-ui-advanced-params-plan.md",
+        "completion": "reports/2026-01-15_F011-C_web-ui-advanced-params-completion.md"
+      },
+      "implementation": {
+        "passed_at": "2026-01-15T21:30:00Z",
+        "files_modified": 1,
+        "lines_added": 66,
+        "lines_modified": 20,
+        "implementation_steps": [
+          "Added CSS classes for format selector (5 classes)",
+          "Added HTML textarea for system_prompt with maxlength=5000",
+          "Added HTML radio buttons for response_format (Text/JSON)",
+          "Modified sendPrompt() to include system_prompt and response_format in payload",
+          "Added client-side validation (5000 characters limit)"
+        ],
+        "files_changed": [
+          "services/free-ai-selector-business-api/app/static/index.html"
+        ]
+      }
     }
   },
 
-  "next_feature_id": 11
+  "next_feature_id": 12
 }
