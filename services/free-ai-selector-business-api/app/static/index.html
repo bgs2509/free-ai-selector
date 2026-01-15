@@ -76,6 +76,11 @@
         }
         textarea:focus { outline: none; border-color: var(--primary); border-style: solid; }
         textarea::placeholder { color: var(--text-muted); }
+        .format-selector { margin-bottom: 16px; }
+        .format-label { display: block; font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+        .radio-group { display: flex; gap: 12px; }
+        .radio-option { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; color: var(--text-light); }
+        .radio-option input { cursor: pointer; }
         .btn-primary {
             display: flex;
             align-items: center;
@@ -212,6 +217,22 @@
             <div class="tab-content">
                 <div id="chat" class="tab-pane active">
                     <textarea id="prompt-input" placeholder="Введите ваш запрос к AI..." rows="4"></textarea>
+                    <textarea id="system-prompt-input" placeholder="System prompt (опционально)" rows="3" maxlength="5000"></textarea>
+
+                    <div class="format-selector">
+                        <label class="format-label">Формат ответа:</label>
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="response-format" value="text" checked>
+                                <span>Текст</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="response-format" value="json">
+                                <span>JSON</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <button id="send-btn" class="btn-primary" onclick="sendPrompt()">
                         <span id="send-btn-text">Отправить</span>
                         <span id="send-btn-loader" class="loader hidden"></span>
@@ -326,16 +347,39 @@
 
         async function sendPrompt() {
             const input = document.getElementById('prompt-input');
+            const systemPromptInput = document.getElementById('system-prompt-input');
+            const formatRadios = document.getElementsByName('response-format');
             const sendBtn = document.getElementById('send-btn');
             const sendBtnText = document.getElementById('send-btn-text');
             const sendBtnLoader = document.getElementById('send-btn-loader');
             const responseBox = document.getElementById('chat-response');
             const errorBox = document.getElementById('chat-error');
+
             const prompt = input.value.trim();
             if (!prompt) { showError(errorBox, 'Введите текст запроса'); return; }
+
+            // Собрать payload
+            const payload = { prompt };
+
+            // Добавить system_prompt если заполнен
+            const systemPrompt = systemPromptInput.value.trim();
+            if (systemPrompt) {
+                if (systemPrompt.length > 5000) {
+                    showError(errorBox, 'System prompt не может превышать 5000 символов');
+                    return;
+                }
+                payload.system_prompt = systemPrompt;
+            }
+
+            // Добавить response_format если JSON выбран
+            const selectedFormat = Array.from(formatRadios).find(r => r.checked)?.value;
+            if (selectedFormat === 'json') {
+                payload.response_format = { type: "json_object" };
+            }
+
             sendBtn.disabled = true; hide(sendBtnText); show(sendBtnLoader); hide(responseBox); hide(errorBox);
             try {
-                const data = await apiCall('/api/v1/prompts/process', { method: 'POST', body: JSON.stringify({ prompt }) });
+                const data = await apiCall('/api/v1/prompts/process', { method: 'POST', body: JSON.stringify(payload) });
                 document.getElementById('response-model').textContent = data.selected_model || 'Неизвестно';
                 document.getElementById('response-provider').textContent = data.provider || 'Неизвестно';
                 document.getElementById('response-time').textContent = formatTime(data.response_time_seconds);
