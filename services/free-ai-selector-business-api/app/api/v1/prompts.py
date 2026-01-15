@@ -56,7 +56,12 @@ async def process_prompt(
         # Execute prompt processing
         # Use "api_user" as default user_id for REST API requests
         # Telegram bot will provide actual user IDs
-        prompt_request = PromptRequest(user_id="api_user", prompt_text=prompt_data.prompt)
+        prompt_request = PromptRequest(
+            user_id="api_user",
+            prompt_text=prompt_data.prompt,
+            system_prompt=prompt_data.system_prompt,
+            response_format=prompt_data.response_format
+        )
 
         response = await use_case.execute(prompt_request)
 
