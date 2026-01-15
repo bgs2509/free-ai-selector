@@ -13,18 +13,18 @@
   },
   "current_stage": 8,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-01-03T21:00:00Z",
+  "updated_at": "2026-01-15T17:30:00Z",
 
   "current_feature": {
-    "id": "F010",
-    "name": "rolling-window-reliability",
-    "title": "Rolling Window Reliability Score",
-    "created": "2026-01-02",
-    "stage": "DEPLOYED",
+    "id": "F011-A",
+    "name": "remove-non-openai-providers",
+    "title": "Удаление нестандартных AI провайдеров (GoogleGemini и Cohere)",
+    "created": "2026-01-15",
+    "stage": "ALL_GATES_PASSED",
     "artifacts": {
-      "prd": "prd/2026-01-02_F010_rolling-window-reliability-prd.md",
-      "research": "research/2026-01-02_F010_rolling-window-reliability-research.md",
-      "plan": "plans/2026-01-02_F010_rolling-window-reliability-plan.md"
+      "prd": "prd/2026-01-15_F011-A_remove-non-openai-providers-prd.md",
+      "research": "research/2026-01-15_F011-A_remove-non-openai-providers-research.md",
+      "plan": "plans/2026-01-15_F011-A_remove-non-openai-providers-plan.md"
     }
   },
 
@@ -90,46 +90,37 @@
     },
     "REVIEW_OK": {
       "passed": true,
-      "passed_at": "2026-01-03T18:30:00Z",
-      "artifact": "ai-docs/docs/reports/2026-01-03_F010_rolling-window-reliability-review.md",
-      "issues": {
-        "blocker": 0,
-        "critical": 0,
-        "major": 0,
-        "minor": 0,
-        "info": 0
-      }
+      "passed_at": "2026-01-15T16:30:00Z",
+      "artifact": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-review.md",
+      "decision": "APPROVED_WITH_COMMENTS",
+      "blocker_issues": 0,
+      "critical_issues": 0,
+      "minor_issues": 3,
+      "notes": "Clean implementation. F008 SSOT maintained. 3 minor cosmetic issues (non-blocking). Safe to merge."
     },
     "QA_PASSED": {
       "passed": true,
-      "passed_at": "2026-01-03T19:00:00Z",
-      "artifact": "ai-docs/docs/reports/2026-01-03_F010_rolling-window-reliability-qa.md",
-      "tests": {
-        "f010_specific": "8/8 passed",
-        "business_api_total": "61/75 passed (14 pre-existing failures)",
-        "data_api_total": "14/21 passed (7 aiosqlite errors)"
-      },
-      "coverage": {
-        "business_api": "55%",
-        "note": "F010 code paths fully covered, overall coverage pre-existing issue"
-      },
-      "requirements_verified": {
-        "FR": "8/8",
-        "INT": "2/2",
-        "NF": "3/3"
-      }
+      "passed_at": "2026-01-15T17:00:00Z",
+      "artifact": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-qa.md",
+      "tests_executed": 95,
+      "tests_passed": 70,
+      "tests_failed": 18,
+      "f011a_specific_failures": 0,
+      "coverage_data_api": "55.26%",
+      "coverage_business_api": "56.74%",
+      "pre_existing_issues": 18,
+      "notes": "QA PASSED with conditions: All F011-A requirements verified. 0 F011-A failures. 18 pre-existing test failures tracked separately as technical debt. Coverage below 75% is pre-existing issue."
     },
     "ALL_GATES_PASSED": {
       "passed": true,
-      "passed_at": "2026-01-03T20:00:00Z",
-      "artifact": "ai-docs/docs/reports/2026-01-03_F010_rolling-window-reliability-validation.md",
-      "requirements_traced": {
-        "FR": "8/8",
-        "INT": "2/2",
-        "NF": "3/3",
-        "total": "13/13 (100%)"
+      "passed_at": "2026-01-15T17:30:00Z",
+      "artifacts": {
+        "rtm": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-rtm.md",
+        "validation": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-validation.md"
       },
-      "rtm_updated": true
+      "requirements_coverage": "100%",
+      "gates_passed": 8,
+      "notes": "All requirements traced and verified. 100% implementation, testing, and verification coverage. Ready for deployment."
     },
     "DEPLOYED": {
       "passed": true,
@@ -152,7 +143,7 @@
   },
 
   "artifacts": {
-    "prd": "ai-docs/docs/prd/2026-01-02_F010_rolling-window-reliability-prd.md"
+    "prd": "ai-docs/docs/prd/2026-01-15_F011-A_remove-non-openai-providers-prd.md"
   },
 
   "features_registry": {
@@ -235,6 +226,33 @@
       "created": "2026-01-02",
       "status": "DEPLOYED",
       "services": ["free-ai-selector-data-postgres-api", "free-ai-selector-business-api"]
+    },
+    "F011-A": {
+      "name": "remove-non-openai-providers",
+      "title": "Удаление нестандартных AI провайдеров (GoogleGemini и Cohere)",
+      "description": "Удаление GoogleGemini и Cohere провайдеров для упрощения кодовой базы перед добавлением system prompts и response_format",
+      "created": "2026-01-15",
+      "status": "VALIDATED",
+      "services": ["free-ai-selector-business-api", "free-ai-selector-data-postgres-api"],
+      "blocks": ["F011-B"],
+      "artifacts": {
+        "prd": "prd/2026-01-15_F011-A_remove-non-openai-providers-prd.md",
+        "research": "research/2026-01-15_F011-A_remove-non-openai-providers-research.md",
+        "plan": "plans/2026-01-15_F011-A_remove-non-openai-providers-plan.md"
+      }
+    },
+    "F011-B": {
+      "name": "system-prompts-json-response",
+      "title": "System Prompts & JSON Response Support",
+      "description": "Поддержка system prompts и response_format параметров для 14 OpenAI-compatible провайдеров",
+      "created": "2026-01-15",
+      "status": "RESEARCH_DONE",
+      "services": ["free-ai-selector-business-api"],
+      "blocked_by": ["F011-A"],
+      "artifacts": {
+        "prd": "prd/2026-01-15_F011-B_system-prompts-json-response-prd.md",
+        "research": "research/2026-01-15_F011-B_system-prompts-json-response-research.md"
+      }
     }
   },
 
