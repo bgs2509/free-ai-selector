@@ -104,7 +104,11 @@ class CerebrasProvider(AIProviderBase):
                 # OpenAI-compatible response format
                 if "choices" in result and len(result["choices"]) > 0:
                     message = result["choices"][0].get("message", {})
-                    return message.get("content", "").strip()
+                    content = message.get("content", "")
+                    # Handle both string and list content
+                    if isinstance(content, list):
+                        content = " ".join(str(item) for item in content)
+                    return str(content).strip()
                 else:
                     logger.error(f"Unexpected Cerebras response format: {sanitize_error_message(str(result))}")
                     raise ValueError("Invalid response format from Cerebras")
