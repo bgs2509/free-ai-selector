@@ -1,5 +1,3 @@
-from app.utils.security import sanitize_error_message
-
 """
 Migration script to remove obsolete AI providers and prepare for new ones.
 
@@ -19,6 +17,7 @@ from sqlalchemy import select
 
 from app.infrastructure.database.connection import AsyncSessionLocal
 from app.infrastructure.database.models import AIModelORM
+from app.utils.security import sanitize_error_message
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

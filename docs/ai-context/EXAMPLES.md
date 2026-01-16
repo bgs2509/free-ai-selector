@@ -78,9 +78,9 @@ import logging
 from app.domain.models import PromptRequest, PromptResponse, AIModelInfo
 from app.infrastructure.http_clients.data_api_client import DataAPIClient
 from app.infrastructure.ai_providers.base import AIProviderBase
-from app.infrastructure.ai_providers.google_gemini import GoogleGeminiProvider
 from app.infrastructure.ai_providers.groq import GroqProvider
-# ... other imports
+from app.infrastructure.ai_providers.deepseek import DeepSeekProvider
+# ... other imports (14 total providers)
 
 logger = logging.getLogger(__name__)
 
@@ -104,15 +104,12 @@ class ProcessPromptUseCase:
             data_api_client: HTTP клиент для Data API
         """
         self.data_api_client = data_api_client
-        # 6 verified free-tier providers, no credit card required
-        self.providers: dict[str, AIProviderBase] = {
-            "GoogleGemini": GoogleGeminiProvider(),
-            "Groq": GroqProvider(),
-            "Cerebras": CerebrasProvider(),
-            "SambaNova": SambanovaProvider(),
-            "HuggingFace": HuggingFaceProvider(),
-            "Cloudflare": CloudflareProvider(),
-        }
+        # 14 verified free-tier providers (F003 + F008 SSOT)
+        # Providers loaded from registry (see registry.py)
+        # Existing: Groq, Cerebras, SambaNova, HuggingFace, Cloudflare
+        # New F003: DeepSeek, OpenRouter, GitHubModels, Fireworks,
+        #           Hyperbolic, Novita, Scaleway, Kluster, Nebius
+        self.providers: dict[str, AIProviderBase] = ProviderRegistry.get_all_providers()
 
     async def execute(self, request: PromptRequest) -> PromptResponse:
         """
@@ -202,83 +199,93 @@ class ProcessPromptUseCase:
 
 ## 3. AI Provider Example
 
-### GoogleGeminiProvider
+### DeepSeekProvider (F003)
 
 ```python
-# services/free-ai-selector-business-api/app/infrastructure/ai_providers/google_gemini.py
+# services/free-ai-selector-business-api/app/infrastructure/ai_providers/deepseek.py
 
 import os
 import httpx
 from app.infrastructure.ai_providers.base import AIProviderBase
 
 
-class GoogleGeminiProvider(AIProviderBase):
+class DeepSeekProvider(AIProviderBase):
     """
-    Google Gemini AI провайдер.
+    DeepSeek AI провайдер.
 
-    Free tier: 10 RPM, 250 RPD, no credit card required.
-    Model: Gemini 2.5 Flash
+    Free tier: 60 RPM, no credit card required.
+    Model: DeepSeek Chat
+    OpenAI-compatible API format.
     """
 
-    def __init__(self):
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         """Инициализация провайдера."""
-        self.api_key = os.getenv("GOOGLE_AI_STUDIO_API_KEY")
-        self.base_url = "https://generativelanguage.googleapis.com/v1beta"
-        self.model = "gemini-2.5-flash-preview-05-20"
+        self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY", "")
+        self.model = model or "deepseek-chat"
+        self.api_url = "https://api.deepseek.com/v1/chat/completions"
+        self.timeout = 30.0
 
     async def generate(self, prompt: str, **kwargs) -> str:
         """
-        Сгенерировать ответ с помощью Google Gemini.
+        Сгенерировать ответ с помощью DeepSeek.
 
         Args:
             prompt: Текст промпта
-            **kwargs: Дополнительные параметры (temperature, max_tokens)
+            **kwargs: Дополнительные параметры (max_tokens, temperature, system_prompt, response_format)
 
         Returns:
             Сгенерированный текст
 
         Raises:
-            Exception: При ошибке API
+            ValueError: Если API ключ отсутствует
+            httpx.HTTPError: При ошибке API
         """
-        url = f"{self.base_url}/models/{self.model}:generateContent"
+        if not self.api_key:
+            raise ValueError("DeepSeek API ключ обязателен")
+
+        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+
+        # F011-B: Support system_prompt and response_format
+        messages = []
+        if system_prompt := kwargs.get("system_prompt"):
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
 
         payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "temperature": kwargs.get("temperature", 0.7),
-                "maxOutputTokens": kwargs.get("max_tokens", 1024),
-            },
+            "model": self.model,
+            "messages": messages,
+            "max_tokens": kwargs.get("max_tokens", 512),
+            "temperature": kwargs.get("temperature", 0.7),
         }
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                url,
-                json=payload,
-                params={"key": self.api_key},
-            )
-            response.raise_for_status()
-            data = response.json()
+        if response_format := kwargs.get("response_format"):
+            payload["response_format"] = response_format
 
-            return data["candidates"][0]["content"]["parts"][0]["text"]
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            response = await client.post(self.api_url, headers=headers, json=payload)
+            response.raise_for_status()
+            result = response.json()
+            return result["choices"][0]["message"]["content"].strip()
 
     async def health_check(self) -> bool:
         """
-        Проверить доступность Google Gemini API.
+        Проверить доступность DeepSeek API.
 
         Returns:
             True если API доступен
         """
+        if not self.api_key:
+            return False
         try:
-            url = f"{self.base_url}/models"
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.get(url, params={"key": self.api_key})
-                return response.status_code == 200
+            # Simple test request
+            await self.generate("test", max_tokens=1)
+            return True
         except Exception:
             return False
 
     def get_provider_name(self) -> str:
         """Вернуть имя провайдера."""
-        return "GoogleGemini"
+        return "DeepSeek"
 ```
 
 ---
@@ -479,7 +486,7 @@ class TestProcessPromptUseCase:
             AIModelInfo(
                 id=1,
                 name="Model A",
-                provider="GoogleGemini",
+                provider="DeepSeek",
                 api_endpoint="https://api.example.com",
                 reliability_score=0.8,
                 is_active=True,
@@ -504,7 +511,7 @@ class TestProcessPromptUseCase:
         # Mock providers
         mock_provider = AsyncMock()
         mock_provider.generate = AsyncMock(return_value="AI response")
-        uc.providers = {"Groq": mock_provider, "GoogleGemini": mock_provider}
+        uc.providers = {"Groq": mock_provider, "DeepSeek": mock_provider}
         return uc
 
     def test_select_best_model(self, use_case, mock_data_api_client):
@@ -542,7 +549,7 @@ class TestProcessPromptUseCase:
 
         use_case.providers = {
             "Groq": failing_provider,
-            "GoogleGemini": working_provider,
+            "DeepSeek": working_provider,
         }
 
         request = PromptRequest(user_id="test_user", prompt_text="Hello")

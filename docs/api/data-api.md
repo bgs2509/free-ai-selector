@@ -42,9 +42,9 @@ curl "http://localhost:8001/api/v1/models?active_only=true"
   "models": [
     {
       "id": 1,
-      "name": "Gemini 2.5 Flash",
-      "provider": "GoogleGemini",
-      "api_endpoint": "https://generativelanguage.googleapis.com/v1beta",
+      "name": "DeepSeek Chat",
+      "provider": "DeepSeek",
+      "api_endpoint": "https://api.deepseek.com/v1",
       "success_count": 150,
       "failure_count": 10,
       "total_response_time": 225.5,
@@ -83,9 +83,9 @@ curl http://localhost:8001/api/v1/models/1
 ```json
 {
   "id": 1,
-  "name": "Gemini 2.5 Flash",
-  "provider": "GoogleGemini",
-  "api_endpoint": "https://generativelanguage.googleapis.com/v1beta",
+  "name": "DeepSeek Chat",
+  "provider": "DeepSeek",
+  "api_endpoint": "https://api.deepseek.com/v1",
   "success_count": 150,
   "failure_count": 10,
   "total_response_time": 225.5,

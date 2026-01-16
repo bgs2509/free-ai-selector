@@ -143,8 +143,9 @@ curl -X POST http://localhost:8000/api/v1/providers/test
 |------------|--------|----------|
 | `DATABASE_URL` | Data API | PostgreSQL connection string |
 | `DATA_API_URL` | Business API | URL Data API |
-| `GOOGLE_AI_STUDIO_API_KEY` | Business API | Google Gemini ключ |
 | `GROQ_API_KEY` | Business API | Groq ключ |
+| `DEEPSEEK_API_KEY` | Business API | DeepSeek ключ |
+| `CEREBRAS_API_KEY` | Business API | Cerebras ключ |
 
 ### Опциональные
 
@@ -211,7 +212,7 @@ docker compose logs -f free-ai-selector-business-api
   "level": "INFO",
   "service": "business-api",
   "message": "Prompt processed successfully",
-  "model": "Gemini 2.5 Flash",
+  "model": "DeepSeek Chat",
   "response_time": 1.234
 }
 ```

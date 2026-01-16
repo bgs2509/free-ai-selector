@@ -126,7 +126,7 @@ make down && make up
 
 | Провайдер | RPM | RPD |
 |-----------|-----|-----|
-| Google Gemini | 10 | 250 |
+| DeepSeek | 60 | unlimited |
 | Groq | 20 | 14,400 |
 | Cerebras | 30 | unlimited |
 | SambaNova | 20 | unlimited |

@@ -29,7 +29,6 @@ class TestIsSensitiveField:
 
     def test_project_specific_fields(self):
         """Специфичные поля проекта маскируются."""
-        assert _is_sensitive_field("google_ai_studio_api_key") is True
         assert _is_sensitive_field("groq_api_key") is True
         assert _is_sensitive_field("huggingface_api_key") is True
         assert _is_sensitive_field("telegram_bot_token") is True
@@ -216,14 +215,12 @@ class TestProjectSpecificFields:
     def test_all_provider_keys_masked(self):
         """Все API ключи провайдеров маскируются."""
         provider_fields = [
-            "google_ai_studio_api_key",
             "groq_api_key",
             "cerebras_api_key",
             "sambanova_api_key",
             "huggingface_api_key",
             "cloudflare_api_token",
             "deepseek_api_key",
-            "cohere_api_key",
             "openrouter_api_key",
             "github_token",
             "fireworks_api_key",

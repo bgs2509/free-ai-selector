@@ -40,7 +40,7 @@ class AIModelRepository:
         """
         query = select(AIModelORM)
         if active_only:
-            query = query.where(AIModelORM.is_active == True)
+            query = query.where(AIModelORM.is_active)
 
         result = await self.session.execute(query)
         orm_models = result.scalars().all()

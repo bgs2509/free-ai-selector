@@ -4,24 +4,13 @@
 
 ## Обзор
 
-Free AI Selector интегрирован с 6 бесплатными AI-провайдерами. Все работают без кредитной карты.
+Free AI Selector интегрирован с 14 бесплатными AI-провайдерами. Все работают без кредитной карты.
 
 ## Список провайдеров
 
-### 1. Google Gemini
+### Существующие провайдеры (5 шт.)
 
-| Параметр | Значение |
-|----------|----------|
-| Класс | `GoogleGeminiProvider` |
-| Модель | Gemini 2.5 Flash Preview |
-| Rate Limit | 10 RPM, 250 RPD |
-| Скорость | Средняя |
-| Качество | Высокое |
-| API Key | `GOOGLE_AI_STUDIO_API_KEY` |
-
-**Получение ключа:** [Google AI Studio](https://aistudio.google.com/apikey)
-
-### 2. Groq
+#### 1. Groq
 
 | Параметр | Значение |
 |----------|----------|
@@ -34,7 +23,7 @@ Free AI Selector интегрирован с 6 бесплатными AI-про�
 
 **Получение ключа:** [Groq Console](https://console.groq.com/keys)
 
-### 3. Cerebras
+#### 2. Cerebras
 
 | Параметр | Значение |
 |----------|----------|
@@ -47,7 +36,7 @@ Free AI Selector интегрирован с 6 бесплатными AI-про�
 
 **Получение ключа:** [Cerebras Cloud](https://cloud.cerebras.ai/)
 
-### 4. SambaNova
+#### 3. SambaNova
 
 | Параметр | Значение |
 |----------|----------|
@@ -60,7 +49,7 @@ Free AI Selector интегрирован с 6 бесплатными AI-про�
 
 **Получение ключа:** [SambaNova Cloud](https://cloud.sambanova.ai/)
 
-### 5. HuggingFace
+#### 4. HuggingFace
 
 | Параметр | Значение |
 |----------|----------|
@@ -73,7 +62,7 @@ Free AI Selector интегрирован с 6 бесплатными AI-про�
 
 **Получение ключа:** [HuggingFace Settings](https://huggingface.co/settings/tokens)
 
-### 6. Cloudflare Workers AI
+#### 5. Cloudflare Workers AI
 
 | Параметр | Значение |
 |----------|----------|
@@ -85,6 +74,71 @@ Free AI Selector интегрирован с 6 бесплатными AI-про�
 | API Keys | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` |
 
 **Получение ключей:** [Cloudflare Dashboard](https://dash.cloudflare.com/)
+
+### Новые провайдеры F003 (9 шт.)
+
+#### 6. DeepSeek
+- **Класс:** `DeepSeekProvider`
+- **Модель:** DeepSeek Chat
+- **Rate Limit:** 60 RPM
+- **API Key:** `DEEPSEEK_API_KEY`
+- **URL:** [DeepSeek Platform](https://platform.deepseek.com/)
+
+#### 7. OpenRouter
+- **Класс:** `OpenRouterProvider`
+- **Модель:** DeepSeek R1 Free
+- **Rate Limit:** 20 RPM
+- **API Key:** `OPENROUTER_API_KEY`
+- **URL:** [OpenRouter](https://openrouter.ai/)
+
+#### 8. GitHub Models
+- **Класс:** `GitHubModelsProvider`
+- **Модель:** GPT-4o Mini
+- **Rate Limit:** 15 RPM, 150 RPD
+- **API Key:** `GITHUB_TOKEN`
+- **URL:** [GitHub Models](https://github.com/marketplace/models)
+
+#### 9. Fireworks
+- **Класс:** `FireworksProvider`
+- **Модель:** Llama 3.1 70B
+- **Free Credits:** $1
+- **API Key:** `FIREWORKS_API_KEY`
+- **URL:** [Fireworks AI](https://fireworks.ai/)
+
+#### 10. Hyperbolic
+- **Класс:** `HyperbolicProvider`
+- **Модель:** Llama 3.1 70B
+- **Free Tier:** Available
+- **API Key:** `HYPERBOLIC_API_KEY`
+- **URL:** [Hyperbolic](https://hyperbolic.xyz/)
+
+#### 11. Novita
+- **Класс:** `NovitaProvider`
+- **Модель:** Llama 3.3 70B
+- **Free Tier:** Available
+- **API Key:** `NOVITA_API_KEY`
+- **URL:** [Novita AI](https://novita.ai/)
+
+#### 12. Scaleway
+- **Класс:** `ScalewayProvider`
+- **Модель:** Llama 3.3 70B
+- **Free Tier:** Available
+- **API Key:** `SCALEWAY_API_KEY`
+- **URL:** [Scaleway](https://www.scaleway.com/)
+
+#### 13. Kluster
+- **Класс:** `KlusterProvider`
+- **Модель:** Llama 3.3 70B
+- **Free Tier:** Available
+- **API Key:** `KLUSTER_API_KEY`
+- **URL:** [Kluster AI](https://kluster.ai/)
+
+#### 14. Nebius
+- **Класс:** `NebiusProvider`
+- **Модель:** Llama 3.3 70B
+- **Free Tier:** Available
+- **API Key:** `NEBIUS_API_KEY`
+- **URL:** [Nebius](https://nebius.ai/)
 
 ---
 

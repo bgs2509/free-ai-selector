@@ -142,7 +142,7 @@ class PromptHistoryRepository:
         query = select(PromptHistoryORM).order_by(desc(PromptHistoryORM.created_at)).limit(limit)
 
         if success_only:
-            query = query.where(PromptHistoryORM.success == True)
+            query = query.where(PromptHistoryORM.success)
 
         result = await self.session.execute(query)
         orm_histories = result.scalars().all()

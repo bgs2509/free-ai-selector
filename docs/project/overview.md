@@ -6,7 +6,7 @@
 
 ## Проблема
 
-Существует множество бесплатных AI API (Google Gemini, Groq, Cerebras, etc.), но:
+Существует множество бесплатных AI API (DeepSeek, Groq, Cerebras, etc.), но:
 
 - Каждый имеет разные rate limits
 - Доступность нестабильна
@@ -39,12 +39,13 @@ Health Worker каждый час проверяет все провайдеры
 
 | Провайдер | Модель | Особенности |
 |-----------|--------|-------------|
-| Google Gemini | Gemini 2.5 Flash | 10 RPM, высокое качество |
+| DeepSeek | DeepSeek Chat | 60 RPM, высокое качество |
 | Groq | Llama 3.3 70B | До 1800 tokens/sec |
 | Cerebras | Llama 3.3 70B | 1M tokens/day |
 | SambaNova | Llama 3.3 70B | 20 RPM |
 | HuggingFace | Llama 3 8B | 300+ моделей |
 | Cloudflare | Llama 3.3 70B | 10K neurons/day |
+| + 8 других F003 | Различные | См. документацию |
 
 ## Архитектура
 
@@ -62,12 +63,13 @@ graph TB
     end
 
     subgraph AI
-        G[Google Gemini]
+        DS[DeepSeek]
         GR[Groq]
         C[Cerebras]
         S[SambaNova]
         H[HuggingFace]
         CF[Cloudflare]
+        Others[+ 8 других F003]
     end
 
     subgraph Storage

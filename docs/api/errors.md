@@ -114,7 +114,7 @@
 
 ```json
 {
-  "detail": "Rate limit exceeded for GoogleGemini"
+  "detail": "Rate limit exceeded for DeepSeek"
 }
 ```
 

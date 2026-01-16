@@ -1,6 +1,6 @@
 # Руководство по получению API ключей
 
-> **Подробная инструкция по настройке всех 6 бесплатных AI провайдеров**
+> **Подробная инструкция по настройке 14 бесплатных AI провайдеров**
 
 Все провайдеры в этом списке **НЕ требуют кредитную карту** и предоставляют бесплатный доступ сразу после регистрации.
 
@@ -8,61 +8,28 @@
 
 ## Содержание
 
-1. [Google AI Studio (Gemini)](#1-google-ai-studio-gemini)
-2. [Groq](#2-groq)
-3. [Cerebras](#3-cerebras)
-4. [SambaNova](#4-sambanova)
-5. [HuggingFace](#5-huggingface)
-6. [Cloudflare Workers AI](#6-cloudflare-workers-ai)
-7. [Итоговая проверка конфигурации](#итоговая-проверка-конфигурации)
-8. [Troubleshooting](#troubleshooting)
+### Основные провайдеры (5 шт.)
+1. [Groq](#1-groq)
+2. [Cerebras](#2-cerebras)
+3. [SambaNova](#3-sambanova)
+4. [HuggingFace](#4-huggingface)
+5. [Cloudflare Workers AI](#5-cloudflare-workers-ai)
+
+### Новые провайдеры F003 (9 шт.)
+См. документацию на соответствующих платформах:
+- DeepSeek: https://platform.deepseek.com/
+- OpenRouter: https://openrouter.ai/
+- GitHub Models: https://github.com/marketplace/models
+- Fireworks: https://fireworks.ai/
+- Hyperbolic: https://hyperbolic.xyz/
+- Novita: https://novita.ai/
+- Scaleway: https://www.scaleway.com/
+- Kluster: https://kluster.ai/
+- Nebius: https://nebius.ai/
 
 ---
 
-## 1. Google AI Studio (Gemini)
-
-### Информация о Free Tier
-- **Модель**: Gemini 2.5 Flash
-- **Лимиты**: 10 запросов/минуту, 250 запросов/день
-- **Требуется кредитная карта**: НЕТ
-
-### Пошаговая инструкция
-
-#### Шаг 1: Переход на сайт
-Откройте в браузере: https://aistudio.google.com/apikey
-
-#### Шаг 2: Авторизация
-- Войдите через свой Google аккаунт
-- Если у вас нет аккаунта Google, создайте его на https://accounts.google.com/
-
-#### Шаг 3: Создание API ключа
-1. На странице "API Keys" нажмите кнопку **"Create API Key"** (синяя кнопка справа вверху)
-2. Выберите один из вариантов:
-   - **"Create API key in new project"** (рекомендуется для новых пользователей)
-   - **"Create API key in existing project"** (если у вас уже есть Google Cloud проект)
-3. Нажмите на выбранный вариант
-
-#### Шаг 4: Копирование ключа
-- API ключ будет сгенерирован мгновенно
-- Скопируйте ключ (кнопка "Copy" справа от ключа)
-- Ключ выглядит примерно так: `AIzaSyD...` (начинается с `AIzaSy`)
-
-#### Шаг 5: Добавление в .env файл
-Откройте файл `.env` в корне проекта и добавьте:
-
-```bash
-GOOGLE_AI_STUDIO_API_KEY=AIzaSyD_ваш_ключ_здесь
-```
-
-### Важные замечания
-- API ключ активен сразу после создания, ожидание не требуется
-- Ключ можно использовать неограниченно долго
-- Если потеряли ключ, создайте новый на той же странице
-- Не публикуйте ключ в публичных репозиториях!
-
----
-
-## 2. Groq
+## 1. Groq
 
 ### Информация о Free Tier
 - **Модель**: Llama 3.3 70B Versatile
@@ -111,7 +78,7 @@ GROQ_API_KEY=gsk_ваш_ключ_здесь
 
 ---
 
-## 3. Cerebras
+## 2. Cerebras
 
 ### Информация о Free Tier
 - **Модель**: Llama 3.3 70B
@@ -158,7 +125,7 @@ CEREBRAS_API_KEY=ваш_ключ_здесь
 
 ---
 
-## 4. SambaNova
+## 3. SambaNova
 
 ### Информация о Free Tier
 - **Модель**: Meta-Llama-3.3-70B-Instruct
@@ -207,7 +174,7 @@ SAMBANOVA_API_KEY=ваш_ключ_здесь
 
 ---
 
-## 5. HuggingFace
+## 4. HuggingFace
 
 ### Информация о Free Tier
 - **Модель**: Meta-Llama-3-8B-Instruct (и тысячи других)
@@ -260,7 +227,7 @@ HUGGINGFACE_API_KEY=hf_ваш_токен_здесь
 
 ---
 
-## 6. Cloudflare Workers AI
+## 5. Cloudflare Workers AI
 
 ### Информация о Free Tier
 - **Модель**: Llama 3.3 70B Instruct FP8 Fast
@@ -344,13 +311,9 @@ CLOUDFLARE_API_TOKEN=ваш_api_token_здесь
 
 ## Итоговая проверка конфигурации
 
-После получения всех ключей, ваш файл `.env` должен выглядеть так:
+После получения ключей, ваш файл `.env` должен выглядеть так (минимум 2-3 провайдера):
 
 ```bash
-# Google AI Studio - https://aistudio.google.com/apikey
-# Free tier: 10 RPM, 250 RPD
-GOOGLE_AI_STUDIO_API_KEY=AIzaSy...
-
 # Groq - https://console.groq.com/keys
 # Free tier: 20 RPM, 14,400 RPD, 1,800 tokens/sec
 GROQ_API_KEY=gsk_...
@@ -459,14 +422,15 @@ make logs-business
 
 | Провайдер | Что требуется | Время получения | Сложность |
 |-----------|---------------|-----------------|-----------|
-| Google AI Studio | API Key | 1 минута | Очень легко |
 | Groq | API Key | 2 минуты | Очень легко |
 | Cerebras | API Key | 2 минуты | Легко |
 | SambaNova | API Key | 2 минуты | Легко |
 | HuggingFace | Access Token | 2 минуты | Очень легко |
 | Cloudflare | Account ID + API Token | 5 минут | Средне |
 
-**Общее время на настройку всех 6 провайдеров**: ~15-20 минут
+**Общее время на настройку основных 5 провайдеров**: ~15 минут
+
+Дополнительные 9 провайдеров F003 настраиваются аналогично (по 2-3 минуты каждый).
 
 ---
 

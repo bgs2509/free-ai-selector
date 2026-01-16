@@ -23,7 +23,6 @@ from app.utils.request_id import (
 from app.utils.security import sanitize_error_message
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1 import history, models
 from app.api.v1.schemas import HealthCheckResponse

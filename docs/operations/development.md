@@ -29,12 +29,14 @@ nano .env
 
 Get free API keys from (all providers require NO credit card):
 
-- **Google AI Studio**: https://aistudio.google.com/apikey
 - **Groq**: https://console.groq.com/keys
 - **Cerebras**: https://cloud.cerebras.ai/
 - **SambaNova**: https://cloud.sambanova.ai/
 - **HuggingFace**: https://huggingface.co/settings/tokens
 - **Cloudflare**: https://dash.cloudflare.com/ (need Account ID + API Token)
+- **DeepSeek**: https://platform.deepseek.com/
+- **OpenRouter**: https://openrouter.ai/
+- **GitHub Models**: https://github.com/marketplace/models
 - **Telegram Bot**: https://t.me/BotFather
 
 ### 3. Start Development Environment
@@ -229,15 +231,16 @@ from app.infrastructure.ai_providers.newprovider import NewProvider
 
 class ProcessPromptUseCase:
     def __init__(self, data_api_client: DataAPIClient):
-        self.providers = {
-            "GoogleGemini": GoogleGeminiProvider(),
-            "Groq": GroqProvider(),
-            "Cerebras": CerebrasProvider(),
-            "SambaNova": SambanovaProvider(),
-            "HuggingFace": HuggingFaceProvider(),
-            "Cloudflare": CloudflareProvider(),
-            "NewProvider": NewProvider(),  # Add your new provider here
-        }
+        # F008 SSOT: Providers loaded from registry
+        # 14 total providers: Groq, Cerebras, SambaNova, HuggingFace, Cloudflare,
+        # DeepSeek, OpenRouter, GitHubModels, Fireworks, Hyperbolic,
+        # Novita, Scaleway, Kluster, Nebius
+        self.providers: dict[str, AIProviderBase] = ProviderRegistry.get_all_providers()
+
+        # To add a new provider:
+        # 1. Create provider in app/infrastructure/ai_providers/
+        # 2. Register in registry.py
+        # 3. Add to seed.py
 ```
 
 ### Step 3: Seed Database

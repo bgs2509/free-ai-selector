@@ -59,8 +59,8 @@ curl -X POST http://localhost:8000/api/v1/prompts/process \
 {
   "prompt_text": "Напиши короткое стихотворение об AI",
   "response_text": "В мире битов и цифр живёт разум стальной...",
-  "selected_model_name": "Gemini 2.5 Flash",
-  "selected_model_provider": "GoogleGemini",
+  "selected_model_name": "DeepSeek Chat",
+  "selected_model_provider": "DeepSeek",
   "response_time_seconds": 1.234,
   "success": true,
   "error_message": null
@@ -73,8 +73,8 @@ curl -X POST http://localhost:8000/api/v1/prompts/process \
 {
   "prompt_text": "Test",
   "response_text": null,
-  "selected_model_name": "Gemini 2.5 Flash",
-  "selected_model_provider": "GoogleGemini",
+  "selected_model_name": "DeepSeek Chat",
+  "selected_model_provider": "DeepSeek",
   "response_time_seconds": 5.678,
   "success": false,
   "error_message": "API rate limit exceeded"
@@ -130,8 +130,8 @@ curl http://localhost:8000/api/v1/models/stats
   "models": [
     {
       "id": 1,
-      "name": "Gemini 2.5 Flash",
-      "provider": "GoogleGemini",
+      "name": "DeepSeek Chat",
+      "provider": "DeepSeek",
       "reliability_score": 0.92,
       "success_rate": 0.95,
       "average_response_time": 1.5,
@@ -147,7 +147,7 @@ curl http://localhost:8000/api/v1/models/stats
       "is_active": true
     }
   ],
-  "total_models": 6
+  "total_models": 14
 }
 ```
 
@@ -192,8 +192,8 @@ curl -X POST http://localhost:8000/api/v1/providers/test
 {
   "results": [
     {
-      "provider": "GoogleGemini",
-      "model_name": "Gemini 2.5 Flash",
+      "provider": "DeepSeek",
+      "model_name": "DeepSeek Chat",
       "success": true,
       "response_time": 1.234,
       "error": null
@@ -213,8 +213,8 @@ curl -X POST http://localhost:8000/api/v1/providers/test
       "error": "Model is currently loading"
     }
   ],
-  "total_tested": 6,
-  "successful": 5,
+  "total_tested": 14,
+  "successful": 13,
   "failed": 1
 }
 ```

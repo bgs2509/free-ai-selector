@@ -10,7 +10,7 @@ F008 SSOT Architecture:
     Each model contains api_format and env_var fields for dynamic dispatch.
     Universal health checker uses api_format to select check function.
 
-Supports all providers configured in seed.py (currently 16).
+Supports all providers configured in seed.py (currently 14).
 """
 
 import asyncio
@@ -106,88 +106,6 @@ async def check_openai_format(
             "health_check_failed",
             provider=provider,
             api_format="openai",
-            error=sanitize_error_message(e),
-        )
-        return False, time.time() - start_time
-
-
-async def check_gemini_format(
-    endpoint: str, api_key: str, provider: str
-) -> tuple[bool, float]:
-    """
-    Health check for Google Gemini API format (F008 SSOT).
-
-    Used by: GoogleGemini
-
-    Args:
-        endpoint: API endpoint URL
-        api_key: API key for authentication
-        provider: Provider name for logging
-
-    Returns:
-        Tuple of (is_healthy, response_time_seconds)
-    """
-    start_time = time.time()
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            payload = {
-                "contents": [{"parts": [{"text": SYNTHETIC_TEST_PROMPT}]}],
-                "generationConfig": {
-                    "maxOutputTokens": 50,
-                    "temperature": 0.7,
-                },
-            }
-            params = {"key": api_key}
-            response = await client.post(endpoint, json=payload, params=params)
-            response_time = time.time() - start_time
-            return response.status_code == 200, response_time
-    except Exception as e:
-        logger.error(
-            "health_check_failed",
-            provider=provider,
-            api_format="gemini",
-            error=sanitize_error_message(e),
-        )
-        return False, time.time() - start_time
-
-
-async def check_cohere_format(
-    endpoint: str, api_key: str, provider: str
-) -> tuple[bool, float]:
-    """
-    Health check for Cohere API v2 format (F008 SSOT).
-
-    Used by: Cohere
-
-    Args:
-        endpoint: API endpoint URL
-        api_key: API key for authentication
-        provider: Provider name for logging
-
-    Returns:
-        Tuple of (is_healthy, response_time_seconds)
-    """
-    start_time = time.time()
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            }
-            payload = {
-                "model": "command-r-plus",
-                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
-                "max_tokens": 50,
-            }
-            response = await client.post(endpoint, headers=headers, json=payload)
-            response_time = time.time() - start_time
-            return response.status_code == 200, response_time
-    except Exception as e:
-        logger.error(
-            "health_check_failed",
-            provider=provider,
-            api_format="cohere",
             error=sanitize_error_message(e),
         )
         return False, time.time() - start_time
@@ -290,8 +208,6 @@ async def check_cloudflare_format(
 
 API_FORMAT_CHECKERS = {
     "openai": check_openai_format,
-    "gemini": check_gemini_format,
-    "cohere": check_cohere_format,
     "huggingface": check_huggingface_format,
     "cloudflare": check_cloudflare_format,
 }

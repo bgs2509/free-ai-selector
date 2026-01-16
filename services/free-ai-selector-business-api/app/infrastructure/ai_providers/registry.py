@@ -20,11 +20,9 @@ from typing import Optional
 from app.infrastructure.ai_providers.base import AIProviderBase
 from app.infrastructure.ai_providers.cerebras import CerebrasProvider
 from app.infrastructure.ai_providers.cloudflare import CloudflareProvider
-from app.infrastructure.ai_providers.cohere import CohereProvider
 from app.infrastructure.ai_providers.deepseek import DeepSeekProvider
 from app.infrastructure.ai_providers.fireworks import FireworksProvider
 from app.infrastructure.ai_providers.github_models import GitHubModelsProvider
-from app.infrastructure.ai_providers.google_gemini import GoogleGeminiProvider
 from app.infrastructure.ai_providers.groq import GroqProvider
 from app.infrastructure.ai_providers.huggingface import HuggingFaceProvider
 from app.infrastructure.ai_providers.hyperbolic import HyperbolicProvider
@@ -38,16 +36,14 @@ from app.infrastructure.ai_providers.scaleway import ScalewayProvider
 
 # Единственное место с маппингом provider_name → ProviderClass
 PROVIDER_CLASSES: dict[str, type[AIProviderBase]] = {
-    # Существующие провайдеры (6 шт.)
-    "GoogleGemini": GoogleGeminiProvider,
+    # Существующие провайдеры (4 шт.)
     "Groq": GroqProvider,
     "Cerebras": CerebrasProvider,
     "SambaNova": SambanovaProvider,
     "HuggingFace": HuggingFaceProvider,
     "Cloudflare": CloudflareProvider,
-    # Новые провайдеры F003 — Фаза 1: Приоритетные (4 шт.)
+    # Новые провайдеры F003 — Фаза 1: Приоритетные (2 шт.)
     "DeepSeek": DeepSeekProvider,
-    "Cohere": CohereProvider,
     "OpenRouter": OpenRouterProvider,
     "GitHubModels": GitHubModelsProvider,
     # Новые провайдеры F003 — Фаза 2: Дополнительные (4 шт.)

@@ -35,9 +35,9 @@ cp .env.example .env
 
 ```bash
 # Обязательно: минимум 2-3 провайдера для fallback
-GOOGLE_AI_STUDIO_API_KEY=AIzaSy...
 GROQ_API_KEY=gsk_...
 CEREBRAS_API_KEY=...
+DEEPSEEK_API_KEY=sk-...
 
 # Опционально: Telegram бот
 TELEGRAM_BOT_TOKEN=...
@@ -106,8 +106,8 @@ curl -X POST http://localhost:8000/api/v1/prompts/process \
 {
   "prompt_text": "Привет! Напиши короткое стихотворение об AI",
   "response_text": "В мире битов и цифр живёт разум стальной...",
-  "selected_model_name": "Gemini 2.5 Flash",
-  "selected_model_provider": "GoogleGemini",
+  "selected_model_name": "DeepSeek Chat",
+  "selected_model_provider": "DeepSeek",
   "response_time_seconds": 1.234,
   "success": true,
   "error_message": null

@@ -172,12 +172,20 @@ Free AI Selector позиционируется как **бесплатный** 
 
 ai_providers/
 ├── base.py              # AIProviderBase (интерфейс)
-├── google_gemini.py     # GoogleGeminiProvider
 ├── groq.py              # GroqProvider
 ├── cerebras.py          # CerebrasProvider
 ├── sambanova.py         # SambaNovaProvider
 ├── huggingface.py       # HuggingFaceProvider
-└── cloudflare.py        # CloudflareProvider
+├── cloudflare.py        # CloudflareProvider
+├── deepseek.py          # DeepSeekProvider (F003)
+├── openrouter.py        # OpenRouterProvider (F003)
+├── github_models.py     # GitHubModelsProvider (F003)
+├── fireworks.py         # FireworksProvider (F003)
+├── hyperbolic.py        # HyperbolicProvider (F003)
+├── novita.py            # NovitaProvider (F003)
+├── scaleway.py          # ScalewayProvider (F003)
+├── kluster.py           # KlusterProvider (F003)
+└── nebius.py            # NebiusProvider (F003)
 ```
 
 ### Добавление нового провайдера

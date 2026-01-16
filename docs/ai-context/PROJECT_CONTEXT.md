@@ -128,10 +128,10 @@ class ProcessPromptUseCase:
 
     def __init__(self, data_api_client: DataAPIClient):
         self.data_api_client = data_api_client
-        self.providers = {
-            "GoogleGemini": GoogleGeminiProvider(),
-            # ... other providers
-        }
+        # Providers loaded from registry (F008 SSOT)
+        # 14 total: Groq, Cerebras, SambaNova, HuggingFace, Cloudflare
+        # + DeepSeek, OpenRouter, GitHubModels, Fireworks, Hyperbolic,
+        # Novita, Scaleway, Kluster, Nebius
 
     async def execute(self, request: PromptRequest) -> PromptResponse:
         """Execute prompt processing.
@@ -170,13 +170,21 @@ class ProcessPromptUseCase:
 |----------|---------|-------------|
 | `DATA_API_URL` | Business API | URL Data API (http://free-ai-selector-data-postgres-api:8001) |
 | `DATABASE_URL` | Data API | PostgreSQL connection string |
-| `GOOGLE_AI_STUDIO_API_KEY` | Business API | Google Gemini API key |
 | `GROQ_API_KEY` | Business API | Groq API key |
 | `CEREBRAS_API_KEY` | Business API | Cerebras API key |
 | `SAMBANOVA_API_KEY` | Business API | SambaNova API key |
 | `HUGGINGFACE_API_KEY` | Business API | HuggingFace token |
 | `CLOUDFLARE_ACCOUNT_ID` | Business API | Cloudflare Account ID |
 | `CLOUDFLARE_API_TOKEN` | Business API | Cloudflare API Token |
+| `DEEPSEEK_API_KEY` | Business API | DeepSeek API key (F003) |
+| `OPENROUTER_API_KEY` | Business API | OpenRouter API key (F003) |
+| `GITHUB_TOKEN` | Business API | GitHub Models token (F003) |
+| `FIREWORKS_API_KEY` | Business API | Fireworks API key (F003) |
+| `HYPERBOLIC_API_KEY` | Business API | Hyperbolic API key (F003) |
+| `NOVITA_API_KEY` | Business API | Novita API key (F003) |
+| `SCALEWAY_API_KEY` | Business API | Scaleway API key (F003) |
+| `KLUSTER_API_KEY` | Business API | Kluster API key (F003) |
+| `NEBIUS_API_KEY` | Business API | Nebius API key (F003) |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot | Bot token from @BotFather |
 
 ---

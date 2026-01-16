@@ -5,7 +5,6 @@ Defines the contract for all AI provider integrations.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
 
 
 class AIProviderBase(ABC):

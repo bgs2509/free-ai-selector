@@ -114,14 +114,29 @@ sequenceDiagram
 
 ## AI Providers
 
+**Существующие (5 провайдеров)**:
+
 | Provider | Class | Model | Rate Limits |
 |----------|-------|-------|-------------|
-| Google Gemini | `GoogleGeminiProvider` | Gemini 2.5 Flash | 10 RPM, 250 RPD |
 | Groq | `GroqProvider` | Llama 3.3 70B | 20 RPM |
 | Cerebras | `CerebrasProvider` | Llama 3.3 70B | 30 RPM, 1M tokens/day |
 | SambaNova | `SambanovaProvider` | Llama 3.3 70B | 20 RPM |
 | HuggingFace | `HuggingFaceProvider` | Llama 3 8B | Variable |
 | Cloudflare | `CloudflareProvider` | Llama 3.3 70B FP8 | 10K neurons/day |
+
+**Новые F003 (9 провайдеров)**:
+
+| Provider | Class | Model | Rate Limits |
+|----------|-------|-------|-------------|
+| DeepSeek | `DeepSeekProvider` | DeepSeek Chat | 60 RPM |
+| OpenRouter | `OpenRouterProvider` | DeepSeek R1 Free | 20 RPM |
+| GitHub Models | `GitHubModelsProvider` | GPT-4o Mini | 15 RPM, 150 RPD |
+| Fireworks | `FireworksProvider` | Llama 3.1 70B | $1 free credits |
+| Hyperbolic | `HyperbolicProvider` | Llama 3.1 70B | Free tier |
+| Novita | `NovitaProvider` | Llama 3.3 70B | Free tier |
+| Scaleway | `ScalewayProvider` | Llama 3.3 70B | Free tier |
+| Kluster | `KlusterProvider` | Llama 3.3 70B | Free tier |
+| Nebius | `NebiusProvider` | Llama 3.3 70B | Free tier |
 
 ---
 
@@ -170,13 +185,23 @@ sequenceDiagram
 
 ```bash
 DATA_API_URL=http://free-ai-selector-data-postgres-api:8001
-GOOGLE_AI_STUDIO_API_KEY=xxx
+# Существующие провайдеры (5)
 GROQ_API_KEY=xxx
 CEREBRAS_API_KEY=xxx
 SAMBANOVA_API_KEY=xxx
 HUGGINGFACE_API_KEY=xxx
 CLOUDFLARE_ACCOUNT_ID=xxx
 CLOUDFLARE_API_TOKEN=xxx
+# Новые провайдеры F003 (9)
+DEEPSEEK_API_KEY=xxx
+OPENROUTER_API_KEY=xxx
+GITHUB_TOKEN=xxx
+FIREWORKS_API_KEY=xxx
+HYPERBOLIC_API_KEY=xxx
+NOVITA_API_KEY=xxx
+SCALEWAY_API_KEY=xxx
+KLUSTER_API_KEY=xxx
+NEBIUS_API_KEY=xxx
 ```
 
 ### Data API

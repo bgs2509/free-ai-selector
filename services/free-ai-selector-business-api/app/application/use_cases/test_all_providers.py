@@ -13,7 +13,7 @@ Note:
 
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 
 from app.domain.models import AIModelInfo
 from app.utils.security import sanitize_error_message
@@ -105,7 +105,7 @@ class TestAllProvidersUseCase:
                     "model": model.name,
                     "status": "error",
                     "response_time": None,
-                    "error": f"Provider class not configured in registry",
+                    "error": "Provider class not configured in registry",
                 })
                 continue
 

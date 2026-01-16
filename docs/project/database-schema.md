@@ -159,9 +159,9 @@ Seed содержит 6 AI-моделей:
 
 INITIAL_MODELS = [
     {
-        "name": "Gemini 2.5 Flash",
-        "provider": "GoogleGemini",
-        "api_endpoint": "https://generativelanguage.googleapis.com/v1beta",
+        "name": "DeepSeek Chat",
+        "provider": "DeepSeek",
+        "api_endpoint": "https://api.deepseek.com/v1",
         "is_active": True,
     },
     {

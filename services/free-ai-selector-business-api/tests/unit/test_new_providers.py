@@ -1,8 +1,8 @@
 """
 Unit-тесты для новых AI провайдеров (F003)
 
-Тестирование 10 новых провайдеров:
-- Фаза 1: DeepSeek, Cohere, OpenRouter, GitHub Models
+Тестирование 9 новых провайдеров:
+- Фаза 1: DeepSeek, OpenRouter, GitHub Models
 - Фаза 2: Fireworks, Hyperbolic, Novita, Scaleway
 - Фаза 3: Kluster, Nebius
 """
@@ -84,35 +84,6 @@ class TestDeepSeekProvider:
             )
             result = await provider.generate("Тестовый промпт")
             assert result == "Тестовый ответ"
-
-
-@pytest.mark.unit
-class TestCohereProvider:
-    """Тесты для Cohere провайдера."""
-
-    def test_init_defaults(self):
-        """Тест инициализации с параметрами по умолчанию."""
-        from app.infrastructure.ai_providers.cohere import CohereProvider
-
-        provider = CohereProvider()
-        assert provider.model == "command-r-plus"
-        assert provider.api_url == "https://api.cohere.com/v2/chat"
-
-    def test_get_provider_name(self):
-        """Тест получения имени провайдера."""
-        from app.infrastructure.ai_providers.cohere import CohereProvider
-
-        provider = CohereProvider()
-        assert provider.get_provider_name() == "Cohere"
-
-    @pytest.mark.asyncio
-    async def test_generate_without_api_key(self):
-        """Тест генерации без API ключа."""
-        from app.infrastructure.ai_providers.cohere import CohereProvider
-
-        provider = CohereProvider(api_key="")
-        with pytest.raises(ValueError, match="API ключ обязателен"):
-            await provider.generate("test prompt")
 
 
 @pytest.mark.unit
@@ -370,7 +341,6 @@ class TestProvidersInheritance:
         """Проверка что все провайдеры наследуют от AIProviderBase."""
         from app.infrastructure.ai_providers.base import AIProviderBase
         from app.infrastructure.ai_providers.deepseek import DeepSeekProvider
-        from app.infrastructure.ai_providers.cohere import CohereProvider
         from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
         from app.infrastructure.ai_providers.github_models import GitHubModelsProvider
         from app.infrastructure.ai_providers.fireworks import FireworksProvider
@@ -382,7 +352,6 @@ class TestProvidersInheritance:
 
         providers = [
             DeepSeekProvider,
-            CohereProvider,
             OpenRouterProvider,
             GitHubModelsProvider,
             FireworksProvider,
@@ -401,7 +370,6 @@ class TestProvidersInheritance:
     def test_all_providers_implement_required_methods(self):
         """Проверка что все провайдеры реализуют обязательные методы."""
         from app.infrastructure.ai_providers.deepseek import DeepSeekProvider
-        from app.infrastructure.ai_providers.cohere import CohereProvider
         from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
         from app.infrastructure.ai_providers.github_models import GitHubModelsProvider
         from app.infrastructure.ai_providers.fireworks import FireworksProvider
@@ -413,7 +381,6 @@ class TestProvidersInheritance:
 
         providers = [
             DeepSeekProvider(),
-            CohereProvider(),
             OpenRouterProvider(),
             GitHubModelsProvider(),
             FireworksProvider(),
