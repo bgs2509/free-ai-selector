@@ -160,14 +160,44 @@ make seed     # Seed with initial AI models
 #### Option A: REST API
 
 ```bash
-# Process a prompt (automatic model selection)
+# 1. Simple prompt (automatic model selection)
 curl -X POST http://localhost:8000/api/v1/prompts/process \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Generate a short poem about AI"}'
 
+# 2. Prompt with system instructions
+curl -X POST http://localhost:8000/api/v1/prompts/process \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "List 3 benefits of AI",
+    "system_prompt": "You are a helpful technical writer. Keep responses concise and factual."
+  }'
+
+# 3. Request JSON response format
+curl -X POST http://localhost:8000/api/v1/prompts/process \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Generate a list of 3 programming languages with their primary use cases",
+    "response_format": {"type": "json_object"}
+  }'
+
+# 4. Combined: System prompt + JSON format
+curl -X POST http://localhost:8000/api/v1/prompts/process \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Analyze the pros and cons of microservices architecture",
+    "system_prompt": "You are a senior software architect. Provide structured analysis.",
+    "response_format": {"type": "json_object"}
+  }'
+
 # Get model statistics
 curl http://localhost:8000/api/v1/models/stats
 ```
+
+**Note**:
+- `system_prompt` is supported by OpenAI-compatible providers (Groq, Cerebras, SambaNova)
+- `response_format: {"type": "json_object"}` requests structured JSON output
+- The platform automatically selects the best available model based on reliability
 
 #### Option B: Telegram Bot
 
