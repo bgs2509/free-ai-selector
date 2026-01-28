@@ -51,6 +51,9 @@ class PromptHistoryRepository:
         await self.session.flush()
         await self.session.refresh(orm_history)
 
+        # Автоматически удаляем старые записи, оставляем только 1000 последних
+        await self._cleanup_old_records(keep_count=1000)
+
         return self._to_domain(orm_history)
 
     async def get_by_id(self, history_id: int) -> Optional[PromptHistory]:
@@ -239,6 +242,28 @@ class PromptHistoryRepository:
             "failed_requests": failed_requests,
             "success_rate": success_rate,
         }
+
+    async def _cleanup_old_records(self, keep_count: int = 1000) -> None:
+        """
+        Удаляет старые записи, оставляя только keep_count последних.
+
+        Args:
+            keep_count: Количество записей для сохранения (default: 1000)
+        """
+        # Подзапрос: получить ID последних keep_count записей
+        subquery = (
+            select(PromptHistoryORM.id)
+            .order_by(desc(PromptHistoryORM.created_at))
+            .limit(keep_count)
+            .scalar_subquery()
+        )
+
+        # Удалить все записи, которые не входят в топ keep_count
+        from sqlalchemy import delete
+
+        delete_query = delete(PromptHistoryORM).where(PromptHistoryORM.id.notin_(subquery))
+
+        await self.session.execute(delete_query)
 
     def _to_domain(self, orm_history: PromptHistoryORM) -> PromptHistory:
         """
