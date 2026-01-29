@@ -40,14 +40,14 @@
         "PRD_READY": {
           "passed": true,
           "passed_at": "2026-01-03T10:00:00Z",
-          "artifact": "ai-docs/docs/prd/2026-01-02_F010_rolling-window-reliability-prd.md",
+          "artifact": "_analysis/2026-01-15_F011-A_remove-non-openai-providers.md",
           "version": 2,
           "notes": "Updated with Section 4 (Pipelines) per AIDD framework v2"
         },
         "RESEARCH_DONE": {
           "passed": true,
           "passed_at": "2026-01-03T11:00:00Z",
-          "artifact": "ai-docs/docs/research/2026-01-02_F010_rolling-window-reliability-research.md",
+          "artifact": null,
           "findings": {
             "extension_points_data_api": 4,
             "extension_points_business_api": 4,
@@ -58,7 +58,7 @@
         "PLAN_APPROVED": {
           "passed": true,
           "passed_at": "2026-01-03T12:00:00Z",
-          "artifact": "ai-docs/docs/plans/2026-01-02_F010_rolling-window-reliability-plan.md",
+          "artifact": null,
           "approved_by": "user",
           "summary": {
             "data_api_changes": 4,
@@ -89,7 +89,7 @@
         "REVIEW_OK": {
           "passed": true,
           "passed_at": "2026-01-15T16:30:00Z",
-          "artifact": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-review.md",
+          "artifact": "_validation/2026-01-15_F011-A_remove-non-openai-providers-review.md",
           "decision": "APPROVED_WITH_COMMENTS",
           "blocker_issues": 0,
           "critical_issues": 0,
@@ -99,7 +99,7 @@
         "QA_PASSED": {
           "passed": true,
           "passed_at": "2026-01-15T17:00:00Z",
-          "artifact": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-qa.md",
+          "artifact": "_validation/2026-01-15_F011-A_remove-non-openai-providers-qa.md",
           "tests_executed": 95,
           "tests_passed": 70,
           "tests_failed": 18,
@@ -113,8 +113,8 @@
           "passed": true,
           "passed_at": "2026-01-15T17:30:00Z",
           "artifacts": {
-            "rtm": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-rtm.md",
-            "validation": "ai-docs/docs/reports/2026-01-15_F011-A_remove-non-openai-providers-validation.md"
+            "rtm": "_validation/2026-01-15_F011-A_remove-non-openai-providers-rtm.md",
+            "validation": "_validation/2026-01-15_F011-A_remove-non-openai-providers-validation.md"
           },
           "requirements_coverage": "100%",
           "gates_passed": 8,
@@ -130,10 +130,11 @@
         }
       },
       "artifacts": {
-        "prd": "prd/2026-01-15_F011-A_remove-non-openai-providers-prd.md",
-        "research": "research/2026-01-15_F011-A_remove-non-openai-providers-research.md",
-        "plan": "plans/2026-01-15_F011-A_remove-non-openai-providers-plan.md",
-        "completion": "reports/2026-01-15_F011-A_remove-non-openai-providers-completion.md"
+        "prd": "_analysis/2026-01-15_F011-A_remove-non-openai-providers.md",
+        "review": "_validation/2026-01-15_F011-A_remove-non-openai-providers-review.md",
+        "qa": "_validation/2026-01-15_F011-A_remove-non-openai-providers-qa.md",
+        "validation": "_validation/2026-01-15_F011-A_remove-non-openai-providers-validation.md",
+        "completion": "_validation/2026-01-15_F011-A_remove-non-openai-providers.md"
       }
     },
     "F011-B": {
@@ -146,17 +147,17 @@
         "PRD_READY": {
           "passed": true,
           "passed_at": "2026-01-15T14:00:00Z",
-          "artifact": "ai-docs/docs/prd/2026-01-15_F011-B_system-prompts-json-response-prd.md"
+          "artifact": "_analysis/2026-01-15_F011-B_system-prompts-json-response.md"
         },
         "RESEARCH_DONE": {
           "passed": true,
           "passed_at": "2026-01-15T14:55:00Z",
-          "artifact": "ai-docs/docs/research/2026-01-15_F011-B_system-prompts-json-response-research.md"
+          "artifact": "_research/2026-01-15_F011-B_system-prompts-json-response.md"
         },
         "PLAN_APPROVED": {
           "passed": true,
           "passed_at": "2026-01-15T15:30:00Z",
-          "artifact": "ai-docs/docs/plans/2026-01-15_F011-B_system-prompts-json-response-plan.md",
+          "artifact": "_plans/features/2026-01-15_F011-B_system-prompts-json-response.md",
           "approved_by": "user",
           "summary": {
             "files_to_modify": 18,
@@ -201,9 +202,9 @@
         }
       },
       "artifacts": {
-        "prd": "prd/2026-01-15_F011-B_system-prompts-json-response-prd.md",
-        "research": "research/2026-01-15_F011-B_system-prompts-json-response-research.md",
-        "plan": "plans/2026-01-15_F011-B_system-prompts-json-response-plan.md"
+        "prd": "_analysis/2026-01-15_F011-B_system-prompts-json-response.md",
+        "research": "_research/2026-01-15_F011-B_system-prompts-json-response.md",
+        "plan": "_plans/features/2026-01-15_F011-B_system-prompts-json-response.md"
       }
     },
     "F012": {
@@ -384,13 +385,11 @@
         "F011-B"
       ],
       "artifacts": {
-        "prd": "prd/2026-01-15_F011-A_remove-non-openai-providers-prd.md",
-        "research": "research/2026-01-15_F011-A_remove-non-openai-providers-research.md",
-        "plan": "plans/2026-01-15_F011-A_remove-non-openai-providers-plan.md",
-        "review": "reports/2026-01-15_F011-A_remove-non-openai-providers-review.md",
-        "qa": "reports/2026-01-15_F011-A_remove-non-openai-providers-qa.md",
-        "validation": "reports/2026-01-15_F011-A_remove-non-openai-providers-validation.md",
-        "completion": "reports/2026-01-15_F011-A_remove-non-openai-providers-completion.md"
+        "prd": "_analysis/2026-01-15_F011-A_remove-non-openai-providers.md",
+        "review": "_validation/2026-01-15_F011-A_remove-non-openai-providers-review.md",
+        "qa": "_validation/2026-01-15_F011-A_remove-non-openai-providers-qa.md",
+        "validation": "_validation/2026-01-15_F011-A_remove-non-openai-providers-validation.md",
+        "completion": "_validation/2026-01-15_F011-A_remove-non-openai-providers.md"
       }
     },
     "F011-B": {
@@ -406,9 +405,9 @@
         "F011-A"
       ],
       "artifacts": {
-        "prd": "prd/2026-01-15_F011-B_system-prompts-json-response-prd.md",
-        "research": "research/2026-01-15_F011-B_system-prompts-json-response-research.md",
-        "plan": "plans/2026-01-15_F011-B_system-prompts-json-response-plan.md"
+        "prd": "_analysis/2026-01-15_F011-B_system-prompts-json-response.md",
+        "research": "_research/2026-01-15_F011-B_system-prompts-json-response.md",
+        "plan": "_plans/features/2026-01-15_F011-B_system-prompts-json-response.md"
       }
     },
     "F011-C": {
@@ -424,10 +423,10 @@
         "F011-B"
       ],
       "artifacts": {
-        "prd": "prd/2026-01-15_F011-C_web-ui-advanced-params-prd.md",
-        "research": "research/2026-01-15_F011-C_web-ui-advanced-params-research.md",
-        "plan": "plans/2026-01-15_F011-C_web-ui-advanced-params-plan.md",
-        "completion": "reports/2026-01-15_F011-C_web-ui-advanced-params-completion.md"
+        "prd": "_analysis/2026-01-15_F011-C_web-ui-advanced-params.md",
+        "research": "_research/2026-01-15_F011-C_web-ui-advanced-params.md",
+        "plan": "_plans/features/2026-01-15_F011-C_web-ui-advanced-params.md",
+        "completion": "_validation/2026-01-15_F011-C_web-ui-advanced-params.md"
       },
       "implementation": {
         "passed_at": "2026-01-15T21:30:00Z",
