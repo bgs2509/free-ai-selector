@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-01-15T19:00:00Z",
+  "updated_at": "2026-01-29T12:54:27.276336",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -205,6 +205,55 @@
         "research": "research/2026-01-15_F011-B_system-prompts-json-response-research.md",
         "plan": "plans/2026-01-15_F011-B_system-prompts-json-response-plan.md"
       }
+    },
+    "F012": {
+      "branch": "feature/F012-rate-limit-handling",
+      "name": "rate-limit-handling",
+      "title": "Rate Limit Handling для AI Провайдеров",
+      "stage": "IDEA",
+      "created": "2026-01-29",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-01-29T12:54:27.276320",
+          "artifact": "prd/2026-01-29_F012_rate-limit-handling-prd.md"
+        },
+        "RESEARCH_DONE": {
+          "passed": false,
+          "passed_at": null
+        },
+        "PLAN_APPROVED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "IMPLEMENT_OK": {
+          "passed": false,
+          "passed_at": null
+        },
+        "REVIEW_OK": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "QA_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "ALL_GATES_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "DEPLOYED": {
+          "passed": false,
+          "passed_at": null
+        }
+      },
+      "artifacts": {
+        "prd": "prd/2026-01-29_F012_rate-limit-handling-prd.md"
+      }
     }
   },
   "features_registry": {
@@ -366,8 +415,12 @@
       "description": "Добавление поддержки system_prompt и response_format в веб-интерфейс (index.html)",
       "created": "2026-01-15",
       "status": "IMPLEMENT_OK",
-      "services": ["free-ai-selector-business-api"],
-      "blocked_by": ["F011-B"],
+      "services": [
+        "free-ai-selector-business-api"
+      ],
+      "blocked_by": [
+        "F011-B"
+      ],
       "artifacts": {
         "prd": "prd/2026-01-15_F011-C_web-ui-advanced-params-prd.md",
         "research": "research/2026-01-15_F011-C_web-ui-advanced-params-research.md",
@@ -390,8 +443,18 @@
           "services/free-ai-selector-business-api/app/static/index.html"
         ]
       }
+    },
+    "F012": {
+      "name": "rate-limit-handling",
+      "title": "Rate Limit Handling для AI Провайдеров",
+      "description": "Retry mechanism с exponential backoff, circuit breaker, parsing Retry-After заголовков для обработки HTTP 429",
+      "created": "2026-01-29",
+      "status": "IN_PROGRESS",
+      "services": [
+        "free-ai-selector-business-api"
+      ]
     }
   },
-  "next_feature_id": 12,
+  "next_feature_id": 13,
   "services": []
 }
