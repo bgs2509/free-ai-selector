@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-01-29T12:54:27.276336",
+  "updated_at": "2026-01-29T17:02:59.279516",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -210,7 +210,7 @@
       "branch": "feature/F012-rate-limit-handling",
       "name": "rate-limit-handling",
       "title": "Rate Limit Handling для AI Провайдеров",
-      "stage": "IDEA",
+      "stage": "RESEARCH",
       "created": "2026-01-29",
       "gates": {
         "PRD_READY": {
@@ -219,8 +219,9 @@
           "artifact": "_analysis/2026-01-29_F012_rate-limit-handling.md"
         },
         "RESEARCH_DONE": {
-          "passed": false,
-          "passed_at": null
+          "passed": true,
+          "passed_at": "2026-01-29T17:02:59.279516",
+          "artifact": "_research/2026-01-29_F012_rate-limit-handling.md"
         },
         "PLAN_APPROVED": {
           "passed": false,
@@ -252,7 +253,8 @@
         }
       },
       "artifacts": {
-        "prd": "_analysis/2026-01-29_F012_rate-limit-handling.md"
+        "prd": "_analysis/2026-01-29_F012_rate-limit-handling.md",
+        "research": "_research/2026-01-29_F012_rate-limit-handling.md"
       }
     }
   },
