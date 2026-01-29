@@ -1,7 +1,7 @@
 {
   "$schema": "pipeline-state-schema",
   "version": "2.0",
-  "naming_version": "v2",
+  "naming_version": "v3",
   "project_name": "free-ai-selector",
   "mode": "FEATURE",
   "init_mode": "EXISTING_PROJECT",
@@ -216,7 +216,7 @@
         "PRD_READY": {
           "passed": true,
           "passed_at": "2026-01-29T12:54:27.276320",
-          "artifact": "prd/2026-01-29_F012_rate-limit-handling-prd.md"
+          "artifact": "_analysis/2026-01-29_F012_rate-limit-handling.md"
         },
         "RESEARCH_DONE": {
           "passed": false,
@@ -252,7 +252,7 @@
         }
       },
       "artifacts": {
-        "prd": "prd/2026-01-29_F012_rate-limit-handling-prd.md"
+        "prd": "_analysis/2026-01-29_F012_rate-limit-handling.md"
       }
     }
   },
@@ -456,5 +456,13 @@
     }
   },
   "next_feature_id": 13,
-  "services": []
+  "services": [],
+  "gate_aliases": {
+    "PRD_READY": "ANALYSIS_READY",
+    "RESEARCH_DONE": "RESEARCH_READY",
+    "IMPLEMENT_OK": "CODE_READY",
+    "REVIEW_OK": "REVIEW_READY",
+    "QA_PASSED": "TESTING_READY",
+    "ALL_GATES_PASSED": "VALIDATION_READY"
+  }
 }

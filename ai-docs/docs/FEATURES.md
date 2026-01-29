@@ -1,6 +1,6 @@
 # Реестр фич проекта
 
-> Последнее обновление: 2025-12-23
+> Последнее обновление: 2026-01-29
 > Автоматически обновляется при создании/завершении фич.
 
 ---
@@ -9,9 +9,9 @@
 
 | Метрика | Значение |
 |---------|----------|
-| Всего фич | 1 |
+| Всего фич | 2 |
 | Deployed | 1 |
-| In Progress | 0 |
+| In Progress | 1 |
 | Archived | 0 |
 
 ---
@@ -20,7 +20,7 @@
 
 | FID | Название | Статус | Дата | Сервисы | Артефакты |
 |-----|----------|--------|------|---------|-----------|
-| — | — | — | — | — | — |
+| F012 | Rate Limit Handling для AI Провайдеров | IN_PROGRESS | 2026-01-29 | free-ai-selector-business-api | [PRD](_analysis/2026-01-29_F012_rate-limit-handling.md) |
 
 ---
 
@@ -28,7 +28,7 @@
 
 | FID | Название | Deployed | Сервисы | Артефакты |
 |-----|----------|----------|---------|-----------|
-| F001 | Аудит и очистка проекта | 2025-12-23 | — | [PRD](prd/2025-12-23_F001_project-cleanup-audit-prd.md), [Research](research/2025-12-23_F001_project-cleanup-audit-research.md), [Plan](plans/2025-12-23_F001_project-cleanup-plan.md), [Review](reports/2025-12-23_F001_project-cleanup-review-report.md), [QA](reports/2025-12-23_F001_project-cleanup-qa-report.md), [Validation](reports/2025-12-23_F001_project-cleanup-validation-report.md), [RTM](rtm.md) |
+| F001 | Аудит и очистка проекта | 2025-12-23 | — | [PRD](_analysis/2025-12-23_F001_project-cleanup-audit.md), [Research](_research/2025-12-23_F001_project-cleanup-audit.md), [Plan](_plans/features/2025-12-23_F001_project-cleanup.md), [Review](_validation/2025-12-23_F001_project-cleanup-review-report.md), [QA](_validation/2025-12-23_F001_project-cleanup-qa-report.md), [Validation](_validation/2025-12-23_F001_project-cleanup-validation-report.md), [RTM](rtm.md) |
 
 ---
 

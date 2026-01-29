@@ -93,14 +93,14 @@ features: ["F001", "F002", "F003", "F004", "F005", "F006", "F008", "F009", "F010
 
 | Этап | Артефакт | Путь | Статус |
 |------|----------|------|--------|
-| PRD | Требования | `prd/2025-12-25_F002_web-ui-prd.md` | ✅ |
-| Research | Анализ | `research/2025-12-25_F002_web-ui-research.md` | ✅ |
-| Plan | Архитектурный план | `plans/2025-12-25_F002_web-ui-plan.md` | ✅ |
+| PRD | Требования | `_analysis/2025-12-25_F002_web-ui-_analysis.md` | ✅ |
+| Research | Анализ | `_research/2025-12-25_F002_web-ui-_research.md` | ✅ |
+| Plan | Архитектурный план | `_plans/features/2025-12-25_F002_web-ui.md` | ✅ |
 | Code | Static files | `services/*/app/static/{index.html,style.css,app.js}` | ✅ |
 | Code | main.py модификация | `services/*/app/main.py` | ✅ |
 | Tests | Unit-тесты | `services/*/tests/unit/test_static_files.py` | ✅ |
-| Review | Код-ревью | `reports/2025-12-25_F002_web-ui-review.md` | ✅ |
-| QA | QA отчёт | `reports/2025-12-25_F002_web-ui-qa.md` | ✅ |
+| Review | Код-ревью | `_validation/2025-12-25_F002_web-ui-review.md` | ✅ |
+| QA | QA отчёт | `_validation/2025-12-25_F002_web-ui-qa.md` | ✅ |
 
 ---
 
@@ -198,15 +198,15 @@ features: ["F001", "F002", "F003", "F004", "F005", "F006", "F008", "F009", "F010
 
 | Этап | Артефакт | Путь | Статус |
 |------|----------|------|--------|
-| PRD | Требования | `prd/2025-12-25_F003_expand-ai-providers-prd.md` | ✅ |
-| Research | Анализ | `research/2025-12-25_F003_expand-ai-providers-research.md` | ✅ |
-| Plan | Архитектурный план | `plans/2025-12-25_F003_expand-ai-providers-plan.md` | ✅ |
+| PRD | Требования | `_analysis/2025-12-25_F003_expand-ai-providers-_analysis.md` | ✅ |
+| Research | Анализ | `_research/2025-12-25_F003_expand-ai-providers-_research.md` | ✅ |
+| Plan | Архитектурный план | `_plans/features/2025-12-25_F003_expand-ai-providers.md` | ✅ |
 | Code | 10 провайдеров | `services/*/app/infrastructure/ai_providers/*.py` | ✅ |
 | Code | process_prompt.py | Регистрация 16 провайдеров | ✅ |
 | Code | seed.py | 16 моделей | ✅ |
 | Tests | Unit-тесты | `services/*/tests/unit/test_new_providers.py` (35 tests) | ✅ |
-| Review | Код-ревью | `reports/2025-12-25_F003_expand-ai-providers-review.md` | ✅ |
-| QA | QA отчёт | `reports/2025-12-25_F003_expand-ai-providers-qa.md` | ✅ |
+| Review | Код-ревью | `_validation/2025-12-25_F003_expand-ai-providers-review.md` | ✅ |
+| QA | QA отчёт | `_validation/2025-12-25_F003_expand-ai-providers-qa.md` | ✅ |
 
 ---
 
@@ -319,14 +319,14 @@ features: ["F001", "F002", "F003", "F004", "F005", "F006", "F008", "F009", "F010
 
 | Этап | Артефакт | Путь | Статус |
 |------|----------|------|--------|
-| PRD | Требования | `prd/2025-12-25_F004_dynamic-providers-list-prd.md` | ✅ |
-| Research | Анализ | `research/2025-12-25_F004_dynamic-providers-list-research.md` | ✅ |
-| Plan | План фичи | `plans/2025-12-25_F004_dynamic-providers-list-plan.md` | ✅ |
+| PRD | Требования | `_analysis/2025-12-25_F004_dynamic-providers-list-_analysis.md` | ✅ |
+| Research | Анализ | `_research/2025-12-25_F004_dynamic-providers-list-_research.md` | ✅ |
+| Plan | План фичи | `_plans/features/2025-12-25_F004_dynamic-providers-list.md` | ✅ |
 | Code | telegram-bot | `cmd_start`, `cmd_help` динамические | ✅ |
 | Code | test_all_providers | 16 провайдеров в dict | ✅ |
 | Code | health-worker | 16 check_* + dispatch dict | ✅ |
-| Review | Код-ревью | `reports/2025-12-25_F004_dynamic-providers-list-review.md` | ✅ |
-| QA | QA отчёт | `reports/2025-12-25_F004_dynamic-providers-list-qa.md` | ✅ |
+| Review | Код-ревью | `_validation/2025-12-25_F004_dynamic-providers-list-review.md` | ✅ |
+| QA | QA отчёт | `_validation/2025-12-25_F004_dynamic-providers-list-qa.md` | ✅ |
 
 ---
 
@@ -426,15 +426,15 @@ features: ["F001", "F002", "F003", "F004", "F005", "F006", "F008", "F009", "F010
 
 | Этап | Артефакт | Путь | Статус |
 |------|----------|------|--------|
-| PRD | Требования | `prd/2025-12-30_F006_aidd-logging-prd.md` | ✅ |
-| Research | Анализ | `research/2025-12-30_F006_aidd-logging-research.md` | ✅ |
-| Plan | Архитектурный план | `plans/2025-12-30_F006_aidd-logging-plan.md` | ✅ |
+| PRD | Требования | `_analysis/2025-12-30_F006_aidd-logging-_analysis.md` | ✅ |
+| Research | Анализ | `_research/2025-12-30_F006_aidd-logging-_research.md` | ✅ |
+| Plan | Архитектурный план | `_plans/features/2025-12-30_F006_aidd-logging.md` | ✅ |
 | Code | logger.py | `services/*/app/utils/logger.py` (4 файла) | ✅ |
 | Code | request_id.py | `services/*/app/utils/request_id.py` (3 файла) | ✅ |
 | Code | log_helpers.py | `services/free-ai-selector-business-api/app/utils/log_helpers.py` | ✅ |
 | Code | main.py | Middleware модификация (4 файла) | ✅ |
-| Review | Код-ревью | `reports/2025-12-31_F006_aidd-logging-review.md` | ✅ |
-| QA | QA отчёт | `reports/2025-12-31_F006_aidd-logging-qa.md` | ✅ |
+| Review | Код-ревью | `_validation/2025-12-31_F006_aidd-logging-review.md` | ✅ |
+| QA | QA отчёт | `_validation/2025-12-31_F006_aidd-logging-qa.md` | ✅ |
 
 ---
 
@@ -577,14 +577,14 @@ features: ["F001", "F002", "F003", "F004", "F005", "F006", "F008", "F009", "F010
 
 | Этап | Артефакт | Путь | Статус |
 |------|----------|------|--------|
-| PRD | Требования | `prd/2025-12-31_F008_provider-registry-ssot-prd.md` | ✅ |
-| Research | Анализ | `research/2025-12-31_F008_provider-registry-ssot-research.md` | ✅ |
-| Plan | Архитектурный план | `plans/2025-12-31_F008_provider-registry-ssot-plan.md` | ✅ |
+| PRD | Требования | `_analysis/2025-12-31_F008_provider-registry-ssot-_analysis.md` | ✅ |
+| Research | Анализ | `_research/2025-12-31_F008_provider-registry-ssot-_research.md` | ✅ |
+| Plan | Архитектурный план | `_plans/features/2025-12-31_F008_provider-registry-ssot.md` | ✅ |
 | Code | registry.py | `business-api/app/infrastructure/ai_providers/registry.py` | ✅ |
 | Code | seed.py | 16 провайдеров с api_format, env_var | ✅ |
 | Code | health-worker | Universal health checker | ✅ |
-| Review | Код-ревью | `reports/2025-12-31_F008_provider-registry-ssot-review.md` | ✅ |
-| QA | QA отчёт | `reports/2025-12-31_F008_provider-registry-ssot-qa.md` | ✅ |
+| Review | Код-ревью | `_validation/2025-12-31_F008_provider-registry-ssot-review.md` | ✅ |
+| QA | QA отчёт | `_validation/2025-12-31_F008_provider-registry-ssot-qa.md` | ✅ |
 
 ---
 
@@ -704,15 +704,15 @@ features: ["F001", "F002", "F003", "F004", "F005", "F006", "F008", "F009", "F010
 
 | Этап | Артефакт | Путь | Статус |
 |------|----------|------|--------|
-| PRD | Требования | `prd/2026-01-01_F009_security-logging-hardening-prd.md` | ✅ |
-| Research | Анализ | `research/2026-01-01_F009_security-logging-hardening-research.md` | ✅ |
-| Plan | Архитектурный план | `plans/2026-01-01_F009_security-logging-hardening-plan.md` | ✅ |
+| PRD | Требования | `_analysis/2026-01-01_F009_security-logging-hardening-_analysis.md` | ✅ |
+| Research | Анализ | `_research/2026-01-01_F009_security-logging-hardening-_research.md` | ✅ |
+| Plan | Архитектурный план | `_plans/features/2026-01-01_F009_security-logging-hardening.md` | ✅ |
 | Code | sensitive_filter.py | `services/*/app/utils/sensitive_filter.py` (4 файла) | ✅ |
 | Code | logger.py | Добавлен processor (4 файла) | ✅ |
 | Code | main.py (Data API) | ROOT_PATH support | ✅ |
 | Tests | Unit-тесты | `services/*/tests/unit/test_sensitive_filter.py` (27 tests) | ✅ |
-| Review | Код-ревью | `reports/2026-01-01_F009_security-logging-hardening-review.md` | ✅ |
-| QA | QA отчёт | `reports/2026-01-01_F009_security-logging-hardening-qa.md` | ✅ |
+| Review | Код-ревью | `_validation/2026-01-01_F009_security-logging-hardening-review.md` | ✅ |
+| QA | QA отчёт | `_validation/2026-01-01_F009_security-logging-hardening-qa.md` | ✅ |
 
 ---
 
@@ -853,12 +853,12 @@ REDACTED = "***REDACTED***"
 
 | Тип | Файл | Дата |
 |-----|------|------|
-| PRD | `ai-docs/docs/prd/2026-01-02_F010_rolling-window-reliability-prd.md` | 2026-01-02 |
-| Research | `ai-docs/docs/research/2026-01-02_F010_rolling-window-reliability-research.md` | 2026-01-03 |
-| Plan | `ai-docs/docs/plans/2026-01-02_F010_rolling-window-reliability-plan.md` | 2026-01-03 |
-| Review | `ai-docs/docs/reports/2026-01-03_F010_rolling-window-reliability-review.md` | 2026-01-03 |
-| QA | `ai-docs/docs/reports/2026-01-03_F010_rolling-window-reliability-qa.md` | 2026-01-03 |
-| Validation | `ai-docs/docs/reports/2026-01-03_F010_rolling-window-reliability-validation.md` | 2026-01-03 |
+| PRD | `ai-docs/docs/_analysis/2026-01-02_F010_rolling-window-reliability-_analysis.md` | 2026-01-02 |
+| Research | `ai-docs/docs/_research/2026-01-02_F010_rolling-window-reliability-_research.md` | 2026-01-03 |
+| Plan | `ai-docs/docs/_plans/features/2026-01-02_F010_rolling-window-reliability.md` | 2026-01-03 |
+| Review | `ai-docs/docs/_validation/2026-01-03_F010_rolling-window-reliability-review.md` | 2026-01-03 |
+| QA | `ai-docs/docs/_validation/2026-01-03_F010_rolling-window-reliability-qa.md` | 2026-01-03 |
+| Validation | `ai-docs/docs/_validation/2026-01-03_F010_rolling-window-reliability-validation.md` | 2026-01-03 |
 
 ---
 
