@@ -161,7 +161,6 @@ def check_feature_plan_preconditions() -> tuple[str, dict] | None:
 > - **v2** (по умолчанию): Старая структура `plans/`, имя с дублированием `{name}-plan.md`
 > - **v3** (после миграции): Новая структура `_plans/features/`, имя без дублирования `{name}.md`
 > - Режим определяется из `.pipeline-state.json → naming_version`
-> - Миграция: `python .aidd/scripts/migrate-naming-v3.py`
 
 ### Именование артефакта
 
@@ -181,22 +180,22 @@ date = datetime.now().strftime("%Y-%m-%d")  # 2024-12-23
 naming_version = state.get("naming_version", "v2")
 
 if naming_version == "v3":
-    artifact_dir = "ai-docs/docs/_plans/features"
-    filename = f"{date}_{fid}_{slug}.md"  # без дублирования -plan
-else:  # v2 (по умолчанию)
-    artifact_dir = "ai-docs/docs/plans"
-    filename = f"{date}_{fid}_{slug}-plan.md"
+    folder = "_plans/features"
+    filename = f"{date}_{fid}_{slug}.md"  # Без дублирования
+else:
+    folder = "plans"
+    filename = f"{date}_{fid}_{slug}-plan.md"  # С дублированием
 
-# Пример: 2024-12-23_F042_email-notify-plan.md (v2)
-# Пример: 2024-12-23_F042_email-notify.md (v3)
+artifact_path = f"{folder}/{filename}"
+# v2: plans/2024-12-23_F042_email-notify-plan.md
+# v3: _plans/features/2024-12-23_F042_email-notify.md
 ```
 
 ### Обновление .pipeline-state.json
 
-После создания плана обновить `active_pipelines[FID].artifacts` (v2).
+После создания плана обновить `active_pipelines[FID].artifacts` (v2):
 
-**Пример для naming_version = "v2" (по умолчанию)**:
-
+**Пример для v2 (по умолчанию)**:
 ```json
 {
   "naming_version": "v2",
@@ -221,22 +220,12 @@ else:  # v2 (по умолчанию)
 }
 ```
 
-**Пример для naming_version = "v3" (после миграции)**:
-
+**Пример для v3 (после миграции)**:
 ```json
 {
   "naming_version": "v3",
   "active_pipelines": {
     "F042": {
-      "branch": "feature/F042-email-notify",
-      "name": "email-notify",
-      "title": "Email уведомления",
-      "stage": "PLAN",
-      "gates": {
-        "PRD_READY": {"passed": true, "passed_at": "2024-12-23T10:00:00Z"},
-        "RESEARCH_DONE": {"passed": true, "passed_at": "2024-12-23T11:00:00Z"},
-        "PLAN_APPROVED": {"passed": false}
-      },
       "artifacts": {
         "prd": "_analysis/2024-12-23_F042_email-notify.md",
         "research": "_research/2024-12-23_F042_email-notify.md",
@@ -278,7 +267,8 @@ else:  # v2 (по умолчанию)
 | Аспект | /aidd-plan (CREATE) | /aidd-feature-plan (FEATURE) |
 |--------|----------------|-------------------------|
 | Цель | Полная архитектура системы | План интеграции фичи |
-| Артефакт | `architecture/{name}-plan.md` | `plans/{feature}-plan.md` |
+| Артефакт (v2) | `architecture/{name}-plan.md` | `plans/{feature}-plan.md` |
+| Артефакт (v3) | `_plans/mvp/{name}.md` | `_plans/features/{name}.md` |
 | Фокус | Компоненты с нуля | Точки расширения |
 | Изменения | Создание нового | Минимизация изменений |
 
@@ -356,10 +346,12 @@ else:  # v2 (по умолчанию)
 
 > ⚠️ AI ОБЯЗАН создать TodoWrite с этими пунктами.
 
-- [ ] 🔴 Feature Plan создан (`ai-docs/docs/plans/{feature}-plan.md`)
+- [ ] 🔴 Feature Plan создан в правильной папке:
+  - v2: `ai-docs/docs/plans/{feature}-plan.md`
+  - v3: `ai-docs/docs/_plans/features/{feature}.md`
 - [ ] 🔴 Интеграция с существующим кодом описана
 - [ ] 🔴 **Пользователь утвердил план** ← КРИТИЧЕСКИ ВАЖНО
-- [ ] 🔴 `.pipeline-state.json` обновлён (gate: PLAN_APPROVED)
+- [ ] 🔴 `.pipeline-state.json` обновлён (gate: PLAN_APPROVED, artifact path соответствует naming_version)
 - [ ] 🟡 Breaking changes определены
 - [ ] 🟡 Миграции БД описаны (если применимо)
 

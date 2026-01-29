@@ -137,21 +137,35 @@ cd /opt/free-ai-selector
 
 ## AIDD Framework
 
-Проект использует фреймворк AIDD-MVP Generator (read-only submodule в `.aidd/`).
+Проект использует фреймворк AIDD-MVP Generator v2.4 (read-only submodule в `.aidd/`).
 
 **Не модифицировать файлы в `.aidd/`** — для AI-driven разработки см. [.aidd/CLAUDE.md](.aidd/CLAUDE.md)
 
+### Migration Mode v2.4
+
+Фреймворк поддерживает обе версии команд — **legacy naming** и **new naming** работают идентично:
+
+| Старая команда | Новая команда | Статус |
+|----------------|---------------|--------|
+| `/aidd-idea` | `/aidd-analyze` | ✅ Обе работают |
+| `/aidd-feature-plan` | `/aidd-plan-feature` | ✅ Обе работают |
+| `/aidd-generate` | `/aidd-code` | ✅ Обе работают |
+| `/aidd-finalize` | `/aidd-validate` | ✅ Обе работают |
+
 ### Slash-команды AIDD
 
-| # | Команда | Описание | Ворота |
-|---|---------|----------|--------|
-| 0 | `/aidd-init` | Инициализация проекта | BOOTSTRAP_READY |
-| 1 | `/aidd-idea` | Создание PRD | PRD_READY |
-| 2 | `/aidd-research` | Анализ кодовой базы | RESEARCH_DONE |
-| 3 | `/aidd-plan` | Архитектурный план | PLAN_APPROVED |
-| 3 | `/aidd-feature-plan` | План фичи | PLAN_APPROVED |
-| 4 | `/aidd-generate` | Генерация кода | IMPLEMENT_OK |
-| 5 | `/aidd-review` | Код-ревью | REVIEW_OK |
-| 6 | `/aidd-test` | Тестирование | QA_PASSED |
-| 7 | `/aidd-validate` | Финальная проверка | ALL_GATES_PASSED |
-| 8 | `/aidd-deploy` | Сборка и запуск | DEPLOYED |
+| # | Этап | Команда | Агент | Ворота | Артефакт |
+|---|------|---------|-------|--------|----------|
+| 0 | Bootstrap | `/aidd-init` | — | `BOOTSTRAP_READY` | Структура проекта |
+| 1 | Идея | `/aidd-analyze` (или `/aidd-idea`) | Аналитик | `PRD_READY` | `prd/{name}-prd.md` |
+| 2 | Исследование | `/aidd-research` | Исследователь | `RESEARCH_DONE` | `research/{name}-research.md` |
+| 3 | Архитектура (CREATE) | `/aidd-plan` | Планировщик | `PLAN_APPROVED` | `architecture/{name}-plan.md` |
+| 3 | Архитектура (FEATURE) | `/aidd-plan-feature` (или `/aidd-feature-plan`) | Планировщик | `PLAN_APPROVED` | `plans/{feature}-plan.md` |
+| 4 | Реализация | `/aidd-code` (или `/aidd-generate`) | Программист | `IMPLEMENT_OK` | `services/`, тесты |
+| 5 | Quality & Deploy | `/aidd-validate` (или `/aidd-finalize`) | Валидатор | `REVIEW_OK`, `QA_PASSED`, `ALL_GATES_PASSED`, `DEPLOYED` | `reports/{name}-completion.md` |
+
+**Примечание**: Команды `/aidd-review`, `/aidd-test`, `/aidd-deploy` не существуют как отдельные — они являются шагами внутри `/aidd-validate`.
+
+### Naming Version
+
+Проект использует `naming_version: "v2"` в `.pipeline-state.json` — традиционная структура артефактов (`prd/`, `architecture/`, `reports/`). Миграция на v3 опциональна.

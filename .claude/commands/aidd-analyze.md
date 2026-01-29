@@ -298,11 +298,13 @@ def create_feature(state: dict, idea: str) -> dict:
     naming_version = state.get("naming_version", "v2")
 
     if naming_version == "v3":
-        artifact_dir = "ai-docs/docs/_analysis"
-        filename = f"{date}_{fid}_{slug}.md"  # без дублирования -prd
-    else:  # v2 (по умолчанию)
-        artifact_dir = "ai-docs/docs/prd"
-        filename = f"{date}_{fid}_{slug}-prd.md"
+        folder = "_analysis"
+        filename = f"{date}_{fid}_{slug}.md"  # Без дублирования
+    else:
+        folder = "prd"
+        filename = f"{date}_{fid}_{slug}-prd.md"  # С дублированием
+
+    artifact_path = f"{folder}/{filename}"
 
     # 5. Сформировать имя ветки
     branch = f"feature/{fid}-{slug}"
@@ -391,28 +393,45 @@ def get_current_feature_context(state: dict) -> tuple[str, dict] | None:
 
 ### Формат имени файла
 
+**v2 (по умолчанию, с дублированием)**:
 ```
-{YYYY-MM-DD}_{FID}_{slug}-{type}.md
+{YYYY-MM-DD}_{FID}_{slug}-prd.md
 
 Примеры:
 - 2024-12-23_F001_table-booking-prd.md
 - 2024-12-23_F002_email-notify-prd.md
 ```
 
+**v3 (после миграции, без дублирования)**:
+```
+{YYYY-MM-DD}_{FID}_{slug}.md
+
+Примеры:
+- 2024-12-23_F001_table-booking.md
+- 2024-12-23_F002_email-notify.md
+```
+
 ### Обновление FEATURES.md
 
 После создания PRD обновить реестр фич:
 
+**v2 (по умолчанию)**:
 ```markdown
 # В ai-docs/docs/FEATURES.md добавить строку:
 
 | F001 | Бронирование столиков | IN_PROGRESS | 2024-12-23 | — | `prd/2024-12-23_F001_table-booking-prd.md` |
 ```
 
+**v3 (после миграции)**:
+```markdown
+# В ai-docs/docs/FEATURES.md добавить строку:
+
+| F001 | Бронирование столиков | IN_PROGRESS | 2024-12-23 | — | `_analysis/2024-12-23_F001_table-booking.md` |
+```
+
 ### Обновление .pipeline-state.json (v2)
 
-**Пример для naming_version = "v2" (по умолчанию)**:
-
+**Пример для v2 (по умолчанию)**:
 ```json
 {
   "version": "2.0",
@@ -454,46 +473,27 @@ def get_current_feature_context(state: dict) -> tuple[str, dict] | None:
 }
 ```
 
-**Пример для naming_version = "v3" (после миграции)**:
-
+**Пример для v3 (после миграции)**:
 ```json
 {
   "version": "2.0",
   "naming_version": "v3",
-  "global_gates": {
-    "BOOTSTRAP_READY": { "passed": true, "passed_at": "2024-12-23T09:00:00Z" }
+  "gate_aliases": {
+    "PRD_READY": "ANALYSIS_READY"
   },
   "active_pipelines": {
     "F001": {
-      "branch": "feature/F001-table-booking",
-      "name": "table-booking",
-      "title": "Система бронирования столиков",
-      "stage": "IDEA",
-      "created": "2024-12-23",
       "gates": {
         "PRD_READY": {
           "passed": true,
-          "passed_at": "2024-12-23T10:30:00Z",
           "artifact": "_analysis/2024-12-23_F001_table-booking.md"
-        },
-        "RESEARCH_DONE": { "passed": false, "passed_at": null },
-        "PLAN_APPROVED": { "passed": false, "passed_at": null, "artifact": null }
+        }
       },
       "artifacts": {
         "prd": "_analysis/2024-12-23_F001_table-booking.md"
       }
     }
-  },
-  "features_registry": {
-    "F001": {
-      "name": "table-booking",
-      "title": "Система бронирования столиков",
-      "created": "2024-12-23",
-      "status": "IN_PROGRESS",
-      "services": []
-    }
-  },
-  "next_feature_id": 2
+  }
 }
 ```
 
@@ -521,6 +521,11 @@ def get_current_feature_context(state: dict) -> tuple[str, dict] | None:
 def pass_prd_ready_gate(state: dict, fid: str, artifact_path: str):
     """
     Отметить PRD_READY как пройденные для указанной фичи.
+
+    Args:
+        artifact_path: Путь к PRD (должен учитывать naming_version)
+                      v2: "prd/{name}-prd.md"
+                      v3: "_analysis/{name}.md"
 
     v2: Ворота обновляются в active_pipelines[fid].gates
     """
@@ -570,10 +575,12 @@ def pass_prd_ready_gate(state: dict, fid: str, artifact_path: str):
 
 > ⚠️ AI ОБЯЗАН создать TodoWrite с этими пунктами.
 
-- [ ] 🔴 PRD документ создан (`ai-docs/docs/prd/{name}-prd.md`)
+- [ ] 🔴 PRD документ создан в правильной папке:
+  - v2: `ai-docs/docs/prd/{name}-prd.md`
+  - v3: `ai-docs/docs/_analysis/{name}.md`
 - [ ] 🔴 Все FR-* требования определены
 - [ ] 🔴 NFR-* требования определены
-- [ ] 🔴 `.pipeline-state.json` обновлён (gate: PRD_READY)
+- [ ] 🔴 `.pipeline-state.json` обновлён (gate: PRD_READY, artifact path соответствует naming_version)
 - [ ] 🟡 Уточняющие вопросы заданы пользователю
 - [ ] 🟡 Scope границы определены (in/out of scope)
 
