@@ -5,6 +5,9 @@ Unit-тесты для новых AI провайдеров (F003)
 - Фаза 1: DeepSeek, OpenRouter, GitHub Models
 - Фаза 2: Fireworks, Hyperbolic, Novita, Scaleway
 - Фаза 3: Kluster, Nebius
+
+F013: Обновлены тесты для OpenAICompatibleProvider.
+Валидация API key теперь в __init__, не в generate().
 """
 
 from unittest.mock import AsyncMock, patch, MagicMock
@@ -26,7 +29,8 @@ class TestDeepSeekProvider:
         """Тест инициализации с параметрами по умолчанию."""
         from app.infrastructure.ai_providers.deepseek import DeepSeekProvider
 
-        provider = DeepSeekProvider()
+        # F013: API key обязателен в __init__
+        provider = DeepSeekProvider(api_key="test-key")
         assert provider.model == "deepseek-chat"
         assert provider.api_url == "https://api.deepseek.com/v1/chat/completions"
         assert provider.timeout == 30.0
@@ -43,26 +47,17 @@ class TestDeepSeekProvider:
         """Тест получения имени провайдера."""
         from app.infrastructure.ai_providers.deepseek import DeepSeekProvider
 
-        provider = DeepSeekProvider()
+        provider = DeepSeekProvider(api_key="test-key")
         assert provider.get_provider_name() == "DeepSeek"
 
-    @pytest.mark.asyncio
-    async def test_generate_without_api_key(self):
-        """Тест генерации без API ключа."""
+    def test_init_without_api_key_raises(self, monkeypatch):
+        """Тест: создание провайдера без API ключа вызывает ValueError."""
         from app.infrastructure.ai_providers.deepseek import DeepSeekProvider
 
-        provider = DeepSeekProvider(api_key="")
-        with pytest.raises(ValueError, match="API ключ обязателен"):
-            await provider.generate("test prompt")
-
-    @pytest.mark.asyncio
-    async def test_health_check_without_api_key(self):
-        """Тест health check без API ключа."""
-        from app.infrastructure.ai_providers.deepseek import DeepSeekProvider
-
-        provider = DeepSeekProvider(api_key="")
-        result = await provider.health_check()
-        assert result is False
+        # F013: Валидация в __init__, нужно очистить env
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+        with pytest.raises(ValueError, match="DEEPSEEK_API_KEY is required"):
+            DeepSeekProvider()
 
     @pytest.mark.asyncio
     async def test_generate_success(self):
@@ -94,25 +89,27 @@ class TestOpenRouterProvider:
         """Тест инициализации с параметрами по умолчанию."""
         from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
 
-        provider = OpenRouterProvider()
-        assert provider.model == "deepseek/deepseek-r1:free"
+        # F013: API key обязателен в __init__
+        provider = OpenRouterProvider(api_key="test-key")
+        # F013: Обновлён DEFAULT_MODEL
+        assert provider.model == "deepseek/deepseek-r1-0528:free"
         assert provider.api_url == "https://openrouter.ai/api/v1/chat/completions"
 
     def test_get_provider_name(self):
         """Тест получения имени провайдера."""
         from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
 
-        provider = OpenRouterProvider()
+        provider = OpenRouterProvider(api_key="test-key")
         assert provider.get_provider_name() == "OpenRouter"
 
-    @pytest.mark.asyncio
-    async def test_generate_without_api_key(self):
-        """Тест генерации без API ключа."""
+    def test_init_without_api_key_raises(self, monkeypatch):
+        """Тест: создание провайдера без API ключа вызывает ValueError."""
         from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
 
-        provider = OpenRouterProvider(api_key="")
-        with pytest.raises(ValueError, match="API ключ обязателен"):
-            await provider.generate("test prompt")
+        # F013: Валидация в __init__, нужно очистить env
+        monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+        with pytest.raises(ValueError, match="OPENROUTER_API_KEY is required"):
+            OpenRouterProvider()
 
 
 @pytest.mark.unit
@@ -123,7 +120,8 @@ class TestGitHubModelsProvider:
         """Тест инициализации с параметрами по умолчанию."""
         from app.infrastructure.ai_providers.github_models import GitHubModelsProvider
 
-        provider = GitHubModelsProvider()
+        # F013: API key обязателен в __init__
+        provider = GitHubModelsProvider(api_key="test-key")
         assert provider.model == "gpt-4o-mini"
         assert provider.api_url == "https://models.inference.ai.azure.com/chat/completions"
 
@@ -131,17 +129,17 @@ class TestGitHubModelsProvider:
         """Тест получения имени провайдера."""
         from app.infrastructure.ai_providers.github_models import GitHubModelsProvider
 
-        provider = GitHubModelsProvider()
+        provider = GitHubModelsProvider(api_key="test-key")
         assert provider.get_provider_name() == "GitHubModels"
 
-    @pytest.mark.asyncio
-    async def test_generate_without_api_key(self):
-        """Тест генерации без API ключа."""
+    def test_init_without_api_key_raises(self, monkeypatch):
+        """Тест: создание провайдера без API ключа вызывает ValueError."""
         from app.infrastructure.ai_providers.github_models import GitHubModelsProvider
 
-        provider = GitHubModelsProvider(api_key="")
-        with pytest.raises(ValueError, match="Token обязателен"):
-            await provider.generate("test prompt")
+        # F013: Валидация в __init__, нужно очистить env
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        with pytest.raises(ValueError, match="GITHUB_TOKEN is required"):
+            GitHubModelsProvider()
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -157,7 +155,8 @@ class TestFireworksProvider:
         """Тест инициализации с параметрами по умолчанию."""
         from app.infrastructure.ai_providers.fireworks import FireworksProvider
 
-        provider = FireworksProvider()
+        # F013: API key обязателен в __init__
+        provider = FireworksProvider(api_key="test-key")
         assert "llama" in provider.model.lower()
         assert provider.api_url == "https://api.fireworks.ai/inference/v1/chat/completions"
 
@@ -165,17 +164,17 @@ class TestFireworksProvider:
         """Тест получения имени провайдера."""
         from app.infrastructure.ai_providers.fireworks import FireworksProvider
 
-        provider = FireworksProvider()
+        provider = FireworksProvider(api_key="test-key")
         assert provider.get_provider_name() == "Fireworks"
 
-    @pytest.mark.asyncio
-    async def test_generate_without_api_key(self):
-        """Тест генерации без API ключа."""
+    def test_init_without_api_key_raises(self, monkeypatch):
+        """Тест: создание провайдера без API ключа вызывает ValueError."""
         from app.infrastructure.ai_providers.fireworks import FireworksProvider
 
-        provider = FireworksProvider(api_key="")
-        with pytest.raises(ValueError, match="API ключ обязателен"):
-            await provider.generate("test prompt")
+        # F013: Валидация в __init__, нужно очистить env
+        monkeypatch.delenv("FIREWORKS_API_KEY", raising=False)
+        with pytest.raises(ValueError, match="FIREWORKS_API_KEY is required"):
+            FireworksProvider()
 
 
 @pytest.mark.unit
@@ -186,7 +185,8 @@ class TestHyperbolicProvider:
         """Тест инициализации с параметрами по умолчанию."""
         from app.infrastructure.ai_providers.hyperbolic import HyperbolicProvider
 
-        provider = HyperbolicProvider()
+        # F013: API key обязателен в __init__
+        provider = HyperbolicProvider(api_key="test-key")
         assert "llama" in provider.model.lower()
         assert provider.api_url == "https://api.hyperbolic.xyz/v1/chat/completions"
 
@@ -194,17 +194,17 @@ class TestHyperbolicProvider:
         """Тест получения имени провайдера."""
         from app.infrastructure.ai_providers.hyperbolic import HyperbolicProvider
 
-        provider = HyperbolicProvider()
+        provider = HyperbolicProvider(api_key="test-key")
         assert provider.get_provider_name() == "Hyperbolic"
 
-    @pytest.mark.asyncio
-    async def test_generate_without_api_key(self):
-        """Тест генерации без API ключа."""
+    def test_init_without_api_key_raises(self, monkeypatch):
+        """Тест: создание провайдера без API ключа вызывает ValueError."""
         from app.infrastructure.ai_providers.hyperbolic import HyperbolicProvider
 
-        provider = HyperbolicProvider(api_key="")
-        with pytest.raises(ValueError, match="API ключ обязателен"):
-            await provider.generate("test prompt")
+        # F013: Валидация в __init__, нужно очистить env
+        monkeypatch.delenv("HYPERBOLIC_API_KEY", raising=False)
+        with pytest.raises(ValueError, match="HYPERBOLIC_API_KEY is required"):
+            HyperbolicProvider()
 
 
 @pytest.mark.unit
@@ -215,7 +215,8 @@ class TestNovitaProvider:
         """Тест инициализации с параметрами по умолчанию."""
         from app.infrastructure.ai_providers.novita import NovitaProvider
 
-        provider = NovitaProvider()
+        # F013: API key обязателен в __init__
+        provider = NovitaProvider(api_key="test-key")
         assert "llama" in provider.model.lower()
         assert provider.api_url == "https://api.novita.ai/v3/openai/chat/completions"
 
@@ -223,17 +224,17 @@ class TestNovitaProvider:
         """Тест получения имени провайдера."""
         from app.infrastructure.ai_providers.novita import NovitaProvider
 
-        provider = NovitaProvider()
+        provider = NovitaProvider(api_key="test-key")
         assert provider.get_provider_name() == "Novita"
 
-    @pytest.mark.asyncio
-    async def test_generate_without_api_key(self):
-        """Тест генерации без API ключа."""
+    def test_init_without_api_key_raises(self, monkeypatch):
+        """Тест: создание провайдера без API ключа вызывает ValueError."""
         from app.infrastructure.ai_providers.novita import NovitaProvider
 
-        provider = NovitaProvider(api_key="")
-        with pytest.raises(ValueError, match="API ключ обязателен"):
-            await provider.generate("test prompt")
+        # F013: Валидация в __init__, нужно очистить env
+        monkeypatch.delenv("NOVITA_API_KEY", raising=False)
+        with pytest.raises(ValueError, match="NOVITA_API_KEY is required"):
+            NovitaProvider()
 
 
 @pytest.mark.unit
@@ -244,7 +245,8 @@ class TestScalewayProvider:
         """Тест инициализации с параметрами по умолчанию."""
         from app.infrastructure.ai_providers.scaleway import ScalewayProvider
 
-        provider = ScalewayProvider()
+        # F013: API key обязателен в __init__
+        provider = ScalewayProvider(api_key="test-key")
         assert "llama" in provider.model.lower()
         assert provider.api_url == "https://api.scaleway.ai/v1/chat/completions"
 
@@ -252,17 +254,17 @@ class TestScalewayProvider:
         """Тест получения имени провайдера."""
         from app.infrastructure.ai_providers.scaleway import ScalewayProvider
 
-        provider = ScalewayProvider()
+        provider = ScalewayProvider(api_key="test-key")
         assert provider.get_provider_name() == "Scaleway"
 
-    @pytest.mark.asyncio
-    async def test_generate_without_api_key(self):
-        """Тест генерации без API ключа."""
+    def test_init_without_api_key_raises(self, monkeypatch):
+        """Тест: создание провайдера без API ключа вызывает ValueError."""
         from app.infrastructure.ai_providers.scaleway import ScalewayProvider
 
-        provider = ScalewayProvider(api_key="")
-        with pytest.raises(ValueError, match="API ключ обязателен"):
-            await provider.generate("test prompt")
+        # F013: Валидация в __init__, нужно очистить env
+        monkeypatch.delenv("SCALEWAY_API_KEY", raising=False)
+        with pytest.raises(ValueError, match="SCALEWAY_API_KEY is required"):
+            ScalewayProvider()
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -278,7 +280,8 @@ class TestKlusterProvider:
         """Тест инициализации с параметрами по умолчанию."""
         from app.infrastructure.ai_providers.kluster import KlusterProvider
 
-        provider = KlusterProvider()
+        # F013: API key обязателен в __init__
+        provider = KlusterProvider(api_key="test-key")
         assert "llama" in provider.model.lower()
         assert provider.api_url == "https://api.kluster.ai/v1/chat/completions"
 
@@ -286,17 +289,17 @@ class TestKlusterProvider:
         """Тест получения имени провайдера."""
         from app.infrastructure.ai_providers.kluster import KlusterProvider
 
-        provider = KlusterProvider()
+        provider = KlusterProvider(api_key="test-key")
         assert provider.get_provider_name() == "Kluster"
 
-    @pytest.mark.asyncio
-    async def test_generate_without_api_key(self):
-        """Тест генерации без API ключа."""
+    def test_init_without_api_key_raises(self, monkeypatch):
+        """Тест: создание провайдера без API ключа вызывает ValueError."""
         from app.infrastructure.ai_providers.kluster import KlusterProvider
 
-        provider = KlusterProvider(api_key="")
-        with pytest.raises(ValueError, match="API ключ обязателен"):
-            await provider.generate("test prompt")
+        # F013: Валидация в __init__, нужно очистить env
+        monkeypatch.delenv("KLUSTER_API_KEY", raising=False)
+        with pytest.raises(ValueError, match="KLUSTER_API_KEY is required"):
+            KlusterProvider()
 
 
 @pytest.mark.unit
@@ -307,7 +310,8 @@ class TestNebiusProvider:
         """Тест инициализации с параметрами по умолчанию."""
         from app.infrastructure.ai_providers.nebius import NebiusProvider
 
-        provider = NebiusProvider()
+        # F013: API key обязателен в __init__
+        provider = NebiusProvider(api_key="test-key")
         assert "llama" in provider.model.lower()
         assert provider.api_url == "https://api.studio.nebius.ai/v1/chat/completions"
 
@@ -315,17 +319,17 @@ class TestNebiusProvider:
         """Тест получения имени провайдера."""
         from app.infrastructure.ai_providers.nebius import NebiusProvider
 
-        provider = NebiusProvider()
+        provider = NebiusProvider(api_key="test-key")
         assert provider.get_provider_name() == "Nebius"
 
-    @pytest.mark.asyncio
-    async def test_generate_without_api_key(self):
-        """Тест генерации без API ключа."""
+    def test_init_without_api_key_raises(self, monkeypatch):
+        """Тест: создание провайдера без API ключа вызывает ValueError."""
         from app.infrastructure.ai_providers.nebius import NebiusProvider
 
-        provider = NebiusProvider(api_key="")
-        with pytest.raises(ValueError, match="API ключ обязателен"):
-            await provider.generate("test prompt")
+        # F013: Валидация в __init__, нужно очистить env
+        monkeypatch.delenv("NEBIUS_API_KEY", raising=False)
+        with pytest.raises(ValueError, match="NEBIUS_API_KEY is required"):
+            NebiusProvider()
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -379,16 +383,17 @@ class TestProvidersInheritance:
         from app.infrastructure.ai_providers.kluster import KlusterProvider
         from app.infrastructure.ai_providers.nebius import NebiusProvider
 
+        # F013: Теперь все провайдеры требуют API key в __init__
         providers = [
-            DeepSeekProvider(),
-            OpenRouterProvider(),
-            GitHubModelsProvider(),
-            FireworksProvider(),
-            HyperbolicProvider(),
-            NovitaProvider(),
-            ScalewayProvider(),
-            KlusterProvider(),
-            NebiusProvider(),
+            DeepSeekProvider(api_key="test-key"),
+            OpenRouterProvider(api_key="test-key"),
+            GitHubModelsProvider(api_key="test-key"),
+            FireworksProvider(api_key="test-key"),
+            HyperbolicProvider(api_key="test-key"),
+            NovitaProvider(api_key="test-key"),
+            ScalewayProvider(api_key="test-key"),
+            KlusterProvider(api_key="test-key"),
+            NebiusProvider(api_key="test-key"),
         ]
 
         required_methods = ["generate", "health_check", "get_provider_name"]

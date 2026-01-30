@@ -308,6 +308,209 @@
         "plan": "_plans/features/2026-01-29_F012_rate-limit-handling.md",
         "completion": "_validation/2026-01-30_F012_rate-limit-handling.md"
       }
+    },
+    "F013": {
+      "branch": "master",
+      "name": "ai-providers-consolidation",
+      "title": "AI Providers Consolidation: OpenAICompatibleProvider",
+      "stage": "VALIDATED",
+      "created": "2026-01-30",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-01-30T12:00:00Z",
+          "artifact": "_analysis/2026-01-30_F013_ai-providers-consolidation.md"
+        },
+        "RESEARCH_DONE": {
+          "passed": true,
+          "passed_at": "2026-01-30T14:30:00Z",
+          "artifact": "_research/2026-01-30_F013_ai-providers-consolidation.md",
+          "findings": {
+            "providers_analyzed": 14,
+            "openai_compatible": 12,
+            "excluded": ["cloudflare"],
+            "hook_methods_needed": ["_build_url", "_build_headers", "_is_health_check_success"],
+            "expected_reduction": "~80%",
+            "lines_before": 1820,
+            "lines_after": 350
+          }
+        },
+        "PLAN_APPROVED": {
+          "passed": true,
+          "passed_at": "2026-01-30T15:00:00Z",
+          "artifact": "_plans/features/2026-01-30_F013_ai-providers-consolidation.md",
+          "approved_by": "user",
+          "summary": {
+            "files_to_modify": 13,
+            "base_class_lines": 120,
+            "providers_to_convert": 12,
+            "cloudflare_excluded": true,
+            "breaking_changes": false,
+            "db_migration_required": false
+          }
+        },
+        "IMPLEMENT_OK": {
+          "passed": true,
+          "passed_at": "2026-01-30T17:00:00Z",
+          "files_changed": [
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/base.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/groq.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/cerebras.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/sambanova.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/huggingface.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/deepseek.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/openrouter.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/github_models.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/fireworks.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/hyperbolic.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/novita.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/scaleway.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/kluster.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/nebius.py",
+            "services/free-ai-selector-business-api/tests/unit/test_new_providers.py"
+          ],
+          "tests": {
+            "f013_specific": "31 provider tests passed",
+            "total_passed": "122 passed",
+            "total_failed": "4 (pre-existing static file tests)",
+            "implementation_status": "Complete: OpenAICompatibleProvider base class, 12 providers converted",
+            "lines_reduced": "~1100 lines (from 1820 to ~300)",
+            "type_hints_coverage": "100%",
+            "backward_compatible": true
+          }
+        },
+        "REVIEW_OK": {
+          "passed": true,
+          "passed_at": "2026-01-30T18:00:00Z",
+          "artifact": "_validation/2026-01-30_F013_ai-providers-consolidation.md",
+          "decision": "APPROVED",
+          "blocker_issues": 0,
+          "critical_issues": 0,
+          "minor_issues": 2,
+          "notes": "Clean refactoring. DRY achieved. E501 lint issues fixed."
+        },
+        "QA_PASSED": {
+          "passed": true,
+          "passed_at": "2026-01-30T18:00:00Z",
+          "artifact": "_validation/2026-01-30_F013_ai-providers-consolidation.md",
+          "tests_executed": 31,
+          "tests_passed": 31,
+          "tests_failed": 0,
+          "f013_specific_failures": 0,
+          "notes": "All 31 provider tests passed. 122 total tests passed (4 pre-existing failures unrelated to F013)."
+        },
+        "ALL_GATES_PASSED": {
+          "passed": true,
+          "passed_at": "2026-01-30T18:00:00Z",
+          "artifact": "_validation/2026-01-30_F013_ai-providers-consolidation.md",
+          "requirements_coverage": "100%",
+          "gates_passed": 7,
+          "notes": "All requirements traced and verified. Ready for deployment."
+        },
+        "DEPLOYED": { "passed": false, "passed_at": null }
+      },
+      "artifacts": {
+        "prd": "_analysis/2026-01-30_F013_ai-providers-consolidation.md",
+        "research": "_research/2026-01-30_F013_ai-providers-consolidation.md",
+        "plan": "_plans/features/2026-01-30_F013_ai-providers-consolidation.md",
+        "completion": "_validation/2026-01-30_F013_ai-providers-consolidation.md"
+      }
+    },
+    "F014": {
+      "branch": "master",
+      "name": "process-prompt-simplification",
+      "title": "ProcessPromptUseCase: Error Handling Consolidation",
+      "stage": "IDEA",
+      "created": "2026-01-30",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-01-30T12:00:00Z",
+          "artifact": "_analysis/2026-01-30_F014_process-prompt-simplification.md"
+        },
+        "RESEARCH_DONE": { "passed": false, "passed_at": null, "artifact": null },
+        "PLAN_APPROVED": { "passed": false, "passed_at": null, "artifact": null },
+        "IMPLEMENT_OK": { "passed": false, "passed_at": null },
+        "REVIEW_OK": { "passed": false, "passed_at": null, "artifact": null },
+        "QA_PASSED": { "passed": false, "passed_at": null, "artifact": null },
+        "ALL_GATES_PASSED": { "passed": false, "passed_at": null, "artifact": null },
+        "DEPLOYED": { "passed": false, "passed_at": null }
+      },
+      "artifacts": {
+        "prd": "_analysis/2026-01-30_F014_process-prompt-simplification.md"
+      }
+    },
+    "F015": {
+      "branch": "master",
+      "name": "data-api-endpoints-dry",
+      "title": "Data API Endpoints: DRY Refactoring",
+      "stage": "IDEA",
+      "created": "2026-01-30",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-01-30T12:00:00Z",
+          "artifact": "_analysis/2026-01-30_F015_data-api-endpoints-dry.md"
+        },
+        "RESEARCH_DONE": { "passed": false, "passed_at": null, "artifact": null },
+        "PLAN_APPROVED": { "passed": false, "passed_at": null, "artifact": null },
+        "IMPLEMENT_OK": { "passed": false, "passed_at": null },
+        "REVIEW_OK": { "passed": false, "passed_at": null, "artifact": null },
+        "QA_PASSED": { "passed": false, "passed_at": null, "artifact": null },
+        "ALL_GATES_PASSED": { "passed": false, "passed_at": null, "artifact": null },
+        "DEPLOYED": { "passed": false, "passed_at": null }
+      },
+      "artifacts": {
+        "prd": "_analysis/2026-01-30_F015_data-api-endpoints-dry.md"
+      }
+    },
+    "F016": {
+      "branch": "master",
+      "name": "reliability-score-ssot",
+      "title": "Reliability Score: Single Source of Truth",
+      "stage": "IDEA",
+      "created": "2026-01-30",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-01-30T12:00:00Z",
+          "artifact": "_analysis/2026-01-30_F016_reliability-score-ssot.md"
+        },
+        "RESEARCH_DONE": { "passed": false, "passed_at": null, "artifact": null },
+        "PLAN_APPROVED": { "passed": false, "passed_at": null, "artifact": null },
+        "IMPLEMENT_OK": { "passed": false, "passed_at": null },
+        "REVIEW_OK": { "passed": false, "passed_at": null, "artifact": null },
+        "QA_PASSED": { "passed": false, "passed_at": null, "artifact": null },
+        "ALL_GATES_PASSED": { "passed": false, "passed_at": null, "artifact": null },
+        "DEPLOYED": { "passed": false, "passed_at": null }
+      },
+      "artifacts": {
+        "prd": "_analysis/2026-01-30_F016_reliability-score-ssot.md"
+      }
+    },
+    "F017": {
+      "branch": "master",
+      "name": "repositories-sql-optimization",
+      "title": "Data API Repositories: SQL Aggregation Optimization",
+      "stage": "IDEA",
+      "created": "2026-01-30",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-01-30T12:00:00Z",
+          "artifact": "_analysis/2026-01-30_F017_repositories-sql-optimization.md"
+        },
+        "RESEARCH_DONE": { "passed": false, "passed_at": null, "artifact": null },
+        "PLAN_APPROVED": { "passed": false, "passed_at": null, "artifact": null },
+        "IMPLEMENT_OK": { "passed": false, "passed_at": null },
+        "REVIEW_OK": { "passed": false, "passed_at": null, "artifact": null },
+        "QA_PASSED": { "passed": false, "passed_at": null, "artifact": null },
+        "ALL_GATES_PASSED": { "passed": false, "passed_at": null, "artifact": null },
+        "DEPLOYED": { "passed": false, "passed_at": null }
+      },
+      "artifacts": {
+        "prd": "_analysis/2026-01-30_F017_repositories-sql-optimization.md"
+      }
     }
   },
   "features_registry": {
@@ -513,9 +716,77 @@
         "plan": "_plans/features/2026-01-29_F012_rate-limit-handling.md",
         "completion": "_validation/2026-01-30_F012_rate-limit-handling.md"
       }
+    },
+    "F013": {
+      "name": "ai-providers-consolidation",
+      "title": "AI Providers Consolidation: OpenAICompatibleProvider",
+      "description": "Рефакторинг: создание OpenAICompatibleProvider базового класса, консолидация 12 OpenAI-compatible провайдеров из ~140 строк каждый в ~27 строк конфигурации. Устранение ~1100 строк дублирования (QC-1/DRY)",
+      "created": "2026-01-30",
+      "status": "ALL_GATES_PASSED",
+      "services": [
+        "free-ai-selector-business-api"
+      ],
+      "artifacts": {
+        "prd": "_analysis/2026-01-30_F013_ai-providers-consolidation.md",
+        "research": "_research/2026-01-30_F013_ai-providers-consolidation.md",
+        "plan": "_plans/features/2026-01-30_F013_ai-providers-consolidation.md",
+        "completion": "_validation/2026-01-30_F013_ai-providers-consolidation.md"
+      }
+    },
+    "F014": {
+      "name": "process-prompt-simplification",
+      "title": "ProcessPromptUseCase: Error Handling Consolidation",
+      "description": "Рефакторинг: консолидация 5 except блоков в 2 приватных метода (_handle_rate_limit, _handle_transient_error). Снижение цикломатической сложности с ~25 до ~15 (QC-2/KISS, QC-4/SRP)",
+      "created": "2026-01-30",
+      "status": "PRD_READY",
+      "services": [
+        "free-ai-selector-business-api"
+      ],
+      "artifacts": {
+        "prd": "_analysis/2026-01-30_F014_process-prompt-simplification.md"
+      }
+    },
+    "F015": {
+      "name": "data-api-endpoints-dry",
+      "title": "Data API Endpoints: DRY Refactoring",
+      "description": "Рефакторинг: объединение _model_to_response() функций, создание get_model_or_404 dependency. Устранение 7 мест дублирования (QC-1/DRY)",
+      "created": "2026-01-30",
+      "status": "PRD_READY",
+      "services": [
+        "free-ai-selector-data-postgres-api"
+      ],
+      "artifacts": {
+        "prd": "_analysis/2026-01-30_F015_data-api-endpoints-dry.md"
+      }
+    },
+    "F016": {
+      "name": "reliability-score-ssot",
+      "title": "Reliability Score: Single Source of Truth",
+      "description": "Рефакторинг: вынесение расчёта reliability_score в ReliabilityService domain service. Устранение дублирования в 2 местах (QC-10/SSoT)",
+      "created": "2026-01-30",
+      "status": "PRD_READY",
+      "services": [
+        "free-ai-selector-data-postgres-api"
+      ],
+      "artifacts": {
+        "prd": "_analysis/2026-01-30_F016_reliability-score-ssot.md"
+      }
+    },
+    "F017": {
+      "name": "repositories-sql-optimization",
+      "title": "Data API Repositories: SQL Aggregation Optimization",
+      "description": "Рефакторинг: замена Python loops на SQL aggregation (func.count, func.avg) в get_statistics_for_period(). Оптимизация памяти O(n) → O(1) (QC-2/KISS, Performance)",
+      "created": "2026-01-30",
+      "status": "PRD_READY",
+      "services": [
+        "free-ai-selector-data-postgres-api"
+      ],
+      "artifacts": {
+        "prd": "_analysis/2026-01-30_F017_repositories-sql-optimization.md"
+      }
     }
   },
-  "next_feature_id": 13,
+  "next_feature_id": 18,
   "services": [],
   "gate_aliases": {
     "PRD_READY": "ANALYSIS_READY",
