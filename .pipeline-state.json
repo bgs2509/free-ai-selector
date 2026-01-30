@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-01-30T22:00:00Z",
+  "updated_at": "2026-01-30T22:30:00Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -497,7 +497,7 @@
       "branch": "master",
       "name": "data-api-endpoints-dry",
       "title": "Data API Endpoints: DRY Refactoring",
-      "stage": "RESEARCH",
+      "stage": "PLAN",
       "created": "2026-01-30",
       "gates": {
         "PRD_READY": {
@@ -519,7 +519,20 @@
             "quality_cascade": "7/7"
           }
         },
-        "PLAN_APPROVED": { "passed": false, "passed_at": null, "artifact": null },
+        "PLAN_APPROVED": {
+          "passed": true,
+          "passed_at": "2026-01-30T22:30:00Z",
+          "artifact": "_plans/features/2026-01-30_F015_data-api-endpoints-dry.md",
+          "approved_by": "user",
+          "summary": {
+            "files_to_modify": 2,
+            "new_components": 1,
+            "loc_change": -44,
+            "endpoints_affected": 6,
+            "breaking_changes": false,
+            "db_migration_required": false
+          }
+        },
         "IMPLEMENT_OK": { "passed": false, "passed_at": null },
         "REVIEW_OK": { "passed": false, "passed_at": null, "artifact": null },
         "QA_PASSED": { "passed": false, "passed_at": null, "artifact": null },
@@ -528,7 +541,8 @@
       },
       "artifacts": {
         "prd": "_analysis/2026-01-30_F015_data-api-endpoints-dry.md",
-        "research": "_research/2026-01-30_F015_data-api-endpoints-dry.md"
+        "research": "_research/2026-01-30_F015_data-api-endpoints-dry.md",
+        "plan": "_plans/features/2026-01-30_F015_data-api-endpoints-dry.md"
       }
     },
     "F016": {
@@ -820,13 +834,14 @@
       "title": "Data API Endpoints: DRY Refactoring",
       "description": "Рефакторинг: объединение _model_to_response() функций, создание get_model_or_404 dependency. Устранение 7 мест дублирования (QC-1/DRY)",
       "created": "2026-01-30",
-      "status": "RESEARCH_DONE",
+      "status": "PLAN_APPROVED",
       "services": [
         "free-ai-selector-data-postgres-api"
       ],
       "artifacts": {
         "prd": "_analysis/2026-01-30_F015_data-api-endpoints-dry.md",
-        "research": "_research/2026-01-30_F015_data-api-endpoints-dry.md"
+        "research": "_research/2026-01-30_F015_data-api-endpoints-dry.md",
+        "plan": "_plans/features/2026-01-30_F015_data-api-endpoints-dry.md"
       }
     },
     "F016": {
