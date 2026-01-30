@@ -403,13 +403,13 @@ def _calculate_recent_metrics(
 
     if request_count >= MIN_REQUESTS_FOR_RECENT:
         recent_success_rate = success_count / request_count
-        # F011: Zero success rate = zero reliability
-        if recent_success_rate == 0.0:
-            recent_reliability = 0.0
-            recent_speed_score = 0.0
-        else:
-            recent_speed_score = max(0.0, 1.0 - (avg_response_time / 10.0))
-            recent_reliability = (recent_success_rate * 0.6) + (recent_speed_score * 0.4)
+
+        # F016: Использование ReliabilityService (Single Source of Truth)
+        from app.domain.services.reliability_service import ReliabilityService
+
+        recent_reliability = ReliabilityService.calculate(
+            success_rate=recent_success_rate, avg_response_time=avg_response_time
+        )
 
         return {
             "recent_success_rate": round(recent_success_rate, 4),

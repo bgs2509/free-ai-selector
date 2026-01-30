@@ -71,13 +71,16 @@ class AIModel:
     def reliability_score(self) -> float:
         """
         Calculate reliability score (0.0 - 1.0).
-        Formula: reliability_score = (success_rate × 0.6) + (speed_score × 0.4)
 
-        Note: If success_rate = 0, returns 0.0 (F011 fix).
+        Делегирует расчёт в ReliabilityService (F016: Single Source of Truth).
+
+        Note: Formula и F011 edge case обрабатываются в сервисе.
         """
-        if self.success_rate == 0.0:
-            return 0.0
-        return (self.success_rate * 0.6) + (self.speed_score * 0.4)
+        from app.domain.services.reliability_service import ReliabilityService
+
+        return ReliabilityService.calculate(
+            success_rate=self.success_rate, avg_response_time=self.average_response_time
+        )
 
 
 @dataclass

@@ -574,7 +574,7 @@
       "branch": "master",
       "name": "reliability-score-ssot",
       "title": "Reliability Score: Single Source of Truth",
-      "stage": "IDEA",
+      "stage": "IMPLEMENT",
       "created": "2026-01-30",
       "gates": {
         "PRD_READY": {
@@ -582,16 +582,48 @@
           "passed_at": "2026-01-30T12:00:00Z",
           "artifact": "_analysis/2026-01-30_F016_reliability-score-ssot.md"
         },
-        "RESEARCH_DONE": { "passed": false, "passed_at": null, "artifact": null },
-        "PLAN_APPROVED": { "passed": false, "passed_at": null, "artifact": null },
-        "IMPLEMENT_OK": { "passed": false, "passed_at": null },
+        "RESEARCH_DONE": {
+          "passed": true,
+          "passed_at": "2026-01-30T23:45:00Z",
+          "artifact": "_research/2026-01-30_F016_reliability-score-ssot.md"
+        },
+        "PLAN_APPROVED": {
+          "passed": true,
+          "passed_at": "2026-01-31T00:00:00Z",
+          "artifact": "_plans/features/2026-01-30_F016_reliability-score-ssot.md",
+          "approved_by": "user"
+        },
+        "IMPLEMENT_OK": {
+          "passed": true,
+          "passed_at": "2026-01-30T17:26:43+00:00",
+          "files_changed": [
+            "services/free-ai-selector-data-postgres-api/app/domain/services/__init__.py",
+            "services/free-ai-selector-data-postgres-api/app/domain/services/reliability_service.py",
+            "services/free-ai-selector-data-postgres-api/app/domain/models.py",
+            "services/free-ai-selector-data-postgres-api/app/api/v1/models.py",
+            "services/free-ai-selector-data-postgres-api/tests/unit/test_reliability_service.py"
+          ],
+          "tests": {
+            "f016_specific": "6/6 passed (new ReliabilityService tests)",
+            "regression_domain": "9/9 passed",
+            "regression_f015": "8/8 passed",
+            "total_unit_tests": "23/23 passed",
+            "implementation_status": "Complete: ReliabilityService created, domain/models.py migrated, api/v1/models.py migrated",
+            "duplication_eliminated": "2 locations (domain/models.py, api/v1/models.py)",
+            "ssot_established": "ReliabilityService.calculate()",
+            "type_hints_coverage": "100%",
+            "backward_compatible": true
+          }
+        },
         "REVIEW_OK": { "passed": false, "passed_at": null, "artifact": null },
         "QA_PASSED": { "passed": false, "passed_at": null, "artifact": null },
         "ALL_GATES_PASSED": { "passed": false, "passed_at": null, "artifact": null },
         "DEPLOYED": { "passed": false, "passed_at": null }
       },
       "artifacts": {
-        "prd": "_analysis/2026-01-30_F016_reliability-score-ssot.md"
+        "prd": "_analysis/2026-01-30_F016_reliability-score-ssot.md",
+        "research": "_research/2026-01-30_F016_reliability-score-ssot.md",
+        "plan": "_plans/features/2026-01-30_F016_reliability-score-ssot.md"
       }
     },
     "F017": {
@@ -875,12 +907,14 @@
       "title": "Reliability Score: Single Source of Truth",
       "description": "Рефакторинг: вынесение расчёта reliability_score в ReliabilityService domain service. Устранение дублирования в 2 местах (QC-10/SSoT)",
       "created": "2026-01-30",
-      "status": "PRD_READY",
+      "status": "IMPLEMENT_OK",
       "services": [
         "free-ai-selector-data-postgres-api"
       ],
       "artifacts": {
-        "prd": "_analysis/2026-01-30_F016_reliability-score-ssot.md"
+        "prd": "_analysis/2026-01-30_F016_reliability-score-ssot.md",
+        "research": "_research/2026-01-30_F016_reliability-score-ssot.md",
+        "plan": "_plans/features/2026-01-30_F016_reliability-score-ssot.md"
       }
     },
     "F017": {
