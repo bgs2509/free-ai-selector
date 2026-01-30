@@ -224,7 +224,7 @@ class PromptHistoryRepository:
         # Используем SQL aggregation вместо загрузки всех записей (F017)
         query = select(
             func.count().label("total"),
-            func.sum(case((PromptHistoryORM.success == True, 1), else_=0)).label("success"),
+            func.sum(case((PromptHistoryORM.success == True, 1), else_=0)).label("success"),  # noqa: E712
         ).where(PromptHistoryORM.created_at >= start_date, PromptHistoryORM.created_at <= end_date)
 
         if model_id is not None:
