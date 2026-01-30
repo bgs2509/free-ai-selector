@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-01-30T23:30:00Z",
+  "updated_at": "2026-01-31T00:15:00Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -637,7 +637,7 @@
       "branch": "master",
       "name": "repositories-sql-optimization",
       "title": "Data API Repositories: SQL Aggregation Optimization",
-      "stage": "IDEA",
+      "stage": "PLAN",
       "created": "2026-01-30",
       "gates": {
         "PRD_READY": {
@@ -645,8 +645,36 @@
           "passed_at": "2026-01-30T12:00:00Z",
           "artifact": "_analysis/2026-01-30_F017_repositories-sql-optimization.md"
         },
-        "RESEARCH_DONE": { "passed": false, "passed_at": null, "artifact": null },
-        "PLAN_APPROVED": { "passed": false, "passed_at": null, "artifact": null },
+        "RESEARCH_DONE": {
+          "passed": true,
+          "passed_at": "2026-01-31T00:00:00Z",
+          "artifact": "_research/2026-01-30_F017_repositories-sql-optimization.md",
+          "findings": {
+            "target_method": "get_statistics_for_period",
+            "current_approach": "Python aggregation (loads all records)",
+            "optimized_approach": "SQL aggregation (func.count, func.sum)",
+            "reference_implementation": "get_recent_stats_for_all_models (lines 155-202)",
+            "index_exists": "ix_prompt_history_created_at",
+            "performance_gain": "50-100x for large datasets",
+            "memory_optimization": "O(n) → O(1)",
+            "breaking_changes": false
+          }
+        },
+        "PLAN_APPROVED": {
+          "passed": true,
+          "passed_at": "2026-01-31T00:15:00Z",
+          "artifact": "_plans/features/2026-01-30_F017_repositories-sql-optimization.md",
+          "approved_by": "user",
+          "summary": {
+            "files_to_modify": 1,
+            "target_method": "get_statistics_for_period",
+            "optimization": "Python aggregation → SQL aggregation",
+            "lines_to_change": 40,
+            "tests_to_create": 6,
+            "breaking_changes": false,
+            "estimated_hours": "2.5"
+          }
+        },
         "IMPLEMENT_OK": { "passed": false, "passed_at": null },
         "REVIEW_OK": { "passed": false, "passed_at": null, "artifact": null },
         "QA_PASSED": { "passed": false, "passed_at": null, "artifact": null },
@@ -654,7 +682,9 @@
         "DEPLOYED": { "passed": false, "passed_at": null }
       },
       "artifacts": {
-        "prd": "_analysis/2026-01-30_F017_repositories-sql-optimization.md"
+        "prd": "_analysis/2026-01-30_F017_repositories-sql-optimization.md",
+        "research": "_research/2026-01-30_F017_repositories-sql-optimization.md",
+        "plan": "_plans/features/2026-01-30_F017_repositories-sql-optimization.md"
       }
     }
   },
@@ -930,12 +960,14 @@
       "title": "Data API Repositories: SQL Aggregation Optimization",
       "description": "Рефакторинг: замена Python loops на SQL aggregation (func.count, func.avg) в get_statistics_for_period(). Оптимизация памяти O(n) → O(1) (QC-2/KISS, Performance)",
       "created": "2026-01-30",
-      "status": "PRD_READY",
+      "status": "PLAN_APPROVED",
       "services": [
         "free-ai-selector-data-postgres-api"
       ],
       "artifacts": {
-        "prd": "_analysis/2026-01-30_F017_repositories-sql-optimization.md"
+        "prd": "_analysis/2026-01-30_F017_repositories-sql-optimization.md",
+        "research": "_research/2026-01-30_F017_repositories-sql-optimization.md",
+        "plan": "_plans/features/2026-01-30_F017_repositories-sql-optimization.md"
       }
     }
   },
