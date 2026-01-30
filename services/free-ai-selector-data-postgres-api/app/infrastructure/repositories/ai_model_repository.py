@@ -5,7 +5,7 @@ Implements repository pattern for AI model CRUD operations.
 Uses SQLAlchemy 2.0 async patterns.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import List, Optional
 
@@ -28,12 +28,16 @@ class AIModelRepository:
         """
         self.session = session
 
-    async def get_all(self, active_only: bool = True) -> List[AIModel]:
+    async def get_all(
+        self, active_only: bool = True, available_only: bool = False
+    ) -> List[AIModel]:
         """
         Get all AI models.
 
         Args:
             active_only: If True, return only active models (default: True)
+            available_only: If True, return only currently available models (default: False)
+                           A model is available if available_at is NULL or <= now()
 
         Returns:
             List of AIModel domain entities
@@ -41,6 +45,13 @@ class AIModelRepository:
         query = select(AIModelORM)
         if active_only:
             query = query.where(AIModelORM.is_active)
+
+        # F012: Filter by availability
+        if available_only:
+            now = datetime.utcnow()
+            query = query.where(
+                (AIModelORM.available_at.is_(None)) | (AIModelORM.available_at <= now)
+            )
 
         result = await self.session.execute(query)
         orm_models = result.scalars().all()
@@ -231,6 +242,39 @@ class AIModelRepository:
 
         return await self.get_by_id(model_id)
 
+    async def set_availability(
+        self, model_id: int, retry_after_seconds: int
+    ) -> Optional[AIModel]:
+        """
+        Set model availability (F012: Rate Limit Handling).
+
+        Sets available_at to now() + retry_after_seconds.
+        A model with available_at in the future is temporarily unavailable.
+
+        Args:
+            model_id: AI model ID
+            retry_after_seconds: Seconds until the model becomes available again
+
+        Returns:
+            Updated AIModel if found, None otherwise
+        """
+        available_at = datetime.utcnow()
+        if retry_after_seconds > 0:
+            available_at = datetime.utcnow() + timedelta(seconds=retry_after_seconds)
+        else:
+            # retry_after_seconds = 0 means clear the cooldown
+            available_at = None
+
+        stmt = (
+            update(AIModelORM)
+            .where(AIModelORM.id == model_id)
+            .values(available_at=available_at, updated_at=datetime.utcnow())
+        )
+        await self.session.execute(stmt)
+        await self.session.flush()
+
+        return await self.get_by_id(model_id)
+
     def _to_domain(self, orm_model: AIModelORM) -> AIModel:
         """
         Convert ORM model to domain model.
@@ -256,4 +300,5 @@ class AIModelRepository:
             updated_at=orm_model.updated_at,
             api_format=orm_model.api_format,
             env_var=orm_model.env_var,
+            available_at=orm_model.available_at,
         )

@@ -26,6 +26,9 @@ MIN_REQUESTS_FOR_RECENT = 3
 @router.get("", response_model=List[AIModelResponse], summary="Get all AI models")
 async def get_all_models(
     active_only: bool = True,
+    available_only: bool = Query(
+        False, description="Exclude models with available_at > now() (F012)"
+    ),
     include_recent: bool = Query(
         False, description="Include recent metrics calculated from prompt_history (F010)"
     ),
@@ -39,6 +42,7 @@ async def get_all_models(
 
     Args:
         active_only: If True, return only active models (default: True)
+        available_only: If True, exclude models with available_at > now() (default: False)
         include_recent: If True, include recent metrics from prompt_history (F010)
         window_days: Window size in days for recent metrics (1-30, default: 7)
         db: Database session dependency
@@ -47,7 +51,7 @@ async def get_all_models(
         List of AI models with statistics (and optional recent metrics)
     """
     repository = AIModelRepository(db)
-    models = await repository.get_all(active_only=active_only)
+    models = await repository.get_all(active_only=active_only, available_only=available_only)
 
     if not include_recent:
         return [_model_to_response(model) for model in models]
@@ -284,6 +288,49 @@ async def set_model_active(
     return _model_to_response(updated_model)
 
 
+@router.patch(
+    "/{model_id}/availability", response_model=AIModelResponse, summary="Set model availability cooldown"
+)
+async def set_model_availability(
+    model_id: int,
+    retry_after_seconds: int = Query(
+        ..., ge=0, description="Seconds until model becomes available (0 = clear cooldown)"
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> AIModelResponse:
+    """
+    Set model availability cooldown (F012: Rate Limit Handling).
+
+    When a provider returns 429 rate limit, set available_at to now() + retry_after_seconds.
+    The model will be excluded from selection until available_at is reached.
+
+    Args:
+        model_id: AI model ID
+        retry_after_seconds: Seconds until model becomes available (0 = clear cooldown)
+        db: Database session dependency
+
+    Returns:
+        Updated AI model with new available_at timestamp
+
+    Raises:
+        HTTPException: 404 if model not found
+    """
+    repository = AIModelRepository(db)
+
+    updated_model = await repository.set_availability(
+        model_id=model_id, retry_after_seconds=retry_after_seconds
+    )
+
+    if updated_model is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"AI model with ID {model_id} not found"
+        )
+
+    await db.commit()
+
+    return _model_to_response(updated_model)
+
+
 def _model_to_response(model: AIModel) -> AIModelResponse:
     """
     Convert domain model to API response.
@@ -309,6 +356,7 @@ def _model_to_response(model: AIModel) -> AIModelResponse:
         updated_at=model.updated_at,
         api_format=model.api_format,
         env_var=model.env_var,
+        available_at=model.available_at,
         success_rate=model.success_rate,
         average_response_time=model.average_response_time,
         speed_score=model.speed_score,
@@ -400,6 +448,7 @@ def _model_to_response_with_recent(
         updated_at=model.updated_at,
         api_format=model.api_format,
         env_var=model.env_var,
+        available_at=model.available_at,
         success_rate=model.success_rate,
         average_response_time=model.average_response_time,
         speed_score=model.speed_score,

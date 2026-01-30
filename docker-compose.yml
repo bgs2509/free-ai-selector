@@ -102,6 +102,10 @@ services:
       ENVIRONMENT: ${ENVIRONMENT}
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
       ROOT_PATH: ${ROOT_PATH:-}
+      # F012: Rate Limit Handling
+      MAX_RETRIES: ${MAX_RETRIES:-10}
+      RETRY_DELAY_SECONDS: ${RETRY_DELAY_SECONDS:-10}
+      RATE_LIMIT_DEFAULT_COOLDOWN: ${RATE_LIMIT_DEFAULT_COOLDOWN:-3600}
     # ports убраны — доступ через nginx-proxy (proxy-network)
     depends_on:
       free-ai-selector-data-postgres-api:

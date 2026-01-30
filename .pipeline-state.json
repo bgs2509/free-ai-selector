@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-01-29T17:02:59.279516",
+  "updated_at": "2026-01-29T23:30:00Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -211,7 +211,7 @@
       "branch": "feature/F012-rate-limit-handling",
       "name": "rate-limit-handling",
       "title": "Rate Limit Handling для AI Провайдеров",
-      "stage": "RESEARCH",
+      "stage": "IMPLEMENT",
       "created": "2026-01-29",
       "gates": {
         "PRD_READY": {
@@ -225,13 +225,56 @@
           "artifact": "_research/2026-01-29_F012_rate-limit-handling.md"
         },
         "PLAN_APPROVED": {
-          "passed": false,
-          "passed_at": null,
-          "artifact": null
+          "passed": true,
+          "passed_at": "2026-01-29T21:00:00Z",
+          "artifact": "_plans/features/2026-01-29_F012_rate-limit-handling.md",
+          "approved_by": "user",
+          "quality_cascade": "16/16",
+          "summary": {
+            "services_affected": 3,
+            "files_to_create": 3,
+            "files_to_modify": 10,
+            "db_migration_required": true,
+            "breaking_changes": false,
+            "estimated_loc": 840
+          }
         },
         "IMPLEMENT_OK": {
-          "passed": false,
-          "passed_at": null
+          "passed": true,
+          "passed_at": "2026-01-29T23:30:00Z",
+          "files_changed": [
+            "services/free-ai-selector-data-postgres-api/app/infrastructure/database/models.py",
+            "services/free-ai-selector-data-postgres-api/app/domain/models.py",
+            "services/free-ai-selector-data-postgres-api/app/api/v1/schemas.py",
+            "services/free-ai-selector-data-postgres-api/app/infrastructure/repositories/ai_model_repository.py",
+            "services/free-ai-selector-data-postgres-api/app/api/v1/models.py",
+            "services/free-ai-selector-data-postgres-api/alembic/versions/004_add_available_at.py",
+            "services/free-ai-selector-data-postgres-api/tests/unit/test_ai_model_repository.py",
+            "services/free-ai-selector-business-api/app/domain/exceptions.py",
+            "services/free-ai-selector-business-api/app/application/services/error_classifier.py",
+            "services/free-ai-selector-business-api/app/application/services/retry_service.py",
+            "services/free-ai-selector-business-api/app/domain/models.py",
+            "services/free-ai-selector-business-api/app/infrastructure/http_clients/data_api_client.py",
+            "services/free-ai-selector-business-api/app/application/use_cases/process_prompt.py",
+            "services/free-ai-selector-business-api/tests/unit/test_error_classifier.py",
+            "services/free-ai-selector-business-api/tests/unit/test_retry_service.py",
+            "services/free-ai-selector-business-api/tests/unit/test_f012_rate_limit_handling.py",
+            "services/free-ai-selector-business-api/tests/conftest.py",
+            "services/free-ai-selector-business-api/tests/unit/test_process_prompt_use_case.py",
+            "services/free-ai-selector-health-worker/app/main.py",
+            "docker-compose.yml"
+          ],
+          "tests": {
+            "f012_specific": "34 tests created",
+            "test_files": [
+              "test_error_classifier.py (12 tests)",
+              "test_retry_service.py (11 tests)",
+              "test_f012_rate_limit_handling.py (6 tests)",
+              "test_ai_model_repository.py (5 F012 tests)"
+            ],
+            "type_hints_coverage": "100%",
+            "backward_compatible": true
+          }
         },
         "REVIEW_OK": {
           "passed": false,
@@ -255,7 +298,8 @@
       },
       "artifacts": {
         "prd": "_analysis/2026-01-29_F012_rate-limit-handling.md",
-        "research": "_research/2026-01-29_F012_rate-limit-handling.md"
+        "research": "_research/2026-01-29_F012_rate-limit-handling.md",
+        "plan": "_plans/features/2026-01-29_F012_rate-limit-handling.md"
       }
     }
   },
@@ -448,12 +492,19 @@
     "F012": {
       "name": "rate-limit-handling",
       "title": "Rate Limit Handling для AI Провайдеров",
-      "description": "Retry mechanism с exponential backoff, circuit breaker, parsing Retry-After заголовков для обработки HTTP 429",
+      "description": "Error classification, fixed retry (10×10s), availability cooldown via available_at, full fallback loop, graceful degradation для обработки HTTP 429",
       "created": "2026-01-29",
-      "status": "IN_PROGRESS",
+      "status": "IMPLEMENT_OK",
       "services": [
-        "free-ai-selector-business-api"
-      ]
+        "free-ai-selector-business-api",
+        "free-ai-selector-data-postgres-api",
+        "free-ai-selector-health-worker"
+      ],
+      "artifacts": {
+        "prd": "_analysis/2026-01-29_F012_rate-limit-handling.md",
+        "research": "_research/2026-01-29_F012_rate-limit-handling.md",
+        "plan": "_plans/features/2026-01-29_F012_rate-limit-handling.md"
+      }
     }
   },
   "next_feature_id": 13,

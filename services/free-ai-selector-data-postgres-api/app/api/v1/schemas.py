@@ -73,6 +73,11 @@ class AIModelResponse(AIModelBase):
     )
     env_var: str = Field(default="", description="ENV variable name for API key lookup")
 
+    # F012: Rate Limit Handling
+    available_at: Optional[datetime] = Field(
+        None, description="Timestamp when provider becomes available after rate limit"
+    )
+
     # Computed fields (long-term / cumulative)
     success_rate: float = Field(..., ge=0.0, le=1.0, description="Success rate (0.0 - 1.0)")
     average_response_time: float = Field(..., ge=0.0, description="Average response time in seconds")

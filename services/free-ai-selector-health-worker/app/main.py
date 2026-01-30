@@ -270,6 +270,9 @@ async def run_health_checks():
     Fetches models from Data API (including api_format and env_var),
     checks each provider using universal health checker,
     and updates statistics based on results.
+
+    F012: Rate-limited providers (available_at > now) are excluded
+    from health checks via available_only=true parameter.
     """
     # Генерируем job_id для этого цикла проверок
     job_id = uuid.uuid4().hex[:12]
@@ -277,8 +280,11 @@ async def run_health_checks():
 
     try:
         # Fetch all active models from Data API (F008: includes api_format, env_var)
+        # F012: available_only=true excludes rate-limited providers
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(f"{DATA_API_URL}/api/v1/models?active_only=true")
+            response = await client.get(
+                f"{DATA_API_URL}/api/v1/models?active_only=true&available_only=true"
+            )
             response.raise_for_status()
             models = response.json()
 

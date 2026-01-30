@@ -5,6 +5,7 @@ Lightweight DTOs for business logic layer.
 """
 
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
@@ -30,6 +31,8 @@ class AIModelInfo:
     effective_reliability_score: float = 0.0  # Score used for model selection
     recent_request_count: int = 0  # Requests in recent window
     decision_reason: str = "fallback"  # "recent_score" or "fallback"
+    # F012: Rate Limit Handling
+    available_at: Optional[datetime] = None  # Timestamp when provider becomes available
 
 
 @dataclass

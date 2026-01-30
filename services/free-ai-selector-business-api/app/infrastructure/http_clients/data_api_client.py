@@ -57,7 +57,10 @@ class DataAPIClient:
         return headers
 
     async def get_all_models(
-        self, active_only: bool = True, include_recent: bool = True
+        self,
+        active_only: bool = True,
+        include_recent: bool = True,
+        available_only: bool = False,
     ) -> List[AIModelInfo]:
         """
         Get all AI models from Data API.
@@ -65,6 +68,7 @@ class DataAPIClient:
         Args:
             active_only: If True, return only active models (default: True)
             include_recent: If True, include recent metrics for F010 (default: True)
+            available_only: If True, exclude models with available_at > now() (default: False)
 
         Returns:
             List of AIModelInfo objects with effective_reliability_score for model selection
@@ -78,6 +82,7 @@ class DataAPIClient:
                 params={
                     "active_only": active_only,
                     "include_recent": include_recent,
+                    "available_only": available_only,
                     "window_days": 7,
                 },
                 headers=self._get_headers(),
@@ -101,6 +106,8 @@ class DataAPIClient:
                     ) or model["reliability_score"],
                     recent_request_count=model.get("recent_request_count") or 0,
                     decision_reason=model.get("decision_reason") or "fallback",
+                    # F012: Rate Limit Handling
+                    available_at=model.get("available_at"),
                 )
                 for model in models_data
             ]
@@ -192,6 +199,37 @@ class DataAPIClient:
 
         except httpx.HTTPError as e:
             logger.error(f"Failed to increment failure for model {model_id}: {sanitize_error_message(e)}")
+            raise
+
+    async def set_availability(self, model_id: int, retry_after_seconds: int) -> None:
+        """
+        Set model availability cooldown (F012: Rate Limit Handling).
+
+        After receiving a 429 rate limit, set the model's available_at timestamp.
+        The model will be excluded from selection until available_at is reached.
+
+        Args:
+            model_id: AI model ID
+            retry_after_seconds: Seconds until model becomes available (0 = clear cooldown)
+
+        Raises:
+            httpx.HTTPError: If request fails
+        """
+        try:
+            response = await self.client.patch(
+                f"{self.base_url}/api/v1/models/{model_id}/availability",
+                params={"retry_after_seconds": retry_after_seconds},
+                headers=self._get_headers(),
+            )
+            response.raise_for_status()
+            logger.info(
+                "availability_updated",
+                model_id=model_id,
+                retry_after_seconds=retry_after_seconds,
+            )
+
+        except httpx.HTTPError as e:
+            logger.error(f"Failed to set availability for model {model_id}: {sanitize_error_message(e)}")
             raise
 
     async def create_history(

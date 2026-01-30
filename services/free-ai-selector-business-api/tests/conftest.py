@@ -18,7 +18,7 @@ def mock_data_api_client(monkeypatch):
 
     mock_client = AsyncMock()
 
-    # Mock get_all_models to return test models with F010 fields
+    # Mock get_all_models to return test models with F010 + F012 fields
     mock_client.get_all_models.return_value = [
         AIModelInfo(
             id=1,
@@ -30,6 +30,7 @@ def mock_data_api_client(monkeypatch):
             effective_reliability_score=0.9,
             recent_request_count=0,
             decision_reason="fallback",
+            env_var="TEST_PROVIDER1_API_KEY",  # F012: Required for filtering
         ),
         AIModelInfo(
             id=2,
@@ -41,6 +42,7 @@ def mock_data_api_client(monkeypatch):
             effective_reliability_score=0.7,
             recent_request_count=0,
             decision_reason="fallback",
+            env_var="TEST_PROVIDER2_API_KEY",  # F012: Required for filtering
         ),
     ]
 
@@ -49,5 +51,7 @@ def mock_data_api_client(monkeypatch):
     mock_client.increment_failure.return_value = None
     mock_client.create_history.return_value = 1
     mock_client.close.return_value = None
+    # F012: set_availability for rate limit handling
+    mock_client.set_availability.return_value = None
 
     return mock_client

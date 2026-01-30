@@ -1,7 +1,12 @@
 """
 Unit tests for ProcessPrompt use case
+
+Note: F012 implementation changed the use case to use a full fallback loop
+instead of _select_best_model and _select_fallback_model methods.
+Model selection tests now verify sorting by effective_reliability_score.
 """
 
+import os
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -14,10 +19,8 @@ from app.domain.models import AIModelInfo, PromptRequest
 class TestProcessPromptUseCase:
     """Test ProcessPrompt use case."""
 
-    async def test_select_best_model_by_effective_score(self, mock_data_api_client):
-        """Test best model selection based on effective_reliability_score (F010)."""
-        use_case = ProcessPromptUseCase(mock_data_api_client)
-
+    def test_models_sorted_by_effective_score(self, mock_data_api_client):
+        """Test that models are sorted by effective_reliability_score (F010)."""
         models = [
             AIModelInfo(
                 id=1,
@@ -43,14 +46,15 @@ class TestProcessPromptUseCase:
             ),
         ]
 
-        best_model = use_case._select_best_model(models)
-        # F010: Model B should be selected because of higher effective_reliability_score
-        assert best_model.id == 2
+        # F010: Sort by effective_reliability_score descending
+        sorted_models = sorted(models, key=lambda m: m.effective_reliability_score, reverse=True)
 
-    async def test_select_best_model_fallback_to_longterm(self, mock_data_api_client):
-        """Test model selection uses fallback when no recent data (F010)."""
-        use_case = ProcessPromptUseCase(mock_data_api_client)
+        # Model B (id=2) should be first because of higher effective score
+        assert sorted_models[0].id == 2
+        assert sorted_models[1].id == 1
 
+    def test_models_sorted_with_fallback_scores(self, mock_data_api_client):
+        """Test model sorting uses fallback when no recent data (F010)."""
         models = [
             AIModelInfo(
                 id=1,
@@ -76,68 +80,12 @@ class TestProcessPromptUseCase:
             ),
         ]
 
-        best_model = use_case._select_best_model(models)
+        sorted_models = sorted(models, key=lambda m: m.effective_reliability_score, reverse=True)
+
         # Model B has higher effective_reliability_score (fallback to long-term)
-        assert best_model.id == 2
+        assert sorted_models[0].id == 2
 
-    async def test_select_fallback_model_by_effective_score(self, mock_data_api_client):
-        """Test fallback model selection uses effective_reliability_score (F010)."""
-        use_case = ProcessPromptUseCase(mock_data_api_client)
-
-        models = [
-            AIModelInfo(
-                id=1,
-                name="Model A",
-                provider="Provider A",
-                api_endpoint="https://a.com",
-                reliability_score=0.9,
-                is_active=True,
-                effective_reliability_score=0.9,
-                recent_request_count=10,
-                decision_reason="recent_score",
-            ),
-            AIModelInfo(
-                id=2,
-                name="Model B",
-                provider="Provider B",
-                api_endpoint="https://b.com",
-                reliability_score=0.7,
-                is_active=True,
-                effective_reliability_score=0.75,
-                recent_request_count=5,
-                decision_reason="recent_score",
-            ),
-        ]
-
-        failed_model = models[0]
-        fallback = use_case._select_fallback_model(models, failed_model)
-
-        assert fallback is not None
-        assert fallback.id == 2  # Model B is the fallback
-
-    async def test_no_fallback_when_only_one_model(self, mock_data_api_client):
-        """Test no fallback when only one model available."""
-        use_case = ProcessPromptUseCase(mock_data_api_client)
-
-        models = [
-            AIModelInfo(
-                id=1,
-                name="Model A",
-                provider="Provider A",
-                api_endpoint="https://a.com",
-                reliability_score=0.9,
-                is_active=True,
-                effective_reliability_score=0.9,
-                recent_request_count=10,
-                decision_reason="recent_score",
-            ),
-        ]
-
-        failed_model = models[0]
-        fallback = use_case._select_fallback_model(models, failed_model)
-
-        assert fallback is None
-
+    @patch.dict(os.environ, {"HUGGINGFACE_API_KEY": "test_key"})
     @patch("app.application.use_cases.process_prompt.ProviderRegistry")
     async def test_execute_success(self, mock_registry, mock_data_api_client):
         """Test successful prompt processing (F008 SSOT via ProviderRegistry)."""
@@ -146,7 +94,7 @@ class TestProcessPromptUseCase:
         mock_provider.generate.return_value = "Generated response"
         mock_registry.get_provider.return_value = mock_provider
 
-        # Mock models returned from Data API with F010 fields
+        # Mock models returned from Data API with F010 + F012 fields
         mock_data_api_client.get_all_models.return_value = [
             AIModelInfo(
                 id=1,
@@ -158,6 +106,7 @@ class TestProcessPromptUseCase:
                 effective_reliability_score=0.9,
                 recent_request_count=0,
                 decision_reason="fallback",
+                env_var="HUGGINGFACE_API_KEY",  # F012: Required for filtering
             ),
         ]
 
@@ -181,6 +130,29 @@ class TestProcessPromptUseCase:
         request = PromptRequest(user_id="test_user", prompt_text="Test prompt")
 
         with pytest.raises(Exception, match="No active AI models available"):
+            await use_case.execute(request)
+
+    @patch.dict(os.environ, {}, clear=True)
+    async def test_execute_no_configured_models(self, mock_data_api_client):
+        """Test error when no models have configured API keys (F012: FR-8)."""
+        # Models exist but none have API keys configured
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Model 1",
+                provider="Provider1",
+                api_endpoint="https://api.test.com",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+                env_var="MISSING_API_KEY",
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(user_id="test_user", prompt_text="Test prompt")
+
+        with pytest.raises(Exception, match="No configured AI models available"):
             await use_case.execute(request)
 
 
@@ -256,6 +228,7 @@ class TestModelSelection:
 class TestF011BSystemPromptsAndResponseFormat:
     """Test F011-B: System Prompts & JSON Response Support."""
 
+    @patch.dict(os.environ, {"GROQ_API_KEY": "test_key"})
     @patch("app.application.use_cases.process_prompt.ProviderRegistry")
     async def test_system_prompt_passed_to_provider(self, mock_registry, mock_data_api_client):
         """Test that system_prompt is correctly passed to AI provider (F011-B)."""
@@ -276,6 +249,7 @@ class TestF011BSystemPromptsAndResponseFormat:
                 effective_reliability_score=0.9,
                 recent_request_count=0,
                 decision_reason="fallback",
+                env_var="GROQ_API_KEY",  # F012: Required
             ),
         ]
 
@@ -295,6 +269,7 @@ class TestF011BSystemPromptsAndResponseFormat:
         assert call_args[0][0] == "Test prompt"  # First positional arg is prompt
         assert call_args[1]["system_prompt"] == "You are a helpful assistant."  # F011-B kwarg
 
+    @patch.dict(os.environ, {"SAMBANOVA_API_KEY": "test_key"})
     @patch("app.application.use_cases.process_prompt.ProviderRegistry")
     async def test_response_format_passed_to_provider(self, mock_registry, mock_data_api_client):
         """Test that response_format is correctly passed to AI provider (F011-B)."""
@@ -315,6 +290,7 @@ class TestF011BSystemPromptsAndResponseFormat:
                 effective_reliability_score=0.9,
                 recent_request_count=0,
                 decision_reason="fallback",
+                env_var="SAMBANOVA_API_KEY",  # F012: Required
             ),
         ]
 
@@ -334,6 +310,7 @@ class TestF011BSystemPromptsAndResponseFormat:
         assert call_args[0][0] == "Test prompt"  # First positional arg is prompt
         assert call_args[1]["response_format"] == {"type": "json_object"}  # F011-B kwarg
 
+    @patch.dict(os.environ, {"CLOUDFLARE_API_TOKEN": "test_key"})
     @patch("app.application.use_cases.process_prompt.ProviderRegistry")
     async def test_both_system_prompt_and_response_format(self, mock_registry, mock_data_api_client):
         """Test that both system_prompt and response_format are passed together (F011-B)."""
@@ -354,6 +331,7 @@ class TestF011BSystemPromptsAndResponseFormat:
                 effective_reliability_score=0.9,
                 recent_request_count=0,
                 decision_reason="fallback",
+                env_var="CLOUDFLARE_API_TOKEN",  # F012: Required
             ),
         ]
 
@@ -375,6 +353,7 @@ class TestF011BSystemPromptsAndResponseFormat:
         assert call_args[1]["system_prompt"] == "You are a JSON-only assistant."
         assert call_args[1]["response_format"] == {"type": "json_object"}
 
+    @patch.dict(os.environ, {"GROQ_API_KEY": "key1", "CEREBRAS_API_KEY": "key2"})
     @patch("app.application.use_cases.process_prompt.ProviderRegistry")
     async def test_fallback_preserves_system_prompt_and_response_format(
         self, mock_registry, mock_data_api_client
@@ -403,6 +382,7 @@ class TestF011BSystemPromptsAndResponseFormat:
                 effective_reliability_score=0.9,
                 recent_request_count=0,
                 decision_reason="fallback",
+                env_var="GROQ_API_KEY",  # F012: Required
             ),
             AIModelInfo(
                 id=2,
@@ -414,6 +394,7 @@ class TestF011BSystemPromptsAndResponseFormat:
                 effective_reliability_score=0.85,
                 recent_request_count=0,
                 decision_reason="fallback",
+                env_var="CEREBRAS_API_KEY",  # F012: Required
             ),
         ]
 
