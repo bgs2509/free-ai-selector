@@ -175,130 +175,29 @@ class ProcessPromptUseCase:
                 break
 
             except RateLimitError as e:
-                # FR-5: Rate limit - don't count as failure, set availability
-                retry_after = e.retry_after_seconds or RATE_LIMIT_DEFAULT_COOLDOWN
-                logger.warning(
-                    "rate_limit_detected",
-                    model=model.name,
-                    provider=model.provider,
-                    retry_after_seconds=retry_after,
-                )
-                try:
-                    await self.data_api_client.set_availability(model.id, retry_after)
-                except Exception as avail_error:
-                    logger.error(
-                        "set_availability_failed",
-                        model=model.name,
-                        error=sanitize_error_message(avail_error),
-                    )
+                # F014: Rate limit - don't count as failure, set availability
+                await self._handle_rate_limit(model, e)
                 last_error_message = sanitize_error_message(e)
-                # Continue to next model
 
-            except (ServerError, TimeoutError) as e:
-                # Retryable errors - already retried in _generate_with_retry
-                # Record as failure
-                response_time = Decimal(str(time.time() - start_time))
-                logger.error(
-                    "generation_failed_after_retry",
-                    model=model.name,
-                    provider=model.provider,
-                    error_type=type(e).__name__,
-                )
-                try:
-                    await self.data_api_client.increment_failure(
-                        model_id=model.id, response_time=float(response_time)
-                    )
-                except Exception as stats_error:
-                    logger.error(
-                        "stats_update_failed",
-                        model=model.name,
-                        error=sanitize_error_message(stats_error),
-                    )
+            except (
+                ServerError,
+                TimeoutError,
+                AuthenticationError,
+                ValidationError,
+                ProviderError,
+            ) as e:
+                # F014: Transient errors - record as failure
+                await self._handle_transient_error(model, e, start_time)
                 last_error_message = sanitize_error_message(e)
-                # Continue to next model
-
-            except (AuthenticationError, ValidationError) as e:
-                # Non-retryable errors - record as failure immediately
-                response_time = Decimal(str(time.time() - start_time))
-                logger.error(
-                    "generation_failed_non_retryable",
-                    model=model.name,
-                    provider=model.provider,
-                    error_type=type(e).__name__,
-                )
-                try:
-                    await self.data_api_client.increment_failure(
-                        model_id=model.id, response_time=float(response_time)
-                    )
-                except Exception as stats_error:
-                    logger.error(
-                        "stats_update_failed",
-                        model=model.name,
-                        error=sanitize_error_message(stats_error),
-                    )
-                last_error_message = sanitize_error_message(e)
-                # Continue to next model
-
-            except ProviderError as e:
-                # Generic provider error
-                response_time = Decimal(str(time.time() - start_time))
-                logger.error(
-                    "generation_failed_generic",
-                    model=model.name,
-                    provider=model.provider,
-                    error=sanitize_error_message(e),
-                )
-                try:
-                    await self.data_api_client.increment_failure(
-                        model_id=model.id, response_time=float(response_time)
-                    )
-                except Exception as stats_error:
-                    logger.error(
-                        "stats_update_failed",
-                        model=model.name,
-                        error=sanitize_error_message(stats_error),
-                    )
-                last_error_message = sanitize_error_message(e)
-                # Continue to next model
 
             except Exception as e:
-                # Unexpected error - classify and handle
+                # F014: Unexpected error - classify and handle
                 classified = classify_error(e)
                 if isinstance(classified, RateLimitError):
-                    retry_after = classified.retry_after_seconds or RATE_LIMIT_DEFAULT_COOLDOWN
-                    logger.warning(
-                        "rate_limit_detected",
-                        model=model.name,
-                        retry_after_seconds=retry_after,
-                    )
-                    try:
-                        await self.data_api_client.set_availability(model.id, retry_after)
-                    except Exception as avail_error:
-                        logger.error(
-                            "set_availability_failed",
-                            model=model.name,
-                            error=sanitize_error_message(avail_error),
-                        )
+                    await self._handle_rate_limit(model, classified)
                 else:
-                    response_time = Decimal(str(time.time() - start_time))
-                    logger.error(
-                        "generation_failed_unexpected",
-                        model=model.name,
-                        provider=model.provider,
-                        error=sanitize_error_message(e),
-                    )
-                    try:
-                        await self.data_api_client.increment_failure(
-                            model_id=model.id, response_time=float(response_time)
-                        )
-                    except Exception as stats_error:
-                        logger.error(
-                            "stats_update_failed",
-                            model=model.name,
-                            error=sanitize_error_message(stats_error),
-                        )
+                    await self._handle_transient_error(model, classified, start_time)
                 last_error_message = sanitize_error_message(e)
-                # Continue to next model
 
         response_time = Decimal(str(time.time() - start_time))
 
@@ -461,3 +360,71 @@ class ProcessPromptUseCase:
         if provider is None:
             raise ValueError(f"Provider '{model.provider}' not configured in registry")
         return provider
+
+    async def _handle_rate_limit(
+        self,
+        model: AIModelInfo,
+        error: RateLimitError,
+    ) -> None:
+        """
+        Handle rate limit error: set availability cooldown (F012: FR-5, F014).
+
+        Rate limit errors are NOT counted as failures to preserve
+        reliability_score for graceful degradation.
+
+        Args:
+            model: Model info for logging and API calls
+            error: RateLimitError with optional retry_after_seconds
+        """
+        retry_after = error.retry_after_seconds or RATE_LIMIT_DEFAULT_COOLDOWN
+        logger.warning(
+            "rate_limit_detected",
+            model=model.name,
+            provider=model.provider,
+            retry_after_seconds=retry_after,
+        )
+        try:
+            await self.data_api_client.set_availability(model.id, retry_after)
+        except Exception as avail_error:
+            logger.error(
+                "set_availability_failed",
+                model=model.name,
+                error=sanitize_error_message(avail_error),
+            )
+
+    async def _handle_transient_error(
+        self,
+        model: AIModelInfo,
+        error: Exception,
+        start_time: float,
+    ) -> None:
+        """
+        Handle transient error: log and record failure (F012: FR-3, FR-4, F014).
+
+        Transient errors (server, timeout, auth, validation, generic provider)
+        are counted as failures for reliability_score calculation.
+
+        Args:
+            model: Model info for logging and API calls
+            error: Exception that caused the failure
+            start_time: Request start time for response_time calculation
+        """
+        response_time = Decimal(str(time.time() - start_time))
+        logger.error(
+            "generation_failed",
+            model=model.name,
+            provider=model.provider,
+            error_type=type(error).__name__,
+            error=sanitize_error_message(error),
+        )
+        try:
+            await self.data_api_client.increment_failure(
+                model_id=model.id,
+                response_time=float(response_time),
+            )
+        except Exception as stats_error:
+            logger.error(
+                "stats_update_failed",
+                model=model.name,
+                error=sanitize_error_message(stats_error),
+            )

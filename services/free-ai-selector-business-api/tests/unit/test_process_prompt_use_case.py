@@ -417,3 +417,173 @@ class TestF011BSystemPromptsAndResponseFormat:
         assert fallback_call_args[0][0] == "Test prompt"
         assert fallback_call_args[1]["system_prompt"] == "Test system"
         assert fallback_call_args[1]["response_format"] == {"type": "json_object"}
+
+
+@pytest.mark.unit
+class TestF014ErrorHandlingConsolidation:
+    """Test F014: Error Handling Consolidation - private methods."""
+
+    async def test_handle_rate_limit_calls_set_availability(self, mock_data_api_client):
+        """Test that _handle_rate_limit calls set_availability (F014)."""
+        from app.domain.exceptions import RateLimitError
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        model = AIModelInfo(
+            id=1,
+            name="Test Model",
+            provider="TestProvider",
+            api_endpoint="https://test.com",
+            reliability_score=0.9,
+            is_active=True,
+        )
+        error = RateLimitError("Rate limit exceeded", retry_after_seconds=120)
+
+        await use_case._handle_rate_limit(model, error)
+
+        # Verify set_availability was called with correct arguments
+        mock_data_api_client.set_availability.assert_called_once_with(1, 120)
+
+    async def test_handle_rate_limit_uses_default_cooldown(self, mock_data_api_client):
+        """Test that _handle_rate_limit uses default cooldown when not specified (F014)."""
+        from app.domain.exceptions import RateLimitError
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        model = AIModelInfo(
+            id=2,
+            name="Test Model",
+            provider="TestProvider",
+            api_endpoint="https://test.com",
+            reliability_score=0.9,
+            is_active=True,
+        )
+        # Error without retry_after_seconds
+        error = RateLimitError("Rate limit exceeded")
+
+        await use_case._handle_rate_limit(model, error)
+
+        # Verify set_availability was called with default cooldown (3600)
+        mock_data_api_client.set_availability.assert_called_once()
+        call_args = mock_data_api_client.set_availability.call_args
+        assert call_args[0][0] == 2  # model_id
+        assert call_args[0][1] == 3600  # default cooldown
+
+    async def test_handle_rate_limit_handles_set_availability_error(
+        self, mock_data_api_client, caplog
+    ):
+        """Test that _handle_rate_limit gracefully handles set_availability errors (F014)."""
+        from app.domain.exceptions import RateLimitError
+
+        mock_data_api_client.set_availability.side_effect = Exception("API Error")
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        model = AIModelInfo(
+            id=3,
+            name="Test Model",
+            provider="TestProvider",
+            api_endpoint="https://test.com",
+            reliability_score=0.9,
+            is_active=True,
+        )
+        error = RateLimitError("Rate limit exceeded", retry_after_seconds=60)
+
+        # Should not raise, error is logged
+        await use_case._handle_rate_limit(model, error)
+
+        # Verify set_availability was called (even though it failed)
+        mock_data_api_client.set_availability.assert_called_once()
+
+    async def test_handle_transient_error_calls_increment_failure(self, mock_data_api_client):
+        """Test that _handle_transient_error calls increment_failure (F014)."""
+        import time
+
+        from app.domain.exceptions import ServerError
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        model = AIModelInfo(
+            id=1,
+            name="Test Model",
+            provider="TestProvider",
+            api_endpoint="https://test.com",
+            reliability_score=0.9,
+            is_active=True,
+        )
+        error = ServerError("Internal server error")
+        start_time = time.time() - 1.5  # 1.5 seconds ago
+
+        await use_case._handle_transient_error(model, error, start_time)
+
+        # Verify increment_failure was called
+        mock_data_api_client.increment_failure.assert_called_once()
+        call_args = mock_data_api_client.increment_failure.call_args
+        assert call_args[1]["model_id"] == 1
+        # response_time should be approximately 1.5 seconds
+        assert 1.4 < call_args[1]["response_time"] < 2.0
+
+    async def test_handle_transient_error_handles_increment_failure_error(
+        self, mock_data_api_client, caplog
+    ):
+        """Test that _handle_transient_error gracefully handles increment_failure errors (F014)."""
+        import time
+
+        from app.domain.exceptions import TimeoutError
+
+        mock_data_api_client.increment_failure.side_effect = Exception("API Error")
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        model = AIModelInfo(
+            id=2,
+            name="Test Model",
+            provider="TestProvider",
+            api_endpoint="https://test.com",
+            reliability_score=0.9,
+            is_active=True,
+        )
+        error = TimeoutError("Request timed out")
+        start_time = time.time() - 2.0
+
+        # Should not raise, error is logged
+        await use_case._handle_transient_error(model, error, start_time)
+
+        # Verify increment_failure was called (even though it failed)
+        mock_data_api_client.increment_failure.assert_called_once()
+
+    async def test_handle_transient_error_works_with_various_exception_types(
+        self, mock_data_api_client
+    ):
+        """Test that _handle_transient_error works with all transient error types (F014)."""
+        import time
+
+        from app.domain.exceptions import (
+            AuthenticationError,
+            ProviderError,
+            ServerError,
+            TimeoutError,
+            ValidationError,
+        )
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        model = AIModelInfo(
+            id=1,
+            name="Test Model",
+            provider="TestProvider",
+            api_endpoint="https://test.com",
+            reliability_score=0.9,
+            is_active=True,
+        )
+
+        error_types = [
+            ServerError("Server error"),
+            TimeoutError("Timeout"),
+            AuthenticationError("Auth failed"),
+            ValidationError("Invalid request"),
+            ProviderError("Provider error"),
+        ]
+
+        for error in error_types:
+            mock_data_api_client.increment_failure.reset_mock()
+            start_time = time.time()
+
+            await use_case._handle_transient_error(model, error, start_time)
+
+            # Each error type should trigger increment_failure
+            mock_data_api_client.increment_failure.assert_called_once()
