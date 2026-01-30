@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-01-30T21:30:00Z",
+  "updated_at": "2026-01-30T22:00:00Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -497,7 +497,7 @@
       "branch": "master",
       "name": "data-api-endpoints-dry",
       "title": "Data API Endpoints: DRY Refactoring",
-      "stage": "IDEA",
+      "stage": "RESEARCH",
       "created": "2026-01-30",
       "gates": {
         "PRD_READY": {
@@ -505,7 +505,20 @@
           "passed_at": "2026-01-30T12:00:00Z",
           "artifact": "_analysis/2026-01-30_F015_data-api-endpoints-dry.md"
         },
-        "RESEARCH_DONE": { "passed": false, "passed_at": null, "artifact": null },
+        "RESEARCH_DONE": {
+          "passed": true,
+          "passed_at": "2026-01-30T22:00:00Z",
+          "artifact": "_research/2026-01-30_F015_data-api-endpoints-dry.md",
+          "findings": {
+            "target_file": "app/api/v1/models.py",
+            "total_lines": 463,
+            "converter_duplication": 37,
+            "get404_duplication": 56,
+            "total_duplication": 93,
+            "endpoints_affected": 7,
+            "quality_cascade": "7/7"
+          }
+        },
         "PLAN_APPROVED": { "passed": false, "passed_at": null, "artifact": null },
         "IMPLEMENT_OK": { "passed": false, "passed_at": null },
         "REVIEW_OK": { "passed": false, "passed_at": null, "artifact": null },
@@ -514,7 +527,8 @@
         "DEPLOYED": { "passed": false, "passed_at": null }
       },
       "artifacts": {
-        "prd": "_analysis/2026-01-30_F015_data-api-endpoints-dry.md"
+        "prd": "_analysis/2026-01-30_F015_data-api-endpoints-dry.md",
+        "research": "_research/2026-01-30_F015_data-api-endpoints-dry.md"
       }
     },
     "F016": {
@@ -806,12 +820,13 @@
       "title": "Data API Endpoints: DRY Refactoring",
       "description": "Рефакторинг: объединение _model_to_response() функций, создание get_model_or_404 dependency. Устранение 7 мест дублирования (QC-1/DRY)",
       "created": "2026-01-30",
-      "status": "PRD_READY",
+      "status": "RESEARCH_DONE",
       "services": [
         "free-ai-selector-data-postgres-api"
       ],
       "artifacts": {
-        "prd": "_analysis/2026-01-30_F015_data-api-endpoints-dry.md"
+        "prd": "_analysis/2026-01-30_F015_data-api-endpoints-dry.md",
+        "research": "_research/2026-01-30_F015_data-api-endpoints-dry.md"
       }
     },
     "F016": {
