@@ -11,6 +11,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_model_or_404
 from app.api.v1.schemas import AIModelCreate, AIModelResponse, AIModelStatsUpdate
 from app.domain.models import AIModel
 from app.infrastructure.database.connection import get_db
@@ -61,19 +62,20 @@ async def get_all_models(
     recent_stats = await history_repository.get_recent_stats_for_all_models(window_days)
 
     return [
-        _model_to_response_with_recent(model, recent_stats)
+        _model_to_response(model, recent_stats)
         for model in models
     ]
 
 
 @router.get("/{model_id}", response_model=AIModelResponse, summary="Get AI model by ID")
-async def get_model_by_id(model_id: int, db: AsyncSession = Depends(get_db)) -> AIModelResponse:
+async def get_model_by_id(
+    model: AIModel = Depends(get_model_or_404),
+) -> AIModelResponse:
     """
     Get AI model by ID.
 
     Args:
-        model_id: AI model ID
-        db: Database session dependency
+        model: AIModel from get_model_or_404 dependency (F015)
 
     Returns:
         AI model with statistics
@@ -81,14 +83,6 @@ async def get_model_by_id(model_id: int, db: AsyncSession = Depends(get_db)) -> 
     Raises:
         HTTPException: 404 if model not found
     """
-    repository = AIModelRepository(db)
-    model = await repository.get_by_id(model_id)
-
-    if model is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"AI model with ID {model_id} not found"
-        )
-
     return _model_to_response(model)
 
 
@@ -331,16 +325,32 @@ async def set_model_availability(
     return _model_to_response(updated_model)
 
 
-def _model_to_response(model: AIModel) -> AIModelResponse:
+def _model_to_response(
+    model: AIModel,
+    recent_stats: Dict[int, Dict[str, Any]] | None = None,
+) -> AIModelResponse:
     """
-    Convert domain model to API response.
+    Convert domain model to API response (F015: FR-001 unified function).
 
     Args:
         model: AIModel domain entity
+        recent_stats: Optional dict from get_recent_stats_for_all_models() (F010)
 
     Returns:
-        AIModelResponse schema
+        AIModelResponse schema with or without recent metrics
     """
+    # F010: Calculate recent metrics only if recent_stats provided
+    if recent_stats is not None:
+        recent_metrics = _calculate_recent_metrics(model, recent_stats)
+    else:
+        recent_metrics = {
+            "recent_success_rate": None,
+            "recent_request_count": None,
+            "recent_reliability_score": None,
+            "effective_reliability_score": None,
+            "decision_reason": None,
+        }
+
     return AIModelResponse(
         id=model.id,
         name=model.name,
@@ -361,12 +371,12 @@ def _model_to_response(model: AIModel) -> AIModelResponse:
         average_response_time=model.average_response_time,
         speed_score=model.speed_score,
         reliability_score=model.reliability_score,
-        # F010: No recent metrics when include_recent=false
-        recent_success_rate=None,
-        recent_request_count=None,
-        recent_reliability_score=None,
-        effective_reliability_score=None,
-        decision_reason=None,
+        # F010: Recent metrics
+        recent_success_rate=recent_metrics["recent_success_rate"],
+        recent_request_count=recent_metrics["recent_request_count"],
+        recent_reliability_score=recent_metrics["recent_reliability_score"],
+        effective_reliability_score=recent_metrics["effective_reliability_score"],
+        decision_reason=recent_metrics["decision_reason"],
     )
 
 
@@ -418,45 +428,3 @@ def _calculate_recent_metrics(
         }
 
 
-def _model_to_response_with_recent(
-    model: AIModel, recent_stats: Dict[int, Dict[str, Any]]
-) -> AIModelResponse:
-    """
-    Convert domain model to API response with recent metrics (F010).
-
-    Args:
-        model: AIModel domain entity
-        recent_stats: Dict from get_recent_stats_for_all_models()
-
-    Returns:
-        AIModelResponse schema with recent metrics populated
-    """
-    recent_metrics = _calculate_recent_metrics(model, recent_stats)
-
-    return AIModelResponse(
-        id=model.id,
-        name=model.name,
-        provider=model.provider,
-        api_endpoint=model.api_endpoint,
-        success_count=model.success_count,
-        failure_count=model.failure_count,
-        total_response_time=model.total_response_time,
-        request_count=model.request_count,
-        last_checked=model.last_checked,
-        is_active=model.is_active,
-        created_at=model.created_at,
-        updated_at=model.updated_at,
-        api_format=model.api_format,
-        env_var=model.env_var,
-        available_at=model.available_at,
-        success_rate=model.success_rate,
-        average_response_time=model.average_response_time,
-        speed_score=model.speed_score,
-        reliability_score=model.reliability_score,
-        # F010: Recent metrics
-        recent_success_rate=recent_metrics["recent_success_rate"],
-        recent_request_count=recent_metrics["recent_request_count"],
-        recent_reliability_score=recent_metrics["recent_reliability_score"],
-        effective_reliability_score=recent_metrics["effective_reliability_score"],
-        decision_reason=recent_metrics["decision_reason"],
-    )
