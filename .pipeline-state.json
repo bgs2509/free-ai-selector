@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-01-29T23:30:00Z",
+  "updated_at": "2026-01-30T10:15:00Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -294,12 +294,19 @@
         "DEPLOYED": {
           "passed": false,
           "passed_at": null
+        },
+        "DOCUMENTED": {
+          "passed": true,
+          "passed_at": "2026-01-30T10:15:00Z",
+          "mode": "quick",
+          "artifact": "_validation/2026-01-30_F012_rate-limit-handling.md"
         }
       },
       "artifacts": {
         "prd": "_analysis/2026-01-29_F012_rate-limit-handling.md",
         "research": "_research/2026-01-29_F012_rate-limit-handling.md",
-        "plan": "_plans/features/2026-01-29_F012_rate-limit-handling.md"
+        "plan": "_plans/features/2026-01-29_F012_rate-limit-handling.md",
+        "completion": "_validation/2026-01-30_F012_rate-limit-handling.md"
       }
     }
   },
@@ -494,7 +501,7 @@
       "title": "Rate Limit Handling для AI Провайдеров",
       "description": "Error classification, fixed retry (10×10s), availability cooldown via available_at, full fallback loop, graceful degradation для обработки HTTP 429",
       "created": "2026-01-29",
-      "status": "IMPLEMENT_OK",
+      "status": "DOCUMENTED",
       "services": [
         "free-ai-selector-business-api",
         "free-ai-selector-data-postgres-api",
@@ -503,7 +510,8 @@
       "artifacts": {
         "prd": "_analysis/2026-01-29_F012_rate-limit-handling.md",
         "research": "_research/2026-01-29_F012_rate-limit-handling.md",
-        "plan": "_plans/features/2026-01-29_F012_rate-limit-handling.md"
+        "plan": "_plans/features/2026-01-29_F012_rate-limit-handling.md",
+        "completion": "_validation/2026-01-30_F012_rate-limit-handling.md"
       }
     }
   },
