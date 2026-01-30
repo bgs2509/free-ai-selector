@@ -205,7 +205,7 @@ class PromptHistoryRepository:
         self, start_date: datetime, end_date: datetime, model_id: Optional[int] = None
     ) -> dict:
         """
-        Get statistics for a specific time period.
+        Get statistics for a specific time period using SQL aggregation.
 
         Args:
             start_date: Start of period
@@ -221,18 +221,20 @@ class PromptHistoryRepository:
                 "success_rate": float
             }
         """
-        query = select(PromptHistoryORM).where(
-            PromptHistoryORM.created_at >= start_date, PromptHistoryORM.created_at <= end_date
-        )
+        # Используем SQL aggregation вместо загрузки всех записей (F017)
+        query = select(
+            func.count().label("total"),
+            func.sum(case((PromptHistoryORM.success == True, 1), else_=0)).label("success"),
+        ).where(PromptHistoryORM.created_at >= start_date, PromptHistoryORM.created_at <= end_date)
 
         if model_id is not None:
             query = query.where(PromptHistoryORM.selected_model_id == model_id)
 
         result = await self.session.execute(query)
-        histories = result.scalars().all()
+        row = result.one()
 
-        total_requests = len(histories)
-        successful_requests = sum(1 for h in histories if h.success)
+        total_requests = row.total or 0
+        successful_requests = row.success or 0
         failed_requests = total_requests - successful_requests
         success_rate = successful_requests / total_requests if total_requests > 0 else 0.0
 
