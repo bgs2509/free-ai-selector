@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-02-11T15:30:00Z",
+  "updated_at": "2026-02-11T17:21:00Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -891,6 +891,57 @@
         "plan": "_plans/features/2026-02-11_F018_remove-env-var-from-db.md",
         "completion": "_validation/2026-02-11_F018_remove-env-var-from-db.md"
       }
+    },
+    "F019": {
+      "branch": "master",
+      "name": "model-id-priority-fallback",
+      "title": "Выбор модели по model_id с fallback на авто-выбор",
+      "stage": "RESEARCH",
+      "created": "2026-02-11",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-02-11T17:21:00Z",
+          "artifact": "_analysis/2026-02-11_F019_model-id-priority-fallback.md"
+        },
+        "RESEARCH_DONE": {
+          "passed": false,
+          "passed_at": null
+        },
+        "PLAN_APPROVED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null,
+          "approved_by": null
+        },
+        "IMPLEMENT_OK": {
+          "passed": false,
+          "passed_at": null
+        },
+        "REVIEW_OK": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "QA_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null,
+          "coverage": null
+        },
+        "ALL_GATES_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "DEPLOYED": {
+          "passed": false,
+          "passed_at": null
+        }
+      },
+      "artifacts": {
+        "prd": "_analysis/2026-02-11_F019_model-id-priority-fallback.md"
+      }
     }
   },
   "features_registry": {
@@ -1193,9 +1244,22 @@
         "plan": "_plans/features/2026-02-11_F018_remove-env-var-from-db.md",
         "completion": "_validation/2026-02-11_F018_remove-env-var-from-db.md"
       }
+    },
+    "F019": {
+      "name": "model-id-priority-fallback",
+      "title": "Выбор модели по model_id с fallback на авто-выбор",
+      "description": "Опциональный model_id в /prompts/process: приоритетный вызов запрошенной модели и fallback на стандартный reliability-based выбор при недоступности или ошибке.",
+      "created": "2026-02-11",
+      "status": "IN_PROGRESS",
+      "services": [
+        "free-ai-selector-business-api"
+      ],
+      "artifacts": {
+        "prd": "_analysis/2026-02-11_F019_model-id-priority-fallback.md"
+      }
     }
   },
-  "next_feature_id": 19,
+  "next_feature_id": 20,
   "services": [],
   "gate_aliases": {
     "PRD_READY": "ANALYSIS_READY",
