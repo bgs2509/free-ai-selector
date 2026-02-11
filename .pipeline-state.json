@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-02-11T17:41:14Z",
+  "updated_at": "2026-02-11T17:48:39Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -968,12 +968,19 @@
         "DEPLOYED": {
           "passed": false,
           "passed_at": null
+        },
+        "DOCUMENTED": {
+          "passed": true,
+          "passed_at": "2026-02-11T17:48:39Z",
+          "mode": "quick",
+          "artifact": "_validation/2026-02-11_F019_model-id-priority-fallback.md"
         }
       },
       "artifacts": {
         "prd": "_analysis/2026-02-11_F019_model-id-priority-fallback.md",
         "research": "_research/2026-02-11_F019_model-id-priority-fallback.md",
-        "plan": "_plans/features/2026-02-11_F019_model-id-priority-fallback.md"
+        "plan": "_plans/features/2026-02-11_F019_model-id-priority-fallback.md",
+        "completion": "_validation/2026-02-11_F019_model-id-priority-fallback.md"
       }
     }
   },
@@ -1283,14 +1290,15 @@
       "title": "Выбор модели по model_id с fallback на авто-выбор",
       "description": "Опциональный model_id в /prompts/process: приоритетный вызов запрошенной модели и fallback на стандартный reliability-based выбор при недоступности или ошибке.",
       "created": "2026-02-11",
-      "status": "IMPLEMENT_OK",
+      "status": "DOCUMENTED",
       "services": [
         "free-ai-selector-business-api"
       ],
       "artifacts": {
         "prd": "_analysis/2026-02-11_F019_model-id-priority-fallback.md",
         "research": "_research/2026-02-11_F019_model-id-priority-fallback.md",
-        "plan": "_plans/features/2026-02-11_F019_model-id-priority-fallback.md"
+        "plan": "_plans/features/2026-02-11_F019_model-id-priority-fallback.md",
+        "completion": "_validation/2026-02-11_F019_model-id-priority-fallback.md"
       }
     }
   },
