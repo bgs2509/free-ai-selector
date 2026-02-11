@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-02-11T17:21:00Z",
+  "updated_at": "2026-02-11T17:41:14Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -896,7 +896,7 @@
       "branch": "master",
       "name": "model-id-priority-fallback",
       "title": "Выбор модели по model_id с fallback на авто-выбор",
-      "stage": "RESEARCH",
+      "stage": "REVIEW",
       "created": "2026-02-11",
       "gates": {
         "PRD_READY": {
@@ -905,18 +905,49 @@
           "artifact": "_analysis/2026-02-11_F019_model-id-priority-fallback.md"
         },
         "RESEARCH_DONE": {
-          "passed": false,
-          "passed_at": null
+          "passed": true,
+          "passed_at": "2026-02-11T17:28:59Z",
+          "artifact": "_research/2026-02-11_F019_model-id-priority-fallback.md",
+          "findings": {
+            "target_service": "free-ai-selector-business-api",
+            "required_production_files": 4,
+            "required_test_files": 2,
+            "new_dependencies_required": false,
+            "recommended_selection_strategy": "in-memory-reorder",
+            "extra_data_api_calls_required": 0,
+            "backward_compatibility": true,
+            "quality_cascade": "7/7"
+          }
         },
         "PLAN_APPROVED": {
-          "passed": false,
-          "passed_at": null,
-          "artifact": null,
-          "approved_by": null
+          "passed": true,
+          "passed_at": "2026-02-11T17:33:42Z",
+          "artifact": "_plans/features/2026-02-11_F019_model-id-priority-fallback.md",
+          "approved_by": "user",
+          "summary": {
+            "files_to_modify": 4,
+            "files_to_test": 2,
+            "db_migration_required": false,
+            "breaking_changes": false
+          }
         },
         "IMPLEMENT_OK": {
-          "passed": false,
-          "passed_at": null
+          "passed": true,
+          "passed_at": "2026-02-11T17:41:14Z",
+          "files_changed": [
+            "services/free-ai-selector-business-api/app/api/v1/schemas.py",
+            "services/free-ai-selector-business-api/app/api/v1/prompts.py",
+            "services/free-ai-selector-business-api/app/domain/models.py",
+            "services/free-ai-selector-business-api/app/application/use_cases/process_prompt.py",
+            "services/free-ai-selector-business-api/tests/unit/test_f011b_schemas.py",
+            "services/free-ai-selector-business-api/tests/unit/test_process_prompt_use_case.py"
+          ],
+          "tests": {
+            "attempted": "pytest -s -o addopts='' tests/unit/test_f011b_schemas.py tests/unit/test_process_prompt_use_case.py",
+            "status": "not_executed",
+            "reason": "Local environment is missing required dependencies (pydantic, structlog) and default pytest addopts requires unavailable pytest-cov plugin",
+            "backward_compatible": true
+          }
         },
         "REVIEW_OK": {
           "passed": false,
@@ -940,7 +971,9 @@
         }
       },
       "artifacts": {
-        "prd": "_analysis/2026-02-11_F019_model-id-priority-fallback.md"
+        "prd": "_analysis/2026-02-11_F019_model-id-priority-fallback.md",
+        "research": "_research/2026-02-11_F019_model-id-priority-fallback.md",
+        "plan": "_plans/features/2026-02-11_F019_model-id-priority-fallback.md"
       }
     }
   },
@@ -1250,12 +1283,14 @@
       "title": "Выбор модели по model_id с fallback на авто-выбор",
       "description": "Опциональный model_id в /prompts/process: приоритетный вызов запрошенной модели и fallback на стандартный reliability-based выбор при недоступности или ошибке.",
       "created": "2026-02-11",
-      "status": "IN_PROGRESS",
+      "status": "IMPLEMENT_OK",
       "services": [
         "free-ai-selector-business-api"
       ],
       "artifacts": {
-        "prd": "_analysis/2026-02-11_F019_model-id-priority-fallback.md"
+        "prd": "_analysis/2026-02-11_F019_model-id-priority-fallback.md",
+        "research": "_research/2026-02-11_F019_model-id-priority-fallback.md",
+        "plan": "_plans/features/2026-02-11_F019_model-id-priority-fallback.md"
       }
     }
   },

@@ -100,6 +100,8 @@ class ProcessPromptUseCase:
         logger.info(
             "processing_prompt",
             prompt_length=len(request.prompt_text),
+            has_model_id=request.model_id is not None,
+            requested_model_id=request.model_id,
             has_system_prompt=request.system_prompt is not None,
             has_response_format=request.response_format is not None,
         )
@@ -132,20 +134,36 @@ class ProcessPromptUseCase:
             reverse=True,
         )
 
+        candidate_models, requested_model_found = self._build_candidate_models(
+            sorted_models=sorted_models,
+            requested_model_id=request.model_id,
+        )
+        first_model = candidate_models[0]
+        selection_mode = "auto"
+        selection_reason = "highest_effective_reliability_score"
+        if request.model_id is not None:
+            if requested_model_found:
+                selection_mode = "forced_first"
+                selection_reason = "requested_model_id"
+            else:
+                selection_mode = "forced_not_found"
+
         # Log initial selection
-        best_model = sorted_models[0]
         log_decision(
             logger,
             decision="ACCEPT",
-            reason="highest_effective_reliability_score",
+            reason=selection_reason,
             evaluated_conditions={
-                "models_count": len(sorted_models),
-                "selected_model": best_model.name,
-                "selected_provider": best_model.provider,
-                "effective_score": float(best_model.effective_reliability_score),
-                "long_term_score": float(best_model.reliability_score),
-                "decision_reason": best_model.decision_reason,
-                "recent_request_count": best_model.recent_request_count,
+                "models_count": len(candidate_models),
+                "selected_model": first_model.name,
+                "selected_provider": first_model.provider,
+                "effective_score": float(first_model.effective_reliability_score),
+                "long_term_score": float(first_model.reliability_score),
+                "decision_reason": first_model.decision_reason,
+                "recent_request_count": first_model.recent_request_count,
+                "requested_model_id": request.model_id,
+                "requested_model_found": requested_model_found,
+                "selection_mode": selection_mode,
             },
         )
 
@@ -155,7 +173,7 @@ class ProcessPromptUseCase:
         successful_model: Optional[AIModelInfo] = None
         response_text: Optional[str] = None
 
-        for model in sorted_models:
+        for model in candidate_models:
             try:
                 provider = self._get_provider_for_model(model)
 
@@ -207,7 +225,7 @@ class ProcessPromptUseCase:
             # All models failed
             logger.error(
                 "all_models_failed",
-                models_tried=len(sorted_models),
+                models_tried=len(candidate_models),
                 last_error=last_error_message,
             )
 
@@ -216,7 +234,7 @@ class ProcessPromptUseCase:
                 await self.data_api_client.create_history(
                     user_id=request.user_id,
                     prompt_text=request.prompt_text,
-                    selected_model_id=sorted_models[0].id,
+                    selected_model_id=candidate_models[0].id,
                     response_text=None,
                     response_time=response_time,
                     success=False,
@@ -268,6 +286,30 @@ class ProcessPromptUseCase:
             success=True,
             error_message=None,
         )
+
+    def _build_candidate_models(
+        self,
+        sorted_models: list[AIModelInfo],
+        requested_model_id: Optional[int],
+    ) -> tuple[list[AIModelInfo], bool]:
+        """
+        Build model candidates for execution.
+
+        If requested_model_id is provided and found in sorted_models,
+        that model is tried first and the remaining models keep their score order.
+
+        Returns:
+            Tuple of (candidate_models, requested_model_found)
+        """
+        if requested_model_id is None:
+            return sorted_models, False
+
+        requested_model = next((model for model in sorted_models if model.id == requested_model_id), None)
+        if requested_model is None:
+            return sorted_models, False
+
+        remaining_models = [model for model in sorted_models if model.id != requested_model.id]
+        return [requested_model, *remaining_models], True
 
     def _filter_configured_models(self, models: list[AIModelInfo]) -> list[AIModelInfo]:
         """

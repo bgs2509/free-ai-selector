@@ -59,6 +59,7 @@ async def process_prompt(
         prompt_request = PromptRequest(
             user_id="api_user",
             prompt_text=prompt_data.prompt,
+            model_id=prompt_data.model_id,
             system_prompt=prompt_data.system_prompt,
             response_format=prompt_data.response_format
         )

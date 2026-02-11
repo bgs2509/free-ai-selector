@@ -39,6 +39,21 @@ class TestProcessPromptRequestSchema:
         assert request.system_prompt is None
         assert request.response_format == {"type": "json_object"}
 
+    def test_request_with_model_id(self):
+        """Test request with model_id field (F019)."""
+        request = ProcessPromptRequest(prompt="Test prompt", model_id=7)
+
+        assert request.prompt == "Test prompt"
+        assert request.model_id == 7
+
+    def test_model_id_must_be_positive(self):
+        """Test that model_id must be greater than zero (F019)."""
+        with pytest.raises(ValidationError):
+            ProcessPromptRequest(prompt="Test prompt", model_id=0)
+
+        with pytest.raises(ValidationError):
+            ProcessPromptRequest(prompt="Test prompt", model_id=-1)
+
     def test_request_with_both_optional_fields(self):
         """Test request with both system_prompt and response_format (F011-B)."""
         request = ProcessPromptRequest(
@@ -108,6 +123,18 @@ class TestPromptRequestDTO:
         assert dto.prompt_text == "Test prompt"
         assert dto.system_prompt == "You are helpful."
         assert dto.response_format is None
+
+    def test_dto_with_model_id(self):
+        """Test DTO with model_id field (F019)."""
+        dto = PromptRequest(
+            user_id="test_user",
+            prompt_text="Test prompt",
+            model_id=12,
+        )
+
+        assert dto.user_id == "test_user"
+        assert dto.prompt_text == "Test prompt"
+        assert dto.model_id == 12
 
     def test_dto_with_response_format(self):
         """Test DTO with response_format field (F011-B)."""

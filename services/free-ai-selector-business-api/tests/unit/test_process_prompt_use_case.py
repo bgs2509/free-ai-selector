@@ -155,6 +155,182 @@ class TestProcessPromptUseCase:
         with pytest.raises(Exception, match="No configured AI models available"):
             await use_case.execute(request)
 
+    @patch.dict(os.environ, {"HIGH_KEY": "high", "LOW_KEY": "low"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_execute_with_requested_model_id_prioritizes_requested(
+        self, mock_registry, mock_data_api_client
+    ):
+        """Requested model_id should be tried first even with lower score (F019)."""
+        high_provider = AsyncMock()
+        high_provider.generate.return_value = "high response"
+        low_provider = AsyncMock()
+        low_provider.generate.return_value = "forced response"
+
+        mock_registry.get_provider.side_effect = lambda provider: {
+            "ProviderHigh": high_provider,
+            "ProviderLow": low_provider,
+        }[provider]
+        mock_registry.get_api_key_env.side_effect = lambda provider: {
+            "ProviderHigh": "HIGH_KEY",
+            "ProviderLow": "LOW_KEY",
+        }.get(provider, "")
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="High Model",
+                provider="ProviderHigh",
+                api_endpoint="https://high.test.com",
+                reliability_score=0.95,
+                is_active=True,
+                effective_reliability_score=0.95,
+                recent_request_count=10,
+                decision_reason="recent_score",
+            ),
+            AIModelInfo(
+                id=2,
+                name="Low Model",
+                provider="ProviderLow",
+                api_endpoint="https://low.test.com",
+                reliability_score=0.6,
+                is_active=True,
+                effective_reliability_score=0.6,
+                recent_request_count=10,
+                decision_reason="recent_score",
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(
+            user_id="test_user",
+            prompt_text="Test prompt",
+            model_id=2,
+        )
+
+        response = await use_case.execute(request)
+
+        assert response.success is True
+        assert response.selected_model_name == "Low Model"
+        low_provider.generate.assert_called_once()
+        high_provider.generate.assert_not_called()
+
+    @patch.dict(os.environ, {"HIGH_KEY": "high", "LOW_KEY": "low"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_execute_with_missing_requested_model_id_falls_back_to_auto_selection(
+        self, mock_registry, mock_data_api_client
+    ):
+        """Missing requested model_id should keep auto-selection behavior (F019)."""
+        high_provider = AsyncMock()
+        high_provider.generate.return_value = "best response"
+        low_provider = AsyncMock()
+        low_provider.generate.return_value = "secondary response"
+
+        mock_registry.get_provider.side_effect = lambda provider: {
+            "ProviderHigh": high_provider,
+            "ProviderLow": low_provider,
+        }[provider]
+        mock_registry.get_api_key_env.side_effect = lambda provider: {
+            "ProviderHigh": "HIGH_KEY",
+            "ProviderLow": "LOW_KEY",
+        }.get(provider, "")
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="High Model",
+                provider="ProviderHigh",
+                api_endpoint="https://high.test.com",
+                reliability_score=0.95,
+                is_active=True,
+                effective_reliability_score=0.95,
+                recent_request_count=10,
+                decision_reason="recent_score",
+            ),
+            AIModelInfo(
+                id=2,
+                name="Low Model",
+                provider="ProviderLow",
+                api_endpoint="https://low.test.com",
+                reliability_score=0.6,
+                is_active=True,
+                effective_reliability_score=0.6,
+                recent_request_count=10,
+                decision_reason="recent_score",
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(
+            user_id="test_user",
+            prompt_text="Test prompt",
+            model_id=999,
+        )
+
+        response = await use_case.execute(request)
+
+        assert response.success is True
+        assert response.selected_model_name == "High Model"
+        high_provider.generate.assert_called_once()
+
+    @patch.dict(os.environ, {"HIGH_KEY": "high", "LOW_KEY": "low"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_execute_with_requested_model_error_uses_fallback_model(
+        self, mock_registry, mock_data_api_client
+    ):
+        """If requested model fails, use case should continue with fallback models (F019)."""
+        high_provider = AsyncMock()
+        high_provider.generate.return_value = "fallback response"
+        low_provider = AsyncMock()
+        low_provider.generate.side_effect = Exception("forced model failed")
+
+        mock_registry.get_provider.side_effect = lambda provider: {
+            "ProviderHigh": high_provider,
+            "ProviderLow": low_provider,
+        }[provider]
+        mock_registry.get_api_key_env.side_effect = lambda provider: {
+            "ProviderHigh": "HIGH_KEY",
+            "ProviderLow": "LOW_KEY",
+        }.get(provider, "")
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="High Model",
+                provider="ProviderHigh",
+                api_endpoint="https://high.test.com",
+                reliability_score=0.95,
+                is_active=True,
+                effective_reliability_score=0.95,
+                recent_request_count=10,
+                decision_reason="recent_score",
+            ),
+            AIModelInfo(
+                id=2,
+                name="Low Model",
+                provider="ProviderLow",
+                api_endpoint="https://low.test.com",
+                reliability_score=0.6,
+                is_active=True,
+                effective_reliability_score=0.6,
+                recent_request_count=10,
+                decision_reason="recent_score",
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(
+            user_id="test_user",
+            prompt_text="Test prompt",
+            model_id=2,
+        )
+
+        response = await use_case.execute(request)
+
+        assert response.success is True
+        assert response.selected_model_name == "High Model"
+        low_provider.generate.assert_called_once()
+        high_provider.generate.assert_called_once()
+
 
 @pytest.mark.unit
 class TestModelSelection:
