@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-01-31T00:15:00Z",
+  "updated_at": "2026-02-11T12:00:00Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -328,8 +328,14 @@
           "findings": {
             "providers_analyzed": 14,
             "openai_compatible": 12,
-            "excluded": ["cloudflare"],
-            "hook_methods_needed": ["_build_url", "_build_headers", "_is_health_check_success"],
+            "excluded": [
+              "cloudflare"
+            ],
+            "hook_methods_needed": [
+              "_build_url",
+              "_build_headers",
+              "_is_health_check_success"
+            ],
             "expected_reduction": "~80%",
             "lines_before": 1820,
             "lines_after": 350
@@ -407,7 +413,10 @@
           "gates_passed": 7,
           "notes": "All requirements traced and verified. Ready for deployment."
         },
-        "DEPLOYED": { "passed": false, "passed_at": null }
+        "DEPLOYED": {
+          "passed": false,
+          "passed_at": null
+        }
       },
       "artifacts": {
         "prd": "_analysis/2026-01-30_F013_ai-providers-consolidation.md",
@@ -468,17 +477,35 @@
             "f012_tests": "8/8 passed",
             "f014_new_tests": "6/6 passed",
             "total_tests": "17/17 passed",
-            "new_methods": ["_handle_rate_limit()", "_handle_transient_error()"],
+            "new_methods": [
+              "_handle_rate_limit()",
+              "_handle_transient_error()"
+            ],
             "except_blocks_reduced": "5 → 3",
             "lines_reduced": "~75",
             "type_hints_coverage": "100%",
             "backward_compatible": true
           }
         },
-        "REVIEW_OK": { "passed": false, "passed_at": null, "artifact": null },
-        "QA_PASSED": { "passed": false, "passed_at": null, "artifact": null },
-        "ALL_GATES_PASSED": { "passed": false, "passed_at": null, "artifact": null },
-        "DEPLOYED": { "passed": false, "passed_at": null },
+        "REVIEW_OK": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "QA_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "ALL_GATES_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "DEPLOYED": {
+          "passed": false,
+          "passed_at": null
+        },
         "DOCUMENTED": {
           "passed": true,
           "passed_at": "2026-01-30T21:30:00Z",
@@ -552,10 +579,25 @@
             "backward_compatible": true
           }
         },
-        "REVIEW_OK": { "passed": false, "passed_at": null, "artifact": null },
-        "QA_PASSED": { "passed": false, "passed_at": null, "artifact": null },
-        "ALL_GATES_PASSED": { "passed": false, "passed_at": null, "artifact": null },
-        "DEPLOYED": { "passed": false, "passed_at": null },
+        "REVIEW_OK": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "QA_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "ALL_GATES_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "DEPLOYED": {
+          "passed": false,
+          "passed_at": null
+        },
         "DOCUMENTED": {
           "passed": true,
           "passed_at": "2026-01-30T23:30:00Z",
@@ -615,10 +657,25 @@
             "backward_compatible": true
           }
         },
-        "REVIEW_OK": { "passed": false, "passed_at": null, "artifact": null },
-        "QA_PASSED": { "passed": false, "passed_at": null, "artifact": null },
-        "ALL_GATES_PASSED": { "passed": false, "passed_at": null, "artifact": null },
-        "DEPLOYED": { "passed": false, "passed_at": null },
+        "REVIEW_OK": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "QA_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "ALL_GATES_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "DEPLOYED": {
+          "passed": false,
+          "passed_at": null
+        },
         "DOCUMENTED": {
           "passed": true,
           "passed_at": "2026-01-30T23:59:00Z",
@@ -686,15 +743,32 @@
             ],
             "tests_created": "tests/unit/test_prompt_history_repository.py (6 test cases)",
             "tests_status": "All 6 tests PASSED",
-            "dependencies_added": ["aiosqlite==0.20.0"],
+            "dependencies_added": [
+              "aiosqlite==0.20.0"
+            ],
             "breaking_changes": false,
             "backward_compatible": true
           }
         },
-        "REVIEW_OK": { "passed": false, "passed_at": null, "artifact": null },
-        "QA_PASSED": { "passed": false, "passed_at": null, "artifact": null },
-        "ALL_GATES_PASSED": { "passed": false, "passed_at": null, "artifact": null },
-        "DEPLOYED": { "passed": false, "passed_at": null },
+        "REVIEW_OK": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "QA_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "ALL_GATES_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "DEPLOYED": {
+          "passed": false,
+          "passed_at": null
+        },
         "DOCUMENTED": {
           "passed": true,
           "passed_at": "2026-01-31T01:30:00Z",
@@ -707,6 +781,57 @@
         "research": "_research/2026-01-30_F017_repositories-sql-optimization.md",
         "plan": "_plans/features/2026-01-30_F017_repositories-sql-optimization.md",
         "completion": "_validation/2026-01-31_F017_repositories-sql-optimization.md"
+      }
+    },
+    "F018": {
+      "branch": "master",
+      "name": "remove-env-var-from-db",
+      "title": "Удаление env_var из БД, SSOT через ProviderRegistry",
+      "stage": "IDEA",
+      "created": "2026-02-11",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-02-11T12:00:00Z",
+          "artifact": "_analysis/2026-02-11_F018_remove-env-var-from-db.md"
+        },
+        "RESEARCH_DONE": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "PLAN_APPROVED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null,
+          "approved_by": null
+        },
+        "IMPLEMENT_OK": {
+          "passed": false,
+          "passed_at": null
+        },
+        "REVIEW_OK": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "QA_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "ALL_GATES_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "DEPLOYED": {
+          "passed": false,
+          "passed_at": null
+        }
+      },
+      "artifacts": {
+        "prd": "_analysis/2026-02-11_F018_remove-env-var-from-db.md"
       }
     }
   },
@@ -992,9 +1117,24 @@
         "plan": "_plans/features/2026-01-30_F017_repositories-sql-optimization.md",
         "completion": "_validation/2026-01-31_F017_repositories-sql-optimization.md"
       }
+    },
+    "F018": {
+      "name": "remove-env-var-from-db",
+      "title": "Удаление env_var из БД, SSOT через ProviderRegistry",
+      "description": "Удаление колонки env_var из БД, ProviderRegistry как SSOT для API key env var names. Исправление production бага (500 на VPS), устранение SSOT violation, исправление Cloudflare env var mismatch",
+      "created": "2026-02-11",
+      "status": "IN_PROGRESS",
+      "services": [
+        "free-ai-selector-data-postgres-api",
+        "free-ai-selector-business-api",
+        "free-ai-selector-health-worker"
+      ],
+      "artifacts": {
+        "prd": "_analysis/2026-02-11_F018_remove-env-var-from-db.md"
+      }
     }
   },
-  "next_feature_id": 18,
+  "next_feature_id": 19,
   "services": [],
   "gate_aliases": {
     "PRD_READY": "ANALYSIS_READY",
