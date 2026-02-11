@@ -44,6 +44,7 @@ class TestF012RateLimitHandling:
         mock_provider2.generate.return_value = "Success from fallback"
 
         mock_registry.get_provider.side_effect = [mock_provider1, mock_provider2]
+        mock_registry.get_api_key_env.return_value = "TEST_API_KEY"
 
         # Setup models
         mock_data_api_client.get_all_models.return_value = [
@@ -55,7 +56,6 @@ class TestF012RateLimitHandling:
                 reliability_score=0.9,
                 is_active=True,
                 effective_reliability_score=0.9,
-                env_var="TEST_API_KEY",
             ),
             AIModelInfo(
                 id=2,
@@ -65,7 +65,6 @@ class TestF012RateLimitHandling:
                 reliability_score=0.8,
                 is_active=True,
                 effective_reliability_score=0.8,
-                env_var="TEST_API_KEY",
             ),
         ]
 
@@ -101,6 +100,7 @@ class TestF012RateLimitHandling:
         mock_provider2.generate.return_value = "Success from fallback"
 
         mock_registry.get_provider.side_effect = [mock_provider1, mock_provider2]
+        mock_registry.get_api_key_env.return_value = "TEST_API_KEY"
 
         mock_data_api_client.get_all_models.return_value = [
             AIModelInfo(
@@ -111,7 +111,6 @@ class TestF012RateLimitHandling:
                 reliability_score=0.9,
                 is_active=True,
                 effective_reliability_score=0.9,
-                env_var="TEST_API_KEY",
             ),
             AIModelInfo(
                 id=2,
@@ -121,7 +120,6 @@ class TestF012RateLimitHandling:
                 reliability_score=0.8,
                 is_active=True,
                 effective_reliability_score=0.8,
-                env_var="TEST_API_KEY",
             ),
         ]
 
@@ -149,6 +147,7 @@ class TestF012RateLimitHandling:
         mock_provider = AsyncMock()
         mock_provider.generate.side_effect = AuthenticationError(message="Invalid key")
         mock_registry.get_provider.return_value = mock_provider
+        mock_registry.get_api_key_env.return_value = "TEST_API_KEY"
 
         mock_data_api_client.get_all_models.return_value = [
             AIModelInfo(
@@ -159,7 +158,6 @@ class TestF012RateLimitHandling:
                 reliability_score=0.9,
                 is_active=True,
                 effective_reliability_score=0.9,
-                env_var="TEST_API_KEY",
             ),
             AIModelInfo(
                 id=2,
@@ -169,7 +167,6 @@ class TestF012RateLimitHandling:
                 reliability_score=0.8,
                 is_active=True,
                 effective_reliability_score=0.8,
-                env_var="TEST_API_KEY",
             ),
         ]
 
@@ -191,6 +188,7 @@ class TestF012RateLimitHandling:
             message="Rate limited", retry_after_seconds=60
         )
         mock_registry.get_provider.return_value = mock_provider
+        mock_registry.get_api_key_env.return_value = "TEST_API_KEY"
 
         mock_data_api_client.get_all_models.return_value = [
             AIModelInfo(
@@ -201,7 +199,6 @@ class TestF012RateLimitHandling:
                 reliability_score=0.9,
                 is_active=True,
                 effective_reliability_score=0.9,
-                env_var="TEST_API_KEY",
             ),
         ]
 
@@ -224,8 +221,14 @@ class TestF012FilterConfiguredModels:
     """Test filtering models by configured API keys (F012: FR-8)."""
 
     @patch.dict(os.environ, {"PROVIDER1_KEY": "key1"}, clear=True)
-    def test_filter_models_with_api_key(self, mock_data_api_client):
-        """Test that only models with configured API keys are returned."""
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    def test_filter_models_with_api_key(self, mock_registry, mock_data_api_client):
+        """Test that only models with configured API keys are returned (F018: via registry)."""
+        # F018: Mock get_api_key_env to return env var names for test providers
+        mock_registry.get_api_key_env.side_effect = lambda p: {
+            "Provider1": "PROVIDER1_KEY", "Provider2": "PROVIDER2_KEY"
+        }.get(p, "")
+
         use_case = ProcessPromptUseCase(mock_data_api_client)
 
         models = [
@@ -236,7 +239,6 @@ class TestF012FilterConfiguredModels:
                 api_endpoint="https://api1.test.com",
                 reliability_score=0.9,
                 is_active=True,
-                env_var="PROVIDER1_KEY",  # Has API key
             ),
             AIModelInfo(
                 id=2,
@@ -245,7 +247,6 @@ class TestF012FilterConfiguredModels:
                 api_endpoint="https://api2.test.com",
                 reliability_score=0.8,
                 is_active=True,
-                env_var="PROVIDER2_KEY",  # No API key configured
             ),
         ]
 
@@ -255,8 +256,11 @@ class TestF012FilterConfiguredModels:
         assert configured[0].id == 1
 
     @patch.dict(os.environ, {}, clear=True)
-    def test_filter_no_configured_models(self, mock_data_api_client):
-        """Test that empty list returned when no models have API keys."""
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    def test_filter_no_configured_models(self, mock_registry, mock_data_api_client):
+        """Test that empty list returned when no models have API keys (F018: via registry)."""
+        mock_registry.get_api_key_env.return_value = "MISSING_KEY"
+
         use_case = ProcessPromptUseCase(mock_data_api_client)
 
         models = [
@@ -267,7 +271,6 @@ class TestF012FilterConfiguredModels:
                 api_endpoint="https://api1.test.com",
                 reliability_score=0.9,
                 is_active=True,
-                env_var="MISSING_KEY",
             ),
         ]
 
@@ -276,8 +279,13 @@ class TestF012FilterConfiguredModels:
         assert len(configured) == 0
 
     @patch.dict(os.environ, {"KEY1": "value1", "KEY2": "value2"}, clear=True)
-    def test_filter_multiple_configured_models(self, mock_data_api_client):
-        """Test filtering with multiple configured models."""
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    def test_filter_multiple_configured_models(self, mock_registry, mock_data_api_client):
+        """Test filtering with multiple configured models (F018: via registry)."""
+        mock_registry.get_api_key_env.side_effect = lambda p: {
+            "Provider1": "KEY1", "Provider2": "KEY2", "Provider3": "MISSING_KEY"
+        }.get(p, "")
+
         use_case = ProcessPromptUseCase(mock_data_api_client)
 
         models = [
@@ -288,7 +296,6 @@ class TestF012FilterConfiguredModels:
                 api_endpoint="https://api1.test.com",
                 reliability_score=0.9,
                 is_active=True,
-                env_var="KEY1",
             ),
             AIModelInfo(
                 id=2,
@@ -297,7 +304,6 @@ class TestF012FilterConfiguredModels:
                 api_endpoint="https://api2.test.com",
                 reliability_score=0.8,
                 is_active=True,
-                env_var="KEY2",
             ),
             AIModelInfo(
                 id=3,
@@ -306,7 +312,6 @@ class TestF012FilterConfiguredModels:
                 api_endpoint="https://api3.test.com",
                 reliability_score=0.7,
                 is_active=True,
-                env_var="MISSING_KEY",
             ),
         ]
 
@@ -330,6 +335,7 @@ class TestF012AvailableOnlyParameter:
         mock_provider = AsyncMock()
         mock_provider.generate.return_value = "Success"
         mock_registry.get_provider.return_value = mock_provider
+        mock_registry.get_api_key_env.return_value = "TEST_API_KEY"
 
         mock_data_api_client.get_all_models.return_value = [
             AIModelInfo(
@@ -340,7 +346,6 @@ class TestF012AvailableOnlyParameter:
                 reliability_score=0.9,
                 is_active=True,
                 effective_reliability_score=0.9,
-                env_var="TEST_API_KEY",
             ),
         ]
 

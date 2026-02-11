@@ -7,7 +7,8 @@ Level 2 (Development Ready) maturity.
 
 F008 SSOT Architecture:
     Provider list is fetched from Data API (PostgreSQL as SSOT).
-    Each model contains api_format and env_var fields for dynamic dispatch.
+    Each model contains api_format field for dynamic dispatch.
+    F018: API key env var names resolved via PROVIDER_ENV_VARS dict (SSOT).
     Universal health checker uses api_format to select check function.
 
 Supports all providers configured in seed.py (currently 14).
@@ -39,6 +40,24 @@ SYNTHETIC_TEST_PROMPT = os.getenv("SYNTHETIC_TEST_PROMPT", "Generate a simple gr
 # Special env vars for Cloudflare (needs account_id)
 CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
 
+# F018: SSOT для API key env var names (отдельный микросервис, не может импортировать ProviderRegistry)
+PROVIDER_ENV_VARS: dict[str, str] = {
+    "Groq": "GROQ_API_KEY",
+    "Cerebras": "CEREBRAS_API_KEY",
+    "SambaNova": "SAMBANOVA_API_KEY",
+    "HuggingFace": "HUGGINGFACE_API_KEY",
+    "Cloudflare": "CLOUDFLARE_API_TOKEN",
+    "DeepSeek": "DEEPSEEK_API_KEY",
+    "OpenRouter": "OPENROUTER_API_KEY",
+    "GitHubModels": "GITHUB_TOKEN",
+    "Fireworks": "FIREWORKS_API_KEY",
+    "Hyperbolic": "HYPERBOLIC_API_KEY",
+    "Novita": "NOVITA_API_KEY",
+    "Scaleway": "SCALEWAY_API_KEY",
+    "Kluster": "KLUSTER_API_KEY",
+    "Nebius": "NEBIUS_API_KEY",
+}
+
 # =============================================================================
 # Logging Configuration (AIDD Framework: structlog)
 # =============================================================================
@@ -57,7 +76,7 @@ def _get_api_key(env_var: str) -> Optional[str]:
     Get API key from environment variable (F008 SSOT).
 
     Args:
-        env_var: Environment variable name from database
+        env_var: Environment variable name
 
     Returns:
         API key value or None if not set
@@ -216,24 +235,31 @@ API_FORMAT_CHECKERS = {
 async def universal_health_check(
     endpoint: str,
     api_format: str,
-    env_var: str,
     provider: str,
 ) -> tuple[bool, float]:
     """
-    Universal health check dispatcher (F008 SSOT).
+    Universal health check dispatcher (F008 SSOT, F018).
 
-    Fetches API key from env_var, then dispatches to appropriate
-    format-specific checker based on api_format from database.
+    Resolves API key env var name via PROVIDER_ENV_VARS dict,
+    then dispatches to appropriate format-specific checker based on api_format.
 
     Args:
         endpoint: API endpoint URL from database
         api_format: API format discriminator from database
-        env_var: Environment variable name for API key from database
-        provider: Provider name for logging
+        provider: Provider name for logging and env var lookup
 
     Returns:
         Tuple of (is_healthy, response_time_seconds)
     """
+    # F018: Resolve env var name from provider name
+    env_var = PROVIDER_ENV_VARS.get(provider, "")
+    if not env_var:
+        logger.warning(
+            "provider_env_var_unknown",
+            provider=provider,
+        )
+        return False, 0.0
+
     # Get API key from environment
     api_key = _get_api_key(env_var)
     if not api_key:
@@ -267,7 +293,7 @@ async def run_health_checks():
     """
     Run synthetic health checks for all AI models (F008 SSOT).
 
-    Fetches models from Data API (including api_format and env_var),
+    Fetches models from Data API (including api_format),
     checks each provider using universal health checker,
     and updates statistics based on results.
 
@@ -279,7 +305,7 @@ async def run_health_checks():
     logger.info("health_check_job_started", job_id=job_id)
 
     try:
-        # Fetch all active models from Data API (F008: includes api_format, env_var)
+        # Fetch all active models from Data API (F008: includes api_format)
         # F012: available_only=true excludes rate-limited providers
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(
@@ -300,9 +326,8 @@ async def run_health_checks():
             model_name = model["name"]
             provider = model["provider"]
             endpoint = model["api_endpoint"]
-            # F008 SSOT: api_format and env_var from database
+            # F008 SSOT: api_format from database
             api_format = model.get("api_format", "openai")
-            env_var = model.get("env_var", "")
 
             logger.info(
                 "checking_model",
@@ -313,10 +338,10 @@ async def run_health_checks():
             )
 
             # F008: Use universal health check with api_format dispatch
+            # F018: env_var resolved inside via PROVIDER_ENV_VARS
             is_healthy, response_time = await universal_health_check(
                 endpoint=endpoint,
                 api_format=api_format,
-                env_var=env_var,
                 provider=provider,
             )
 
@@ -410,11 +435,11 @@ async def main():
             models_response = await client.get(f"{DATA_API_URL}/api/v1/models?active_only=true")
             if models_response.status_code == 200:
                 models = models_response.json()
-                # Check which providers have API keys configured
+                # F018: Check which providers have API keys configured via PROVIDER_ENV_VARS
                 configured_providers = []
                 for model in models:
-                    env_var = model.get("env_var", "")
                     provider = model.get("provider", "")
+                    env_var = PROVIDER_ENV_VARS.get(provider, "")
                     if env_var and _get_api_key(env_var):
                         configured_providers.append(provider)
 

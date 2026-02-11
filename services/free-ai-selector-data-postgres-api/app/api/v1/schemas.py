@@ -71,8 +71,6 @@ class AIModelResponse(AIModelBase):
         default="openai",
         description="API format for health check dispatch (openai, gemini, cohere, huggingface, cloudflare)",
     )
-    env_var: str = Field(default="", description="ENV variable name for API key lookup")
-
     # F012: Rate Limit Handling
     available_at: Optional[datetime] = Field(
         None, description="Timestamp when provider becomes available after rate limit"

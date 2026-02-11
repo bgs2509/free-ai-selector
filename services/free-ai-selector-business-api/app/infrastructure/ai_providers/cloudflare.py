@@ -26,6 +26,8 @@ class CloudflareProvider(AIProviderBase):
     No credit card required - fully free tier with 10k Neurons/day.
     """
 
+    API_KEY_ENV = "CLOUDFLARE_API_TOKEN"
+
     def __init__(
         self,
         api_token: Optional[str] = None,

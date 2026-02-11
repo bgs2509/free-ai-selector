@@ -11,8 +11,9 @@ Usage:
         response = await provider.generate(prompt)
 
 Note:
-    Provider metadata (api_format, env_var) is stored in the database (seed.py).
-    This registry only maps provider names to their implementation classes.
+    Provider metadata (api_format) is stored in the database (seed.py).
+    This registry maps provider names to their implementation classes
+    and provides API key env var names (F018 SSOT).
 """
 
 from typing import Optional
@@ -92,6 +93,22 @@ class ProviderRegistry:
     def has_provider(cls, name: str) -> bool:
         """Проверить наличие класса провайдера в registry."""
         return name in PROVIDER_CLASSES
+
+    @classmethod
+    def get_api_key_env(cls, name: str) -> str:
+        """
+        Получить имя env переменной API ключа без создания экземпляра (F018 SSOT).
+
+        Args:
+            name: Имя провайдера (например, "Groq")
+
+        Returns:
+            Имя env переменной (например, "GROQ_API_KEY") или "" если не найден
+        """
+        provider_class = PROVIDER_CLASSES.get(name)
+        if provider_class and hasattr(provider_class, "API_KEY_ENV"):
+            return provider_class.API_KEY_ENV
+        return ""
 
     @classmethod
     def reset(cls) -> None:

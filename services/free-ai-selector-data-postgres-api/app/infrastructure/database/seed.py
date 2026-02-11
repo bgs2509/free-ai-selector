@@ -35,7 +35,6 @@ SEED_MODELS = [
         "api_endpoint": "https://api.groq.com/openai/v1/chat/completions",
         "is_active": True,
         "api_format": "openai",
-        "env_var": "GROQ_API_KEY",
     },
     {
         "name": "Llama 3.3 70B",
@@ -43,7 +42,6 @@ SEED_MODELS = [
         "api_endpoint": "https://api.cerebras.ai/v1/chat/completions",
         "is_active": True,
         "api_format": "openai",
-        "env_var": "CEREBRAS_API_KEY",
     },
     {
         "name": "Meta-Llama-3.3-70B-Instruct",
@@ -51,7 +49,6 @@ SEED_MODELS = [
         "api_endpoint": "https://api.sambanova.ai/v1/chat/completions",
         "is_active": True,
         "api_format": "openai",
-        "env_var": "SAMBANOVA_API_KEY",
     },
     {
         "name": "Meta-Llama-3-8B-Instruct",
@@ -59,7 +56,6 @@ SEED_MODELS = [
         "api_endpoint": "https://router.huggingface.co/v1/chat/completions",
         "is_active": True,
         "api_format": "openai",
-        "env_var": "HUGGINGFACE_API_KEY",
     },
     {
         "name": "Llama 3.3 70B Instruct FP8 Fast",
@@ -67,7 +63,6 @@ SEED_MODELS = [
         "api_endpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
         "is_active": True,
         "api_format": "cloudflare",
-        "env_var": "CLOUDFLARE_API_KEY",
     },
     # ═══════════════════════════════════════════════════════════════════════════
     # Новые провайдеры F003 — Фаза 1: Приоритетные (3 шт.)
@@ -78,7 +73,6 @@ SEED_MODELS = [
         "api_endpoint": "https://api.deepseek.com/v1/chat/completions",
         "is_active": True,
         "api_format": "openai",
-        "env_var": "DEEPSEEK_API_KEY",
     },
     {
         "name": "DeepSeek R1 (OpenRouter)",
@@ -86,7 +80,6 @@ SEED_MODELS = [
         "api_endpoint": "https://openrouter.ai/api/v1/chat/completions",
         "is_active": True,
         "api_format": "openai",
-        "env_var": "OPENROUTER_API_KEY",
     },
     {
         "name": "GPT-4o Mini (GitHub)",
@@ -94,7 +87,6 @@ SEED_MODELS = [
         "api_endpoint": "https://models.inference.ai.azure.com/chat/completions",
         "is_active": True,
         "api_format": "openai",
-        "env_var": "GITHUB_TOKEN",
     },
     # ═══════════════════════════════════════════════════════════════════════════
     # Новые провайдеры F003 — Фаза 2: Дополнительные (4 шт.)
@@ -105,7 +97,6 @@ SEED_MODELS = [
         "api_endpoint": "https://api.fireworks.ai/inference/v1/chat/completions",
         "is_active": True,
         "api_format": "openai",
-        "env_var": "FIREWORKS_API_KEY",
     },
     {
         "name": "Llama 3.3 70B (Hyperbolic)",
@@ -113,7 +104,6 @@ SEED_MODELS = [
         "api_endpoint": "https://api.hyperbolic.xyz/v1/chat/completions",
         "is_active": True,
         "api_format": "openai",
-        "env_var": "HYPERBOLIC_API_KEY",
     },
     {
         "name": "Llama 3.1 70B (Novita)",
@@ -121,7 +111,6 @@ SEED_MODELS = [
         "api_endpoint": "https://api.novita.ai/v3/openai/chat/completions",
         "is_active": True,
         "api_format": "openai",
-        "env_var": "NOVITA_API_KEY",
     },
     {
         "name": "Llama 3.1 70B (Scaleway)",
@@ -129,7 +118,6 @@ SEED_MODELS = [
         "api_endpoint": "https://api.scaleway.ai/v1/chat/completions",
         "is_active": True,
         "api_format": "openai",
-        "env_var": "SCALEWAY_API_KEY",
     },
     # ═══════════════════════════════════════════════════════════════════════════
     # Новые провайдеры F003 — Фаза 3: Резервные (2 шт.)
@@ -140,7 +128,6 @@ SEED_MODELS = [
         "api_endpoint": "https://api.kluster.ai/v1/chat/completions",
         "is_active": True,
         "api_format": "openai",
-        "env_var": "KLUSTER_API_KEY",
     },
     {
         "name": "Llama 3.1 70B (Nebius)",
@@ -148,21 +135,23 @@ SEED_MODELS = [
         "api_endpoint": "https://api.studio.nebius.ai/v1/chat/completions",
         "is_active": True,
         "api_format": "openai",
-        "env_var": "NEBIUS_API_KEY",
     },
 ]
 
 
 async def seed_database() -> None:
     """
-    Seed database with initial AI models.
+    Seed database with initial AI models (upsert + cleanup).
 
-    Checks if models already exist before inserting to avoid duplicates.
+    F018: Upsert logic — обновляет поля существующих моделей вместо пропуска.
+    Удаляет orphan-модели, которых нет в SEED_MODELS.
     """
     logger.info("Starting database seeding...")
 
     async with AsyncSessionLocal() as session:
         try:
+            seed_names = {m["name"] for m in SEED_MODELS}
+
             for model_data in SEED_MODELS:
                 # Check if model already exists
                 query = select(AIModelORM).where(AIModelORM.name == model_data["name"])
@@ -170,7 +159,18 @@ async def seed_database() -> None:
                 existing_model = result.scalar_one_or_none()
 
                 if existing_model is not None:
-                    logger.info(f"Model '{model_data['name']}' already exists, skipping...")
+                    # F018: Upsert — обновить поля если изменились
+                    updated = False
+                    for field in ("api_format", "api_endpoint", "is_active"):
+                        new_val = model_data.get(field)
+                        if new_val is not None and getattr(existing_model, field) != new_val:
+                            setattr(existing_model, field, new_val)
+                            updated = True
+                    if updated:
+                        existing_model.updated_at = datetime.utcnow()
+                        logger.info(f"Updated model: {model_data['name']}")
+                    else:
+                        logger.info(f"Model '{model_data['name']}' up to date, skipping...")
                     continue
 
                 # Create new model
@@ -185,13 +185,19 @@ async def seed_database() -> None:
                     last_checked=None,
                     is_active=model_data["is_active"],
                     api_format=model_data.get("api_format", "openai"),
-                    env_var=model_data.get("env_var", ""),
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow(),
                 )
 
                 session.add(new_model)
                 logger.info(f"Seeded model: {model_data['name']}")
+
+            # F018: Cleanup orphan models (удалены из seed, но остались в БД)
+            all_models_result = await session.execute(select(AIModelORM))
+            for model in all_models_result.scalars():
+                if model.name not in seed_names:
+                    logger.warning(f"Removing orphan model: {model.name}")
+                    await session.delete(model)
 
             await session.commit()
             logger.info("Database seeding completed successfully!")

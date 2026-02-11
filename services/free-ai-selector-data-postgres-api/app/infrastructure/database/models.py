@@ -47,8 +47,6 @@ class AIModelORM(Base):
     api_format: Mapped[str] = mapped_column(
         String(20), nullable=False, default="openai", index=True
     )
-    env_var: Mapped[str] = mapped_column(String(50), nullable=False, default="")
-
     # Status
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
 

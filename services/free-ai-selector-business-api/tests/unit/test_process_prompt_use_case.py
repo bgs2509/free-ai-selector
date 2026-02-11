@@ -93,6 +93,8 @@ class TestProcessPromptUseCase:
         mock_provider = AsyncMock()
         mock_provider.generate.return_value = "Generated response"
         mock_registry.get_provider.return_value = mock_provider
+        # F018: Mock get_api_key_env for _filter_configured_models
+        mock_registry.get_api_key_env.return_value = "HUGGINGFACE_API_KEY"
 
         # Mock models returned from Data API with F010 + F012 fields
         mock_data_api_client.get_all_models.return_value = [
@@ -106,7 +108,6 @@ class TestProcessPromptUseCase:
                 effective_reliability_score=0.9,
                 recent_request_count=0,
                 decision_reason="fallback",
-                env_var="HUGGINGFACE_API_KEY",  # F012: Required for filtering
             ),
         ]
 
@@ -145,7 +146,6 @@ class TestProcessPromptUseCase:
                 reliability_score=0.9,
                 is_active=True,
                 effective_reliability_score=0.9,
-                env_var="MISSING_API_KEY",
             ),
         ]
 
@@ -236,6 +236,7 @@ class TestF011BSystemPromptsAndResponseFormat:
         mock_provider = AsyncMock()
         mock_provider.generate.return_value = "Generated response"
         mock_registry.get_provider.return_value = mock_provider
+        mock_registry.get_api_key_env.return_value = "GROQ_API_KEY"
 
         # Mock models returned from Data API
         mock_data_api_client.get_all_models.return_value = [
@@ -249,7 +250,6 @@ class TestF011BSystemPromptsAndResponseFormat:
                 effective_reliability_score=0.9,
                 recent_request_count=0,
                 decision_reason="fallback",
-                env_var="GROQ_API_KEY",  # F012: Required
             ),
         ]
 
@@ -277,6 +277,7 @@ class TestF011BSystemPromptsAndResponseFormat:
         mock_provider = AsyncMock()
         mock_provider.generate.return_value = '{"result": "test"}'
         mock_registry.get_provider.return_value = mock_provider
+        mock_registry.get_api_key_env.return_value = "SAMBANOVA_API_KEY"
 
         # Mock models returned from Data API
         mock_data_api_client.get_all_models.return_value = [
@@ -290,7 +291,6 @@ class TestF011BSystemPromptsAndResponseFormat:
                 effective_reliability_score=0.9,
                 recent_request_count=0,
                 decision_reason="fallback",
-                env_var="SAMBANOVA_API_KEY",  # F012: Required
             ),
         ]
 
@@ -318,6 +318,7 @@ class TestF011BSystemPromptsAndResponseFormat:
         mock_provider = AsyncMock()
         mock_provider.generate.return_value = '{"answer": "42"}'
         mock_registry.get_provider.return_value = mock_provider
+        mock_registry.get_api_key_env.return_value = "CLOUDFLARE_API_TOKEN"
 
         # Mock models returned from Data API
         mock_data_api_client.get_all_models.return_value = [
@@ -331,7 +332,6 @@ class TestF011BSystemPromptsAndResponseFormat:
                 effective_reliability_score=0.9,
                 recent_request_count=0,
                 decision_reason="fallback",
-                env_var="CLOUDFLARE_API_TOKEN",  # F012: Required
             ),
         ]
 
@@ -369,6 +369,9 @@ class TestF011BSystemPromptsAndResponseFormat:
 
         # Registry returns different providers for primary and fallback
         mock_registry.get_provider.side_effect = [mock_primary_provider, mock_fallback_provider]
+        mock_registry.get_api_key_env.side_effect = lambda p: {
+            "Groq": "GROQ_API_KEY", "Cerebras": "CEREBRAS_API_KEY"
+        }.get(p, "")
 
         # Mock models returned from Data API (2 models for fallback)
         mock_data_api_client.get_all_models.return_value = [
@@ -382,7 +385,6 @@ class TestF011BSystemPromptsAndResponseFormat:
                 effective_reliability_score=0.9,
                 recent_request_count=0,
                 decision_reason="fallback",
-                env_var="GROQ_API_KEY",  # F012: Required
             ),
             AIModelInfo(
                 id=2,
@@ -394,7 +396,6 @@ class TestF011BSystemPromptsAndResponseFormat:
                 effective_reliability_score=0.85,
                 recent_request_count=0,
                 decision_reason="fallback",
-                env_var="CEREBRAS_API_KEY",  # F012: Required
             ),
         ]
 

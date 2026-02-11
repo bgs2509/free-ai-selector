@@ -35,7 +35,6 @@ class AIModel:
     updated_at: datetime
     # F008 SSOT fields
     api_format: str = "openai"  # Discriminator for health check dispatch
-    env_var: str = ""  # ENV variable name for API key lookup
     # F012: Rate Limit Handling
     available_at: Optional[datetime] = None  # Timestamp when provider becomes available
 

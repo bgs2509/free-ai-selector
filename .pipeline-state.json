@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-02-11T13:00:00Z",
+  "updated_at": "2026-02-11T15:00:00Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -787,7 +787,7 @@
       "branch": "master",
       "name": "remove-env-var-from-db",
       "title": "Удаление env_var из БД, SSOT через ProviderRegistry",
-      "stage": "PLAN",
+      "stage": "IMPLEMENT",
       "created": "2026-02-11",
       "gates": {
         "PRD_READY": {
@@ -825,8 +825,39 @@
           }
         },
         "IMPLEMENT_OK": {
-          "passed": false,
-          "passed_at": null
+          "passed": true,
+          "passed_at": "2026-02-11T15:00:00Z",
+          "files_changed": [
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/cloudflare.py",
+            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/registry.py",
+            "services/free-ai-selector-business-api/app/application/use_cases/process_prompt.py",
+            "services/free-ai-selector-business-api/app/domain/models.py",
+            "services/free-ai-selector-business-api/app/infrastructure/http_clients/data_api_client.py",
+            "services/free-ai-selector-business-api/tests/conftest.py",
+            "services/free-ai-selector-business-api/tests/unit/test_process_prompt_use_case.py",
+            "services/free-ai-selector-business-api/tests/unit/test_f012_rate_limit_handling.py",
+            "services/free-ai-selector-data-postgres-api/app/infrastructure/database/models.py",
+            "services/free-ai-selector-data-postgres-api/app/domain/models.py",
+            "services/free-ai-selector-data-postgres-api/app/api/v1/schemas.py",
+            "services/free-ai-selector-data-postgres-api/app/api/v1/models.py",
+            "services/free-ai-selector-data-postgres-api/app/infrastructure/repositories/ai_model_repository.py",
+            "services/free-ai-selector-data-postgres-api/app/infrastructure/database/seed.py",
+            "services/free-ai-selector-data-postgres-api/alembic/versions/20260211_0004_drop_env_var.py",
+            "services/free-ai-selector-data-postgres-api/tests/unit/test_f015_dry_refactoring.py",
+            "services/free-ai-selector-health-worker/app/main.py"
+          ],
+          "tests": {
+            "implementation_status": "Complete: env_var removed from all 3 services, Alembic migration created, seed upsert+cleanup, ProviderRegistry SSOT",
+            "changes_summary": {
+              "data_api": "Removed env_var from ORM, domain, schema, repository, API response; seed.py upsert+cleanup",
+              "business_api": "ProviderRegistry.get_api_key_env() SSOT; Cloudflare API_KEY_ENV added; process_prompt uses registry",
+              "health_worker": "PROVIDER_ENV_VARS dict for env var lookup by provider name",
+              "migration": "0004_drop_env_var (DROP COLUMN ai_models.env_var)",
+              "tests": "All test fixtures updated, ProviderRegistry mocked in unit tests"
+            },
+            "type_hints_coverage": "100%",
+            "backward_compatible": true
+          }
         },
         "REVIEW_OK": {
           "passed": false,

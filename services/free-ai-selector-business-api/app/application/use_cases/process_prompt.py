@@ -17,7 +17,8 @@ F012: Rate Limit Handling
 
 Note:
     Provider instances are obtained from ProviderRegistry (F008 SSOT).
-    Provider metadata (api_format, env_var) is stored in the database.
+    Provider metadata (api_format) is stored in the database.
+    API key env var names are resolved via ProviderRegistry (F018 SSOT).
 """
 
 import os
@@ -270,10 +271,10 @@ class ProcessPromptUseCase:
 
     def _filter_configured_models(self, models: list[AIModelInfo]) -> list[AIModelInfo]:
         """
-        Filter models to only those with configured API keys (FR-8).
+        Filter models to only those with configured API keys (FR-8, F018 SSOT).
 
-        A model is "configured" if its env_var is set AND the corresponding
-        environment variable contains a non-empty value.
+        A model is "configured" if ProviderRegistry knows its env_var name
+        AND the corresponding environment variable contains a non-empty value.
 
         Args:
             models: List of all active models
@@ -283,17 +284,17 @@ class ProcessPromptUseCase:
         """
         configured = []
         for model in models:
-            if not model.env_var:
-                # No env_var set - skip
+            env_var = ProviderRegistry.get_api_key_env(model.provider)
+            if not env_var:
                 continue
-            api_key = os.getenv(model.env_var, "")
+            api_key = os.getenv(env_var, "")
             if api_key:
                 configured.append(model)
             else:
                 logger.debug(
                     "model_not_configured",
                     model=model.name,
-                    env_var=model.env_var,
+                    env_var=env_var,
                 )
         return configured
 
@@ -345,7 +346,7 @@ class ProcessPromptUseCase:
 
         Uses ProviderRegistry singleton to get cached provider instances.
         Provider class mapping is defined in registry.py (SSOT for class→implementation).
-        Provider metadata (api_format, env_var) comes from database via Data API.
+        Provider metadata (api_format) comes from database via Data API.
 
         Args:
             model: AIModelInfo object with provider name

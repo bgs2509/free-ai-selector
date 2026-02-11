@@ -99,7 +99,6 @@ class DataAPIClient:
                     reliability_score=model["reliability_score"],
                     is_active=model["is_active"],
                     api_format=model.get("api_format", "openai"),
-                    env_var=model.get("env_var", ""),
                     # F010: Use effective_score for selection, fallback to reliability_score
                     effective_reliability_score=model.get(
                         "effective_reliability_score"
@@ -148,7 +147,6 @@ class DataAPIClient:
                 reliability_score=model_data["reliability_score"],
                 is_active=model_data["is_active"],
                 api_format=model_data.get("api_format", "openai"),
-                env_var=model_data.get("env_var", ""),
             )
 
         except httpx.HTTPError as e:

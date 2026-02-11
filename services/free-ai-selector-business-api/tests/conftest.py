@@ -30,7 +30,6 @@ def mock_data_api_client(monkeypatch):
             effective_reliability_score=0.9,
             recent_request_count=0,
             decision_reason="fallback",
-            env_var="TEST_PROVIDER1_API_KEY",  # F012: Required for filtering
         ),
         AIModelInfo(
             id=2,
@@ -42,7 +41,6 @@ def mock_data_api_client(monkeypatch):
             effective_reliability_score=0.7,
             recent_request_count=0,
             decision_reason="fallback",
-            env_var="TEST_PROVIDER2_API_KEY",  # F012: Required for filtering
         ),
     ]
 

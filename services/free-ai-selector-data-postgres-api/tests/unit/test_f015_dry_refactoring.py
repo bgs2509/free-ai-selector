@@ -35,7 +35,6 @@ class TestUnifiedModelToResponse:
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
             api_format="openai",
-            env_var="TEST_API_KEY",
             available_at=None,
         )
 

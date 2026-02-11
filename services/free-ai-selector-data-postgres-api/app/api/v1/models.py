@@ -365,7 +365,6 @@ def _model_to_response(
         created_at=model.created_at,
         updated_at=model.updated_at,
         api_format=model.api_format,
-        env_var=model.env_var,
         available_at=model.available_at,
         success_rate=model.success_rate,
         average_response_time=model.average_response_time,
