@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-02-11T15:00:00Z",
+  "updated_at": "2026-02-11T15:30:00Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -877,12 +877,19 @@
         "DEPLOYED": {
           "passed": false,
           "passed_at": null
+        },
+        "DOCUMENTED": {
+          "passed": true,
+          "passed_at": "2026-02-11T15:30:00Z",
+          "mode": "quick",
+          "artifact": "_validation/2026-02-11_F018_remove-env-var-from-db.md"
         }
       },
       "artifacts": {
         "prd": "_analysis/2026-02-11_F018_remove-env-var-from-db.md",
         "research": "_research/2026-02-11_F018_remove-env-var-from-db.md",
-        "plan": "_plans/features/2026-02-11_F018_remove-env-var-from-db.md"
+        "plan": "_plans/features/2026-02-11_F018_remove-env-var-from-db.md",
+        "completion": "_validation/2026-02-11_F018_remove-env-var-from-db.md"
       }
     }
   },
@@ -1174,14 +1181,17 @@
       "title": "Удаление env_var из БД, SSOT через ProviderRegistry",
       "description": "Удаление колонки env_var из БД, ProviderRegistry как SSOT для API key env var names. Исправление production бага (500 на VPS), устранение SSOT violation, исправление Cloudflare env var mismatch",
       "created": "2026-02-11",
-      "status": "IN_PROGRESS",
+      "status": "DOCUMENTED",
       "services": [
         "free-ai-selector-data-postgres-api",
         "free-ai-selector-business-api",
         "free-ai-selector-health-worker"
       ],
       "artifacts": {
-        "prd": "_analysis/2026-02-11_F018_remove-env-var-from-db.md"
+        "prd": "_analysis/2026-02-11_F018_remove-env-var-from-db.md",
+        "research": "_research/2026-02-11_F018_remove-env-var-from-db.md",
+        "plan": "_plans/features/2026-02-11_F018_remove-env-var-from-db.md",
+        "completion": "_validation/2026-02-11_F018_remove-env-var-from-db.md"
       }
     }
   },
