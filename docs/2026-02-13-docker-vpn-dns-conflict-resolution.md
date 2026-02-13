@@ -180,6 +180,30 @@ make down MODE=loc
 make loc
 ```
 
+### 7.1 Дополнительный runtime-фикс для Hiddify (localhost ↔ Docker)
+
+После устранения DNS overlap была выявлена отдельная проблема host-доступа при активном VPN:
+
+1. Контейнер `free-ai-selector-business-api` оставался `running/healthy`.
+2. Внутри контейнера `curl http://localhost:8000/health` возвращал `200`.
+3. С хоста `curl http://127.0.0.1:8000/health` возвращал `curl: (52) Empty reply from server`.
+
+Фактическая причина: в профиле Hiddify были включены `enable-tun: true` и `strict-route: true`.
+В таком режиме политика маршрутизации VPN может ломать цепочку `host -> docker-proxy -> bridge network`,
+даже если приложение внутри контейнера работает корректно.
+
+Рабочее решение для локальной разработки:
+
+1. В Hiddify установить `strict-route: false`.
+2. Рекомендуемо держать `bypass-lan: true`.
+3. Переподключить профиль VPN после изменения.
+
+Практический результат после переключения `strict-route=false`:
+
+1. `localhost:8000` снова отвечает с хоста.
+2. `ERR_EMPTY_RESPONSE` в браузере исчезает.
+3. Внутренние health-check контейнеров продолжают работать без изменений.
+
 ## 8. Проверка после финального решения
 
 ### 8.1 Проверка подсетей
@@ -197,6 +221,7 @@ make loc
 1. Сборка образов проходит (`pip install` без DNS-ошибок).
 2. В runtime нет `Temporary failure in name resolution` для внешних доменов.
 3. `telegram-bot` не уходит в цикл перезапусков по DNS.
+4. С хоста открывается `http://127.0.0.1:8000/health` (не `Empty reply`).
 
 ## 9. Почему финальное решение корректное
 
@@ -224,7 +249,8 @@ make loc
 2. При смене VPN-клиента проверять:
    - `resolvectl status <vpn_if>`
    - `docker network inspect ...`
-3. Для локального режима всегда явно указывать режим в командах диагностики:
+3. Для Hiddify/TUN-профилей отдельно проверять сочетание `strict-route` и `bypass-lan`.
+4. Для локального режима всегда явно указывать режим в командах диагностики:
    - `make logs MODE=loc`
    - `make health MODE=loc`
 
@@ -245,10 +271,14 @@ docker run --rm busybox nslookup api.telegram.org
 make loc
 make health MODE=loc
 make logs MODE=loc
+
+# Проверка host-доступа к Business API
+curl -i http://127.0.0.1:8000/health
 ```
 
 ## 13. Краткий итог
 
 Проблема с `pip` действительно была DNS/маршрутизацией из-за overlap `172.19.0.0/16`.  
 Перенос Docker address pool в `10.66.0.0/16` устранил корень проблемы.  
-Статический `dns` помог на первом этапе, но для `loc`-режима создал дополнительную хрупкость в runtime; финально его удалили.
+Статический `dns` помог на первом этапе, но для `loc`-режима создал дополнительную хрупкость в runtime; финально его удалили.  
+Дополнительно для Hiddify зафиксировано: при `strict-route=true` возможен `Empty reply` на `localhost:8000`; для dev-профиля рабочий вариант — `strict-route=false`.
