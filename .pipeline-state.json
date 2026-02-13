@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-02-11T17:48:39Z",
+  "updated_at": "2026-02-13T08:43:03Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -982,6 +982,61 @@
         "plan": "_plans/features/2026-02-11_F019_model-id-priority-fallback.md",
         "completion": "_validation/2026-02-11_F019_model-id-priority-fallback.md"
       }
+    },
+    "F020": {
+      "branch": "master",
+      "name": "web-model-selection-stage1",
+      "title": "Web UI: выбор конкретной AI модели (Stage 1)",
+      "stage": "PLAN",
+      "created": "2026-02-13",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-02-13T08:43:03Z",
+          "artifact": "_analysis/2026-02-13_F020_web-model-selection-stage1.md"
+        },
+        "RESEARCH_DONE": {
+          "passed": true,
+          "passed_at": "2026-02-13T08:43:03Z",
+          "artifact": "_research/2026-02-13_F020_web-model-selection-stage1.md",
+          "findings": {
+            "scope": "web-only-stage1",
+            "manual_model_min_score": 0.4,
+            "auto_switch_on_error": true,
+            "telegram_affected": false,
+            "settings_affected": false,
+            "target_file": "services/free-ai-selector-business-api/app/static/index.html"
+          }
+        },
+        "PLAN_APPROVED": {
+          "passed": false,
+          "passed_at": null
+        },
+        "IMPLEMENT_OK": {
+          "passed": false,
+          "passed_at": null
+        },
+        "REVIEW_OK": {
+          "passed": false,
+          "passed_at": null
+        },
+        "QA_PASSED": {
+          "passed": false,
+          "passed_at": null
+        },
+        "ALL_GATES_PASSED": {
+          "passed": false,
+          "passed_at": null
+        },
+        "DEPLOYED": {
+          "passed": false,
+          "passed_at": null
+        }
+      },
+      "artifacts": {
+        "prd": "_analysis/2026-02-13_F020_web-model-selection-stage1.md",
+        "research": "_research/2026-02-13_F020_web-model-selection-stage1.md"
+      }
     }
   },
   "features_registry": {
@@ -1300,9 +1355,23 @@
         "plan": "_plans/features/2026-02-11_F019_model-id-priority-fallback.md",
         "completion": "_validation/2026-02-11_F019_model-id-priority-fallback.md"
       }
+    },
+    "F020": {
+      "name": "web-model-selection-stage1",
+      "title": "Web UI: выбор конкретной AI модели (Stage 1)",
+      "description": "Web-only Stage 1: режим Авто/Конкретная, фильтр моделей по reliability_score > 0.4, показ score в списке и автопереключение в Авто при ошибке/пустом списке.",
+      "created": "2026-02-13",
+      "status": "RESEARCH_DONE",
+      "services": [
+        "free-ai-selector-business-api"
+      ],
+      "artifacts": {
+        "prd": "_analysis/2026-02-13_F020_web-model-selection-stage1.md",
+        "research": "_research/2026-02-13_F020_web-model-selection-stage1.md"
+      }
     }
   },
-  "next_feature_id": 20,
+  "next_feature_id": 21,
   "services": [],
   "gate_aliases": {
     "PRD_READY": "ANALYSIS_READY",
