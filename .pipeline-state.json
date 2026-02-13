@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-02-13T13:31:23Z",
+  "updated_at": "2026-02-13T13:39:24Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -1096,7 +1096,7 @@
         "PLAN_APPROVED": {
           "passed": false,
           "passed_at": null,
-          "artifact": null,
+          "artifact": "_plans/features/2026-02-13_F021_compose-nginx-local-modes.md",
           "approved_by": null
         },
         "IMPLEMENT_OK": {
@@ -1122,7 +1122,8 @@
       },
       "artifacts": {
         "prd": "_analysis/2026-02-13_F021_compose-nginx-local-modes.md",
-        "research": "_research/2026-02-13_F021_compose-nginx-local-modes.md"
+        "research": "_research/2026-02-13_F021_compose-nginx-local-modes.md",
+        "plan": "_plans/features/2026-02-13_F021_compose-nginx-local-modes.md"
       }
     }
   },
@@ -1463,7 +1464,7 @@
       "title": "Два независимых compose-файла: make nginx/make loc с корректным root_path",
       "description": "Переименование текущего compose в nginx-конфигурацию и создание независимого локального compose-файла без override, с корректными портами и обработкой ROOT_PATH/OpenAPI.",
       "created": "2026-02-13",
-      "status": "RESEARCH_DONE",
+      "status": "IN_PROGRESS",
       "services": [
         "free-ai-selector-business-api",
         "free-ai-selector-data-postgres-api",
@@ -1472,7 +1473,8 @@
       ],
       "artifacts": {
         "prd": "_analysis/2026-02-13_F021_compose-nginx-local-modes.md",
-        "research": "_research/2026-02-13_F021_compose-nginx-local-modes.md"
+        "research": "_research/2026-02-13_F021_compose-nginx-local-modes.md",
+        "plan": "_plans/features/2026-02-13_F021_compose-nginx-local-modes.md"
       }
     }
   },
