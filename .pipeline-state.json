@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-02-13T13:39:24Z",
+  "updated_at": "2026-02-13T13:46:06Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -1065,7 +1065,7 @@
       "branch": "master",
       "name": "compose-nginx-local-modes",
       "title": "Два независимых compose-файла: make nginx/make loc с корректным root_path",
-      "stage": "PLAN",
+      "stage": "IMPLEMENT",
       "created": "2026-02-13",
       "gates": {
         "PRD_READY": {
@@ -1094,10 +1094,18 @@
           }
         },
         "PLAN_APPROVED": {
-          "passed": false,
-          "passed_at": null,
+          "passed": true,
+          "passed_at": "2026-02-13T13:46:06Z",
           "artifact": "_plans/features/2026-02-13_F021_compose-nginx-local-modes.md",
-          "approved_by": null
+          "approved_by": "user",
+          "summary": {
+            "compose_files": 2,
+            "approach": "independent_configs_no_override",
+            "must_have_comments": true,
+            "deploy_script_removed": true,
+            "db_migration_required": false,
+            "breaking_changes_api": false
+          }
         },
         "IMPLEMENT_OK": {
           "passed": false,
@@ -1464,7 +1472,7 @@
       "title": "Два независимых compose-файла: make nginx/make loc с корректным root_path",
       "description": "Переименование текущего compose в nginx-конфигурацию и создание независимого локального compose-файла без override, с корректными портами и обработкой ROOT_PATH/OpenAPI.",
       "created": "2026-02-13",
-      "status": "IN_PROGRESS",
+      "status": "PLAN_APPROVED",
       "services": [
         "free-ai-selector-business-api",
         "free-ai-selector-data-postgres-api",
