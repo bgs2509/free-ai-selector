@@ -77,7 +77,7 @@ build:
 # По умолчанию `up` работает как nginx (см. MODE ?= nginx).
 up:
 	@echo "Starting services with $(COMPOSE_FILE) (MODE=$(MODE))"
-	$(COMPOSE) up -d
+	$(COMPOSE) up -d --build
 	@echo "Waiting for services to be healthy..."
 	@sleep 5
 	@$(MAKE) health MODE=$(MODE)
