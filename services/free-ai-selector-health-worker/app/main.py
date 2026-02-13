@@ -71,6 +71,19 @@ logger = get_logger(__name__)
 # Dispatch by api_format from database instead of hardcoded provider names
 
 
+def format_exception_message(error: Exception) -> str:
+    """
+    Формирует безопасное и информативное сообщение об ошибке.
+
+    Для сетевых таймаутов str(error) может быть пустой строкой,
+    поэтому включаем имя класса исключения.
+    """
+    message = sanitize_error_message(f"{type(error).__name__}: {error}").strip()
+    if message:
+        return message
+    return type(error).__name__
+
+
 def _get_api_key(env_var: str) -> Optional[str]:
     """
     Get API key from environment variable (F008 SSOT).
@@ -125,7 +138,7 @@ async def check_openai_format(
             "health_check_failed",
             provider=provider,
             api_format="openai",
-            error=sanitize_error_message(e),
+            error=format_exception_message(e),
         )
         return False, time.time() - start_time
 
@@ -163,7 +176,7 @@ async def check_huggingface_format(
             "health_check_failed",
             provider=provider,
             api_format="huggingface",
-            error=sanitize_error_message(e),
+            error=format_exception_message(e),
         )
         return False, time.time() - start_time
 
@@ -215,7 +228,7 @@ async def check_cloudflare_format(
             "health_check_failed",
             provider=provider,
             api_format="cloudflare",
-            error=sanitize_error_message(e),
+            error=format_exception_message(e),
         )
         return False, time.time() - start_time
 
@@ -383,7 +396,7 @@ async def run_health_checks():
                     "stats_update_failed",
                     job_id=job_id,
                     model=model_name,
-                    error=sanitize_error_message(update_error),
+                    error=format_exception_message(update_error),
                 )
 
         logger.info(
@@ -396,7 +409,7 @@ async def run_health_checks():
         )
 
     except Exception as e:
-        logger.error("health_check_job_failed", job_id=job_id, error=sanitize_error_message(e))
+        logger.error("health_check_job_failed", job_id=job_id, error=format_exception_message(e))
 
 
 # =============================================================================
@@ -454,7 +467,7 @@ async def main():
                     logger.warning("no_providers_configured")
 
     except Exception as e:
-        logger.error("data_api_connection_failed", error=sanitize_error_message(e))
+        logger.error("data_api_connection_failed", error=format_exception_message(e))
         raise
 
     # Run initial health check

@@ -12,6 +12,7 @@ from typing import Optional
 
 import httpx
 from aiogram import Bot, Dispatcher, F, Router
+from aiogram.exceptions import TelegramNetworkError
 
 from app.utils.logger import setup_logging, get_logger
 from app.utils.request_id import (
@@ -33,6 +34,10 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 BUSINESS_API_URL = os.getenv("BUSINESS_API_URL", "http://localhost:8000")
 LOG_LEVEL = os.getenv("TELEGRAM_BOT_LOG_LEVEL", "INFO")
 BOT_MAX_MESSAGE_LENGTH = int(os.getenv("BOT_MAX_MESSAGE_LENGTH", "4000"))
+BOT_POLLING_RETRY_DELAY_SECONDS = int(
+    os.getenv("BOT_POLLING_RETRY_DELAY_SECONDS", "5")
+)
+BOT_POLLING_MAX_RETRIES = int(os.getenv("BOT_POLLING_MAX_RETRIES", "0"))
 
 # =============================================================================
 # Logging Configuration (AIDD Framework: structlog)
@@ -44,6 +49,19 @@ logger = get_logger(__name__)
 # =============================================================================
 # HTTP Client for Business API
 # =============================================================================
+
+
+def format_exception_message(error: Exception) -> str:
+    """
+    Формирует безопасное и информативное сообщение об ошибке.
+
+    Для некоторых сетевых исключений str(error) может быть пустым,
+    поэтому добавляем имя класса исключения.
+    """
+    message = sanitize_error_message(f"{type(error).__name__}: {error}").strip()
+    if message:
+        return message
+    return type(error).__name__
 
 
 async def call_business_api(prompt: str) -> Optional[dict]:
@@ -464,8 +482,49 @@ async def main():
         logger.error("business_api_connection_failed", error=sanitize_error_message(e))
         logger.warning("service_starting_with_errors")
 
+    attempts = 0
     try:
-        await dp.start_polling(bot)
+        while True:
+            attempts += 1
+            try:
+                logger.info("polling_starting", attempt=attempts)
+                await dp.start_polling(bot)
+                logger.info("polling_stopped")
+                break
+            except asyncio.CancelledError:
+                # Нормальный сценарий остановки контейнера
+                raise
+            except TelegramNetworkError as e:
+                logger.error(
+                    "telegram_polling_network_error",
+                    attempt=attempts,
+                    error=format_exception_message(e),
+                )
+            except asyncio.TimeoutError as e:
+                logger.error(
+                    "telegram_polling_timeout",
+                    attempt=attempts,
+                    error=format_exception_message(e),
+                )
+            except Exception as e:
+                logger.error(
+                    "telegram_polling_failed",
+                    attempt=attempts,
+                    error=format_exception_message(e),
+                )
+
+            if BOT_POLLING_MAX_RETRIES > 0 and attempts >= BOT_POLLING_MAX_RETRIES:
+                logger.error(
+                    "polling_retry_limit_reached",
+                    max_retries=BOT_POLLING_MAX_RETRIES,
+                )
+                break
+
+            logger.info(
+                "polling_retry_scheduled",
+                retry_in_seconds=BOT_POLLING_RETRY_DELAY_SECONDS,
+            )
+            await asyncio.sleep(BOT_POLLING_RETRY_DELAY_SECONDS)
     finally:
         await bot.session.close()
         logger.info("service_stopping")
