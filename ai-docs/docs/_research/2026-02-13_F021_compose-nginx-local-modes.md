@@ -59,17 +59,17 @@ findings_count: 18
 Вывод:
 - после переименования `docker-compose.yml` весь `Makefile` нужно сделать mode-aware.
 
-### 2.3 Скрипт деплоя использует compose default file
+### 2.3 Скрипт деплоя удаляется для упрощения контура запуска
 
-**Файл**: `scripts/deploy.sh`
+**Файл**: `scripts/deploy.sh` (удалён в рамках задачи)
 
 Ключевые наблюдения:
-- `docker compose down` (`scripts/deploy.sh:21`);
-- `docker compose --env-file .env up --build -d` (`scripts/deploy.sh:31`);
-- скрипт отдельно создаёт `proxy-network` (`scripts/deploy.sh:16`).
+- отдельный shell-скрипт дублирует слой оркестрации, который уже есть в `Makefile`;
+- при разделении на `docker-compose.nginx.yml` и `docker-compose.loc.yml` дополнительная точка запуска повышает риск рассинхронизации;
+- для поддержки проще держать единый операционный вход через `make nginx`.
 
 Вывод:
-- после переименования файла скрипт нужно явно переключить на `-f docker-compose.nginx.yml`.
+- деплой и запуск VPS-режима должны опираться на mode-aware цели `Makefile`, без отдельного `scripts/deploy.sh`.
 
 ### 2.4 ROOT_PATH/OpenAPI: поведение между сервисами сейчас несимметричное
 
@@ -183,7 +183,7 @@ Mode-aware команды:
 | `proxy-network` | nginx compose | Нужна только в VPS-режиме |
 | `make` команды | DevOps/локальная разработка | Должны прозрачно выбирать режим |
 | `index.html` inline JS | Web UI runtime | Источник формирования API/docs URL |
-| `scripts/deploy.sh` | VPS deploy | Должен явно использовать nginx compose файл |
+| `make nginx` (операционный вход) | VPS deploy | Должен быть единой точкой запуска nginx-режима |
 
 ---
 
@@ -202,7 +202,7 @@ Mode-aware команды:
 | # | Риск | Вероятность | Влияние | Митигация |
 |---|---|---|---|---|
 | 1 | Расхождение `docker-compose.nginx.yml` и `docker-compose.loc.yml` со временем | Medium | High | Подробные комментарии + явное описание «что отличается и почему» |
-| 2 | Поломка существующих скриптов после переименования файла | Medium | High | Обновить `Makefile` и `scripts/deploy.sh`, оставить `make up` как алиас |
+| 2 | Поломка существующих локальных/CI команд после переименования файла | Medium | High | Обновить `Makefile` и документацию, оставить `make up` как алиас |
 | 3 | Регрессия docs/openapi в Data API при `ROOT_PATH` | Medium | Medium | Использовать ту же динамическую схему, что уже работает в Business API |
 | 4 | Неправильная сборка URL в UI для нестандартного префикса | Medium | Medium | Вычисление базового пути по текущему location, не по хардкоду |
 | 5 | Несогласованность документации режимов | High | Medium | Обновить минимум `README.md` и `docs/operations/quick-start.md`, затем ops docs |
@@ -219,14 +219,14 @@ Mode-aware команды:
 3. Зафиксировать smoke-сценарии в двух режимах:
    - `nginx`: порты не экспонированы напрямую, работа через proxy-путь;
    - `loc`: `localhost:8000/docs` и `localhost:8001/docs` доступны.
-4. Включить обновление `scripts/deploy.sh` в scope, чтобы не оставить скрытую регрессию деплоя.
+4. Зафиксировать в плане удаление `scripts/deploy.sh` и использовать `make nginx` как единую точку запуска VPS-режима.
 
 ---
 
 ## 8. Quality Cascade Checklist (7/7)
 
 ### QC-1: DRY ✅
-- [x] Найдены существующие точки конфигурации (`docker-compose.yml`, `Makefile`, `deploy.sh`).
+- [x] Найдены существующие точки конфигурации (`docker-compose.yml`, `Makefile`).
 - [x] Рекомендовано переиспользовать текущую nginx-конфигурацию как основу `docker-compose.nginx.yml`.
 - [x] Избегаем дублирования логики root_path в коде через унификацию Business/Data подхода.
 
@@ -243,7 +243,7 @@ Mode-aware команды:
 ### QC-4: SoC ✅
 - [x] Оркестрация меняется в compose/make, а не в бизнес-логике сервисов.
 - [x] Root path корректируется только в API/UI слоях, где это уместно.
-- [x] Деплой-скрипт остаётся отдельной операционной ответственностью.
+- [x] Операционный вход стандартизирован через `Makefile` без отдельного deploy-скрипта.
 
 ### QC-5: SSoT ✅
 - [x] Для каждого режима определён один compose-источник истины.
