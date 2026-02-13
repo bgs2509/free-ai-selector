@@ -2,6 +2,9 @@
 
 > Руководство по решению типичных проблем Free AI Selector.
 
+> Примеры ниже ориентированы на локальный режим (`make loc`).
+> Для VPS режима добавляйте `MODE=nginx` к командам `make` или используйте `-f docker-compose.nginx.yml`.
+
 ---
 
 ## Диагностика
@@ -13,7 +16,7 @@
 docker compose ps
 
 # 2. Health endpoints
-make health
+make health MODE=loc
 
 # 3. Логи ошибок
 docker compose logs --tail=50 | grep -i error
@@ -58,7 +61,7 @@ lsof -i :5432
 # Если порт занят, остановить локальный PostgreSQL
 sudo systemctl stop postgresql
 
-# Или изменить порт в docker-compose.yml
+# Или изменить порт в docker-compose.loc.yml
 ```
 
 ### Порты заняты
@@ -106,11 +109,11 @@ make logs-business | grep -i "provider\|error\|failed"
 # 1. Проверить API ключи
 docker compose exec free-ai-selector-business-api env | grep API_KEY
 
-# 2. Проверить .env файл
-cat .env | grep -v "^#" | grep API
+# 2. Проверить переменные внутри контейнера
+docker compose exec free-ai-selector-business-api env | grep -E "API_KEY|ACCOUNT_ID|API_TOKEN"
 
 # 3. Перезапустить сервисы
-make down && make up
+make down MODE=loc && make loc
 ```
 
 ### Rate Limit Exceeded
@@ -170,7 +173,7 @@ curl -X POST http://localhost:8000/api/v1/providers/test | jq '.results[] | sele
 docker compose exec postgres psql -U free_ai_selector_user -d free_ai_selector_db -c "SELECT 1"
 
 # Проверить Data API
-curl http://localhost:8002/health
+curl http://localhost:8001/health
 ```
 
 **Решения:**
@@ -206,7 +209,7 @@ docker compose logs free-ai-selector-data-postgres-api | grep -i alembic
 **Диагностика:**
 
 ```bash
-curl http://localhost:8002/api/v1/models
+curl http://localhost:8001/api/v1/models
 # Ожидается: {"models": [...], "total": 6}
 ```
 
@@ -299,7 +302,7 @@ docker compose up -d
 LOG_LEVEL=DEBUG
 
 # Перезапустить
-make down && make up
+make down MODE=loc && make loc
 ```
 
 ### Просмотр логов конкретного сервиса
@@ -336,7 +339,7 @@ make db-shell
 
 - [ ] `docker compose ps` - все контейнеры Up и healthy
 - [ ] `make health` - все endpoints отвечают
-- [ ] `curl http://localhost:8002/api/v1/models` - есть модели в БД
+- [ ] `curl http://localhost:8001/api/v1/models` - есть модели в БД
 - [ ] `curl -X POST .../providers/test` - провайдеры работают
 - [ ] `.env` файл существует и содержит ключи
 - [ ] `docker compose logs` - нет критических ошибок

@@ -1,15 +1,22 @@
 # =============================================================================
-# Free AI Selector - Docker Compose Configuration
+# Free AI Selector - Docker Compose (loc / local mode)
 # =============================================================================
-# Конфигурация для VPS с внешним nginx-proxy
-# Архитектура: 4 микросервиса + PostgreSQL, доступ через proxy-network
+# Этот файл intentionally независим от docker-compose.nginx.yml.
+# Почему так (а не override):
+# 1) Запуск проще и прозрачнее: один режим = один файл.
+# 2) Нет неочевидного merge-поведения compose-файлов.
+# 3) Локальный запуск можно читать/поддерживать без контекста VPS-конфига.
+#
+# Назначение: локальная разработка БЕЗ внешнего nginx-proxy.
+# В этом режиме API порты публикуются на host для прямого доступа к /health и /docs.
 # =============================================================================
 
 services:
   # ---------------------------------------------------------------------------
   # PostgreSQL Database
   # ---------------------------------------------------------------------------
-  # Внешний порт убран — доступ только через внутреннюю сеть
+  # Порт БД не публикуем наружу: локальным сервисам достаточно внутренней сети,
+  # а лишняя публикация порта повышает риск конфликтов и случайного доступа.
   postgres:
     image: postgres:16-alpine
     container_name: free-ai-selector-postgres
@@ -18,7 +25,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
-    # ports убраны — БД доступна только внутри Docker-сети
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -34,7 +40,6 @@ services:
   # ---------------------------------------------------------------------------
   # Data API Service (PostgreSQL Data Layer)
   # ---------------------------------------------------------------------------
-  # Внешний порт убран — доступ только через внутреннюю сеть
   free-ai-selector-data-postgres-api:
     build:
       context: ./services/free-ai-selector-data-postgres-api
@@ -47,8 +52,12 @@ services:
       DATA_API_LOG_LEVEL: ${DATA_API_LOG_LEVEL}
       ENVIRONMENT: ${ENVIRONMENT}
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
-      ROOT_PATH: ${DATA_API_ROOT_PATH:-}
-    # ports убраны — API доступен только внутри Docker-сети
+      # Для локального режима ROOT_PATH должен быть пустым,
+      # чтобы docs/openapi открывались по корневым путям.
+      ROOT_PATH: ""
+    ports:
+      # Публикуем порт для локального доступа к Data API docs/health.
+      - "8001:8001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,8 +77,8 @@ services:
   # ---------------------------------------------------------------------------
   # Business API Service (Business Logic Layer)
   # ---------------------------------------------------------------------------
-  # Точка входа для внешнего nginx-proxy через proxy-network
-  # Внутренний порт 8000 — доступен только через Docker-сети
+  # В локальном режиме сервис работает без proxy-network и без внешнего nginx:
+  # доступ осуществляется напрямую через host-порт 8000.
   free-ai-selector-business-api:
     build:
       context: ./services/free-ai-selector-business-api
@@ -86,7 +95,7 @@ services:
       HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY}
       CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID}
       CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
-      # F003: Новые провайдеры (8 шт.)
+      # F003: Новые провайдеры
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
@@ -101,12 +110,16 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS}
       ENVIRONMENT: ${ENVIRONMENT}
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
-      ROOT_PATH: ${ROOT_PATH:-}
+      # В local mode ROOT_PATH пустой: это упрощает локальную отладку,
+      # URL вида http://localhost:8000/docs работает без префиксов.
+      ROOT_PATH: ""
       # F012: Rate Limit Handling
       MAX_RETRIES: ${MAX_RETRIES:-10}
       RETRY_DELAY_SECONDS: ${RETRY_DELAY_SECONDS:-10}
       RATE_LIMIT_DEFAULT_COOLDOWN: ${RATE_LIMIT_DEFAULT_COOLDOWN:-3600}
-    # ports убраны — доступ через nginx-proxy (proxy-network)
+    ports:
+      # Публикуем Business API для локального UI/API-тестирования.
+      - "8000:8000"
     depends_on:
       free-ai-selector-data-postgres-api:
         condition: service_healthy
@@ -118,7 +131,6 @@ services:
       start_period: 40s
     networks:
       - free-ai-selector-network
-      - proxy-network
     restart: unless-stopped
     volumes:
       - ./services/free-ai-selector-business-api:/app
@@ -168,7 +180,7 @@ services:
       HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY}
       CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID}
       CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
-      # F003: Новые провайдеры (8 шт.)
+      # F003: Новые провайдеры
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
@@ -195,14 +207,11 @@ services:
 # Networks
 # =============================================================================
 networks:
-  # Внутренняя сеть для связи между сервисами кластера
+  # В local mode используем только внутреннюю сеть сервиса.
+  # External proxy-network здесь intentionally отсутствует.
   free-ai-selector-network:
     driver: bridge
     name: free-ai-selector-network
-
-  # Внешняя сеть для связи с nginx-proxy (создаётся отдельно на VPS)
-  proxy-network:
-    external: true
 
 # =============================================================================
 # Volumes

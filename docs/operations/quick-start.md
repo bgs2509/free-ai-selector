@@ -53,11 +53,19 @@ TELEGRAM_BOT_TOKEN=...
 # Собрать Docker образы
 make build
 
-# Запустить все сервисы
-make up
+# Локальный режим без nginx (рекомендовано для разработки)
+make loc
 ```
 
 Подождите ~30 секунд для инициализации.
+
+Для VPS/reverse proxy режима используйте:
+
+```bash
+make nginx
+```
+
+`make up` сохранён как алиас на `make nginx` для обратной совместимости.
 
 ---
 
@@ -67,7 +75,7 @@ make up
 make health
 ```
 
-Ожидаемый вывод:
+Ожидаемый вывод в `loc` режиме:
 
 ```
 ✅ PostgreSQL: Ready
@@ -126,7 +134,7 @@ curl http://localhost:8000/api/v1/models/stats
 
 1. Получить токен у [@BotFather](https://t.me/BotFather)
 2. Добавить в `.env`: `TELEGRAM_BOT_TOKEN=...`
-3. Перезапустить: `make down && make up`
+3. Перезапустить: `make down MODE=loc && make loc`
 4. Найти бота в Telegram и отправить `/start`
 
 ---
@@ -147,7 +155,7 @@ curl http://localhost:8000/api/v1/models/stats
 ```bash
 make logs           # Все логи
 make logs-business  # Логи Business API
-make down           # Остановить сервисы
+make down MODE=loc  # Остановить локальный режим
 make test           # Запустить тесты
 make lint           # Проверка кода
 ```

@@ -11,7 +11,7 @@
 |---------|----------|
 | Всего фич | 4 |
 | Deployed | 1 |
-| In Progress | 3 |
+| In Progress | 2 |
 | Archived | 0 |
 
 ---
@@ -22,7 +22,7 @@
 |-----|----------|--------|------|---------|-----------|
 | F012 | Rate Limit Handling для AI Провайдеров | IN_PROGRESS | 2026-01-29 | free-ai-selector-business-api | [PRD](_analysis/2026-01-29_F012_rate-limit-handling.md) |
 | F019 | Выбор модели по model_id с fallback на авто-выбор | IN_PROGRESS | 2026-02-11 | free-ai-selector-business-api | [PRD](_analysis/2026-02-11_F019_model-id-priority-fallback.md) |
-| F021 | Два независимых compose-файла: make nginx/make loc с корректным root_path | PLAN_APPROVED | 2026-02-13 | free-ai-selector-business-api, free-ai-selector-data-postgres-api, free-ai-selector-telegram-bot, free-ai-selector-health-worker | [PRD](_analysis/2026-02-13_F021_compose-nginx-local-modes.md), [Research](_research/2026-02-13_F021_compose-nginx-local-modes.md), [Plan](_plans/features/2026-02-13_F021_compose-nginx-local-modes.md) |
+| F021 | Два независимых compose-файла: make nginx/make loc с корректным root_path | IMPLEMENT_OK | 2026-02-13 | free-ai-selector-business-api, free-ai-selector-data-postgres-api, free-ai-selector-telegram-bot, free-ai-selector-health-worker | [PRD](_analysis/2026-02-13_F021_compose-nginx-local-modes.md), [Research](_research/2026-02-13_F021_compose-nginx-local-modes.md), [Plan](_plans/features/2026-02-13_F021_compose-nginx-local-modes.md) |
 
 ---
 
@@ -48,6 +48,7 @@
 |--------|----------|----------------|
 | `IN_PROGRESS` | Фича в разработке | 1-4 |
 | `PLAN_APPROVED` | План утверждён | 3 |
+| `IMPLEMENT_OK` | Код написан и передан в review | 4 |
 | `IMPLEMENTED` | Код написан | 4 |
 | `REVIEW_OK` | Код проверен | 5 |
 | `QA_PASSED` | Тесты пройдены | 6 |

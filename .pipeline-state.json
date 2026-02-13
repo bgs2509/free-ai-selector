@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-02-13T13:46:06Z",
+  "updated_at": "2026-02-13T14:41:30Z",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -1065,7 +1065,7 @@
       "branch": "master",
       "name": "compose-nginx-local-modes",
       "title": "Два независимых compose-файла: make nginx/make loc с корректным root_path",
-      "stage": "IMPLEMENT",
+      "stage": "REVIEW",
       "created": "2026-02-13",
       "gates": {
         "PRD_READY": {
@@ -1108,8 +1108,27 @@
           }
         },
         "IMPLEMENT_OK": {
-          "passed": false,
-          "passed_at": null
+          "passed": true,
+          "passed_at": "2026-02-13T14:41:30Z",
+          "files_changed": [
+            "docker-compose.nginx.yml",
+            "docker-compose.loc.yml",
+            "Makefile",
+            "services/free-ai-selector-data-postgres-api/app/main.py",
+            "services/free-ai-selector-business-api/app/static/index.html",
+            "README.md",
+            "docs/operations/quick-start.md",
+            "docs/operations/deployment.md",
+            "docs/operations/development.md",
+            "docs/operations/troubleshooting.md"
+          ],
+          "tests": {
+            "compose_validation": "docker compose -f docker-compose.nginx.yml config --services",
+            "compose_validation_loc": "docker compose -f docker-compose.loc.yml config --services",
+            "json_validation": "python3 -m json.tool .pipeline-state.json",
+            "automated_tests": "not_run",
+            "reason": "Изменения инфраструктурные и документационные; запуск pytest не запрошен в задаче."
+          }
         },
         "REVIEW_OK": {
           "passed": false,
@@ -1472,7 +1491,7 @@
       "title": "Два независимых compose-файла: make nginx/make loc с корректным root_path",
       "description": "Переименование текущего compose в nginx-конфигурацию и создание независимого локального compose-файла без override, с корректными портами и обработкой ROOT_PATH/OpenAPI.",
       "created": "2026-02-13",
-      "status": "PLAN_APPROVED",
+      "status": "IMPLEMENT_OK",
       "services": [
         "free-ai-selector-business-api",
         "free-ai-selector-data-postgres-api",

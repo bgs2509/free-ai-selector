@@ -37,6 +37,11 @@ SERVICE_VERSION = "1.0.0"
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 ROOT_PATH = os.getenv("ROOT_PATH", "")
 
+# Динамический OpenAPI URL нужен по той же причине, что и в Business API:
+# при запуске за reverse proxy документация должна открываться с префиксом,
+# а в локальном режиме без префикса оставаться на стандартном /openapi.json.
+_openapi_url = f"{ROOT_PATH}/openapi.json" if ROOT_PATH else "/openapi.json"
+
 # =============================================================================
 # Logging Configuration (AIDD Framework: structlog)
 # =============================================================================
@@ -99,7 +104,7 @@ app = FastAPI(
     version=SERVICE_VERSION,
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json",
+    openapi_url=_openapi_url,
     root_path=ROOT_PATH,
     lifespan=lifespan,
 )

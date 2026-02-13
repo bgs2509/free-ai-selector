@@ -132,7 +132,7 @@ BOT_ADMIN_IDS=123456789,987654321
 
 ```bash
 make build  # Build all Docker images
-make up     # Start all services
+make loc    # Local mode: direct access to localhost:8000/8001 (no nginx)
 ```
 
 Wait ~30 seconds for services to initialize, then verify health:
@@ -141,12 +141,20 @@ Wait ~30 seconds for services to initialize, then verify health:
 make health
 ```
 
-Expected output:
+Expected output in `loc` mode:
 ```
 ✅ PostgreSQL: Ready
 ✅ Data API (http://localhost:8001/health): Healthy
 ✅ Business API (http://localhost:8000/health): Healthy
 ```
+
+For VPS/reverse-proxy mode use:
+
+```bash
+make nginx  # Uses docker-compose.nginx.yml
+```
+
+`make up` is kept for backward compatibility and maps to `make nginx`.
 
 ### 4. Initialize Database
 
@@ -268,14 +276,16 @@ All 6 providers are **100% free with NO credit card required**:
 
 ```bash
 make help           # Show all available commands
-make up             # Start all services
-make down           # Stop all services
+make loc            # Start local mode without nginx
+make nginx          # Start VPS/proxy mode
+make up             # Alias to make nginx
+make down MODE=loc  # Stop local mode services
 make logs           # View logs from all services
 make logs-business  # View Business API logs only
 make test           # Run all tests (≥75% coverage required)
 make lint           # Run linters (ruff, mypy, bandit)
 make format         # Format code with ruff
-make migrate        # Run database migrations
+make migrate MODE=loc        # Run database migrations for local mode
 make shell-business # Open shell in Business API container
 make db-shell       # Open PostgreSQL shell
 ```
@@ -310,7 +320,8 @@ free-ai-selector/
 │   └── free-ai-selector-health-worker/        # Background monitoring
 │       └── ...
 ├── shared/                     # Shared utilities (future)
-├── docker-compose.yml          # Service orchestration
+├── docker-compose.nginx.yml    # VPS/proxy mode (no direct API host ports)
+├── docker-compose.loc.yml      # Local mode (direct API host ports)
 ├── Makefile                    # Development commands
 └── README.md                   # This file
 ```
@@ -331,8 +342,11 @@ Level 2 maturity requires **≥75% code coverage** for all services.
 
 Once services are running, visit:
 
-- **Business API Docs**: http://localhost:8000/docs (Swagger UI)
-- **Data API Docs**: http://localhost:8001/docs (Swagger UI)
+- **Local mode (`make loc`)**:
+  - Business API Docs: http://localhost:8000/docs
+  - Data API Docs: http://localhost:8001/docs
+- **Nginx/VPS mode (`make nginx`)**:
+  - Docs are available via your reverse proxy prefix (for example `/free-ai-selector/docs`)
 
 ### Key Endpoints
 

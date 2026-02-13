@@ -1,0 +1,221 @@
+# =============================================================================
+# Free AI Selector - Docker Compose (nginx / VPS mode)
+# =============================================================================
+# Этот файл является отдельной конфигурацией для VPS/production окружения.
+# Почему файл отдельный (а не override):
+# 1) Так проще поддерживать и объяснять команде: один режим = один файл.
+# 2) Нет скрытого merge-поведения Compose при запуске.
+# 3) Меньше риск случайно открыть порты в production.
+#
+# Архитектура: 4 микросервиса + PostgreSQL, доступ к Business API через external
+# proxy-network и внешний nginx-proxy.
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  # Внешний порт intentionally не публикуем: БД должна быть доступна только
+  # внутри Docker-сети сервиса (security by default).
+  postgres:
+    image: postgres:16-alpine
+    container_name: free-ai-selector-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    # Для VPS mode ports не публикуем намеренно.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - free-ai-selector-network
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Data API Service (PostgreSQL Data Layer)
+  # ---------------------------------------------------------------------------
+  # Data API в nginx mode работает только во внутренней сети Docker.
+  free-ai-selector-data-postgres-api:
+    build:
+      context: ./services/free-ai-selector-data-postgres-api
+      dockerfile: Dockerfile
+    container_name: free-ai-selector-data-postgres-api
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DATA_API_HOST: ${DATA_API_HOST}
+      DATA_API_PORT: ${DATA_API_PORT}
+      DATA_API_LOG_LEVEL: ${DATA_API_LOG_LEVEL}
+      ENVIRONMENT: ${ENVIRONMENT}
+      REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
+      ROOT_PATH: ${DATA_API_ROOT_PATH:-}
+    # Порты не публикуем: внешний вход только через Business API + nginx.
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - free-ai-selector-network
+    restart: unless-stopped
+    volumes:
+      - ./services/free-ai-selector-data-postgres-api:/app
+      - /app/__pycache__
+
+  # ---------------------------------------------------------------------------
+  # Business API Service (Business Logic Layer)
+  # ---------------------------------------------------------------------------
+  # Business API подключается к external proxy-network, чтобы внешний nginx-proxy
+  # маршрутизировал трафик с ROOT_PATH без прямого проброса 8000 на host.
+  free-ai-selector-business-api:
+    build:
+      context: ./services/free-ai-selector-business-api
+      dockerfile: Dockerfile
+    container_name: free-ai-selector-business-api
+    environment:
+      BUSINESS_API_HOST: ${BUSINESS_API_HOST}
+      BUSINESS_API_PORT: ${BUSINESS_API_PORT}
+      BUSINESS_API_LOG_LEVEL: ${BUSINESS_API_LOG_LEVEL}
+      DATA_API_URL: ${DATA_API_URL}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY}
+      SAMBANOVA_API_KEY: ${SAMBANOVA_API_KEY}
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+      # F003: Новые провайдеры (8 шт.)
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      FIREWORKS_API_KEY: ${FIREWORKS_API_KEY:-}
+      HYPERBOLIC_API_KEY: ${HYPERBOLIC_API_KEY:-}
+      NOVITA_API_KEY: ${NOVITA_API_KEY:-}
+      SCALEWAY_API_KEY: ${SCALEWAY_API_KEY:-}
+      KLUSTER_API_KEY: ${KLUSTER_API_KEY:-}
+      NEBIUS_API_KEY: ${NEBIUS_API_KEY:-}
+      RATE_LIMIT_REQUESTS: ${RATE_LIMIT_REQUESTS}
+      RATE_LIMIT_PERIOD: ${RATE_LIMIT_PERIOD}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      ENVIRONMENT: ${ENVIRONMENT}
+      REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
+      ROOT_PATH: ${ROOT_PATH:-}
+      # F012: Rate Limit Handling
+      MAX_RETRIES: ${MAX_RETRIES:-10}
+      RETRY_DELAY_SECONDS: ${RETRY_DELAY_SECONDS:-10}
+      RATE_LIMIT_DEFAULT_COOLDOWN: ${RATE_LIMIT_DEFAULT_COOLDOWN:-3600}
+    # В этом режиме порт 8000 не публикуется намеренно.
+    depends_on:
+      free-ai-selector-data-postgres-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - free-ai-selector-network
+      - proxy-network
+    restart: unless-stopped
+    volumes:
+      - ./services/free-ai-selector-business-api:/app
+      - /app/__pycache__
+
+  # ---------------------------------------------------------------------------
+  # Telegram Bot Service (User Interface Layer)
+  # ---------------------------------------------------------------------------
+  free-ai-selector-telegram-bot:
+    build:
+      context: ./services/free-ai-selector-telegram-bot
+      dockerfile: Dockerfile
+    container_name: free-ai-selector-telegram-bot
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_BOT_LOG_LEVEL: ${TELEGRAM_BOT_LOG_LEVEL}
+      BUSINESS_API_URL: ${BUSINESS_API_URL_BOT}
+      BOT_ADMIN_IDS: ${BOT_ADMIN_IDS}
+      BOT_MAX_MESSAGE_LENGTH: ${BOT_MAX_MESSAGE_LENGTH}
+      ENVIRONMENT: ${ENVIRONMENT}
+      REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
+    depends_on:
+      free-ai-selector-business-api:
+        condition: service_healthy
+    networks:
+      - free-ai-selector-network
+    restart: unless-stopped
+    volumes:
+      - ./services/free-ai-selector-telegram-bot:/app
+      - /app/__pycache__
+
+  # ---------------------------------------------------------------------------
+  # Health Worker Service (Background Monitoring)
+  # ---------------------------------------------------------------------------
+  free-ai-selector-health-worker:
+    build:
+      context: ./services/free-ai-selector-health-worker
+      dockerfile: Dockerfile
+    container_name: free-ai-selector-health-worker
+    environment:
+      WORKER_LOG_LEVEL: ${WORKER_LOG_LEVEL}
+      HEALTH_CHECK_INTERVAL: ${HEALTH_CHECK_INTERVAL}
+      DATA_API_URL: ${DATA_API_URL_WORKER}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY}
+      SAMBANOVA_API_KEY: ${SAMBANOVA_API_KEY}
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+      # F003: Новые провайдеры (8 шт.)
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      FIREWORKS_API_KEY: ${FIREWORKS_API_KEY:-}
+      HYPERBOLIC_API_KEY: ${HYPERBOLIC_API_KEY:-}
+      NOVITA_API_KEY: ${NOVITA_API_KEY:-}
+      SCALEWAY_API_KEY: ${SCALEWAY_API_KEY:-}
+      KLUSTER_API_KEY: ${KLUSTER_API_KEY:-}
+      NEBIUS_API_KEY: ${NEBIUS_API_KEY:-}
+      SYNTHETIC_TEST_PROMPT: ${SYNTHETIC_TEST_PROMPT}
+      ENVIRONMENT: ${ENVIRONMENT}
+      REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
+    depends_on:
+      free-ai-selector-data-postgres-api:
+        condition: service_healthy
+    networks:
+      - free-ai-selector-network
+    restart: unless-stopped
+    volumes:
+      - ./services/free-ai-selector-health-worker:/app
+      - /app/__pycache__
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  # Внутренняя сеть для связи между сервисами кластера
+  free-ai-selector-network:
+    driver: bridge
+    name: free-ai-selector-network
+
+  # External сеть нужна только для VPS режима.
+  # В локальном режиме она не используется (см. docker-compose.loc.yml).
+  proxy-network:
+    external: true
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+    name: free-ai-selector-postgres-data

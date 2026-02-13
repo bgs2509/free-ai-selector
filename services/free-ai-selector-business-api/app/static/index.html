@@ -336,10 +336,25 @@
     </div>
 
     <script>
-        // Определяем базовый путь для работы за nginx-proxy
-        // На VPS: API_BASE = '/free-ai-selector'
-        // Локально: API_BASE = ''
-        const API_BASE = window.location.pathname.includes('/free-ai-selector/') ? '/free-ai-selector' : '';
+        // Определяем API_BASE без хардкода префикса.
+        // Почему так, а не через фиксированное '/free-ai-selector':
+        // 1) локально страница может открываться как /static/index.html;
+        // 2) на VPS префикс может измениться;
+        // 3) нам нужен единый код, который работает в обоих режимах.
+        function detectApiBase() {
+            const path = window.location.pathname;
+            const staticMarker = '/static/';
+            const staticMarkerIndex = path.indexOf(staticMarker);
+
+            // Когда UI открыт как <prefix>/static/index.html, берём <prefix>.
+            if (staticMarkerIndex > 0) {
+                return path.slice(0, staticMarkerIndex);
+            }
+
+            return '';
+        }
+
+        const API_BASE = detectApiBase();
         const MANUAL_MODEL_MIN_SCORE = 0.4;
         let manualModelsLoaded = false;
 

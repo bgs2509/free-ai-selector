@@ -12,6 +12,9 @@
 
 ## Getting Started
 
+> Для разработки используйте `loc` режим (`docker-compose.loc.yml`).
+> `nginx` режим нужен для VPS/proxy сценариев и запускается отдельно.
+
 ### 1. Clone and Setup
 
 ```bash
@@ -43,17 +46,17 @@ Get free API keys from (all providers require NO credit card):
 
 ```bash
 # Build all services
-make build
+make build MODE=loc
 
-# Start services
-make up
+# Start local mode without nginx
+make loc
 
 # Initialize database
-make migrate
-make seed
+make migrate MODE=loc
+make seed MODE=loc
 
 # Verify health
-make health
+make health MODE=loc
 ```
 
 ## Development Workflow
@@ -62,13 +65,13 @@ make health
 
 ```bash
 # Run all tests
-make test
+make test MODE=loc
 
 # Run Data API tests only
-make test-data
+make test-data MODE=loc
 
 # Run Business API tests only
-make test-business
+make test-business MODE=loc
 ```
 
 **Level 2 Requirement**: >=75% code coverage
@@ -77,10 +80,10 @@ make test-business
 
 ```bash
 # Run linters
-make lint
+make lint MODE=loc
 
 # Format code
-make format
+make format MODE=loc
 ```
 
 Tools used:
@@ -92,29 +95,29 @@ Tools used:
 
 ```bash
 # Run migrations
-make migrate
+make migrate MODE=loc
 
 # Seed initial data
-make seed
+make seed MODE=loc
 
 # Open PostgreSQL shell
-make db-shell
+make db-shell MODE=loc
 
 # Reset database (WARNING: deletes all data)
-make clean
+make clean MODE=loc
 ```
 
 ### Viewing Logs
 
 ```bash
 # All services
-make logs
+make logs MODE=loc
 
 # Specific service
-make logs-data
-make logs-business
-make logs-bot
-make logs-worker
+make logs-data MODE=loc
+make logs-business MODE=loc
+make logs-bot MODE=loc
+make logs-worker MODE=loc
 ```
 
 ## Project Structure
@@ -158,7 +161,8 @@ free-ai-selector/
 │       ├── Dockerfile
 │       └── requirements.txt
 │
-├── docker-compose.yml          # Service orchestration
+├── docker-compose.nginx.yml    # VPS/proxy режим
+├── docker-compose.loc.yml      # Локальный режим
 ├── Makefile                    # Development commands
 ├── README.md                   # Project overview
 └── .env.example                # Environment template
@@ -293,7 +297,7 @@ make db-shell
 
 ```bash
 # Via Make
-make health
+make health MODE=loc
 
 # Via curl
 curl http://localhost:8001/health  # Data API
@@ -304,10 +308,10 @@ curl http://localhost:8000/health  # Business API
 
 ```bash
 # Real-time logs
-make logs-business
+make logs-business MODE=loc
 
 # Last 100 lines
-docker-compose logs --tail=100 free-ai-selector-business-api
+docker compose -f docker-compose.loc.yml logs --tail=100 free-ai-selector-business-api
 ```
 
 ## Contributing
@@ -329,13 +333,13 @@ docker-compose logs --tail=100 free-ai-selector-business-api
 
 ```bash
 # Check if postgres is running
-docker-compose ps postgres
+docker compose -f docker-compose.loc.yml ps postgres
 
 # Restart postgres
-docker-compose restart postgres
+docker compose -f docker-compose.loc.yml restart postgres
 
 # View postgres logs
-make logs-db
+make logs-db MODE=loc
 ```
 
 ### Port Already in Use

@@ -1,159 +1,115 @@
 # Deployment Guide
 
-> Руководство по развёртыванию Free AI Selector.
+> Руководство по развёртыванию Free AI Selector в двух режимах: `nginx` (VPS/proxy) и `loc` (локальная разработка).
 
-## Обзор архитектуры развёртывания
+## Режимы запуска
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  Nginx :8000    │────▶│ Business API    │────▶│   Data API      │
-│  (external)     │     │    :8000        │     │    :8001        │
-└─────────────────┘     └─────────────────┘     └────────┬────────┘
-                                                         │
-┌─────────────────┐                              ┌───────▼────────┐
-│ Telegram Bot    │────────────────────────────▶│   PostgreSQL   │
-│                 │                              │    :5432       │
-└─────────────────┘                              └────────────────┘
-        ▲
-        │
-┌───────┴────────┐
-│ Health Worker  │
-│ (APScheduler)  │
-└────────────────┘
-```
+| Режим | Compose файл | Назначение | Доступ к API |
+|-------|--------------|------------|--------------|
+| `nginx` | `docker-compose.nginx.yml` | VPS/production за внешним reverse proxy | Через внешний nginx + `ROOT_PATH` |
+| `loc` | `docker-compose.loc.yml` | Локальная разработка без nginx | Прямо через `localhost:8000/8001` |
+
+Почему сделано именно так:
+- два независимых compose-файла проще читать и сопровождать;
+- нет скрытого merge-поведения override-конфигов;
+- меньше риск случайно открыть production-порты на VPS.
 
 ---
 
-## Development Deployment
-
-### Полный запуск
+## Развёртывание (VPS/proxy режим)
 
 ```bash
-# 1. Сборка образов
-make build
+# 1. Сборка
+make build MODE=nginx
 
-# 2. Запуск сервисов
-make up
+# 2. Запуск
+make nginx
 
-# 3. Проверка здоровья
-make health
+# 3. Проверка состояния
+make status MODE=nginx
+make health MODE=nginx
 
 # 4. Инициализация БД
-make migrate
-make seed
+make migrate MODE=nginx
+make seed MODE=nginx
 ```
 
-### Перезапуск после изменений
-
-```bash
-# Перезапуск конкретного сервиса
-docker compose restart free-ai-selector-business-api
-
-# Полная пересборка
-make down
-make build
-make up
-```
+Важно:
+- в `nginx` режиме порты API на host не публикуются;
+- внешний nginx должен проксировать запросы в контейнер `free-ai-selector-business-api`;
+- значение `ROOT_PATH` (например `/free-ai-selector`) должно совпадать с конфигурацией reverse proxy.
 
 ---
 
-## Docker Compose Services
+## Развёртывание (локальный режим)
 
-### Порядок запуска
+```bash
+# 1. Сборка
+make build MODE=loc
 
-```yaml
-# docker-compose.yml определяет зависимости:
-services:
-  postgres:           # 1. Сначала БД
+# 2. Запуск
+make loc
 
-  free-ai-selector-data-postgres-api:
-    depends_on:
-      postgres:       # 2. Data API после БД
-        condition: service_healthy
+# 3. Проверка состояния
+make status MODE=loc
+make health MODE=loc
 
-  free-ai-selector-business-api:
-    depends_on:
-      free-ai-selector-data-postgres-api:  # 3. Business API после Data API
-        condition: service_healthy
-
-  free-ai-selector-telegram-bot:
-    depends_on:
-      free-ai-selector-business-api:       # 4. Bot после Business API
-        condition: service_healthy
+# 4. Инициализация БД
+make migrate MODE=loc
+make seed MODE=loc
 ```
 
-### Health Checks
+Локальные endpoint'ы:
+- `http://localhost:8000/health`
+- `http://localhost:8000/docs`
+- `http://localhost:8001/health`
+- `http://localhost:8001/docs`
 
-Каждый сервис имеет встроенную проверку здоровья:
+---
 
-```yaml
-healthcheck:
-  test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-  interval: 30s
-  timeout: 10s
-  retries: 3
-  start_period: 40s
-```
+## Порядок запуска сервисов
+
+Оба compose-файла используют одинаковую последовательность зависимостей:
+1. `postgres`
+2. `free-ai-selector-data-postgres-api`
+3. `free-ai-selector-business-api`
+4. `free-ai-selector-telegram-bot`
+
+`free-ai-selector-health-worker` зависит от Data API и стартует после него.
 
 ---
 
 ## Проверка развёртывания
 
-### 1. Статус контейнеров
+### Статус контейнеров
 
 ```bash
-docker compose ps
+make status MODE=nginx
+# или
+make status MODE=loc
 ```
 
-Ожидаемый вывод:
-
-```
-NAME                              STATUS          PORTS
-free-ai-selector-business-api            Up (healthy)    8000/tcp
-free-ai-selector-data-postgres-api       Up (healthy)    8001/tcp
-free-ai-selector-health-worker           Up
-free-ai-selector-nginx                   Up              0.0.0.0:8000->80/tcp
-free-ai-selector-telegram-bot            Up
-postgres                          Up (healthy)    5432/tcp
-```
-
-### 2. Health Endpoints
+### Проверка health
 
 ```bash
-# Business API
+# Внутриконтейнерная проверка (подходит для обоих режимов)
+make health MODE=nginx
+
+# Для loc дополнительно доступны host-проверки
 curl http://localhost:8000/health
-
-# Data API
-curl http://localhost:8002/health
+curl http://localhost:8001/health
 ```
 
-### 3. Проверка провайдеров
+### Проверка провайдеров
 
 ```bash
+# loc mode
 curl -X POST http://localhost:8000/api/v1/providers/test
+
+# nginx mode
+# Используйте URL reverse proxy с вашим ROOT_PATH
+# Пример: https://example.com/free-ai-selector/api/v1/providers/test
 ```
-
----
-
-## Переменные окружения
-
-### Обязательные
-
-| Переменная | Сервис | Описание |
-|------------|--------|----------|
-| `DATABASE_URL` | Data API | PostgreSQL connection string |
-| `DATA_API_URL` | Business API | URL Data API |
-| `GROQ_API_KEY` | Business API | Groq ключ |
-| `DEEPSEEK_API_KEY` | Business API | DeepSeek ключ |
-| `CEREBRAS_API_KEY` | Business API | Cerebras ключ |
-
-### Опциональные
-
-| Переменная | Сервис | По умолчанию |
-|------------|--------|--------------|
-| `LOG_LEVEL` | Все | INFO |
-| `TELEGRAM_BOT_TOKEN` | Telegram Bot | - |
-| `BOT_ADMIN_IDS` | Telegram Bot | - |
 
 ---
 
@@ -162,135 +118,72 @@ curl -X POST http://localhost:8000/api/v1/providers/test
 ### Миграции
 
 ```bash
-# Применить все миграции
-make migrate
-
-# Или напрямую через Alembic
-docker compose exec free-ai-selector-data-postgres-api alembic upgrade head
+make migrate MODE=nginx
+# или
+make migrate MODE=loc
 ```
 
 ### Seed данные
 
 ```bash
-# Загрузить AI-модели
-make seed
+make seed MODE=nginx
+# или
+make seed MODE=loc
 ```
 
 ### Backup
 
 ```bash
-# Создать backup
-docker compose exec postgres pg_dump -U free_ai_selector_user free_ai_selector_db > backup.sql
+docker compose -f docker-compose.nginx.yml exec postgres \
+  pg_dump -U free_ai_selector_user free_ai_selector_db > backup.sql
 
-# Восстановить
-docker compose exec -T postgres psql -U free_ai_selector_user -d free_ai_selector_db < backup.sql
+docker compose -f docker-compose.nginx.yml exec -T postgres \
+  psql -U free_ai_selector_user -d free_ai_selector_db < backup.sql
 ```
 
 ---
 
-## Логирование
-
-### Просмотр логов
+## Логи и обслуживание
 
 ```bash
-# Все сервисы
-make logs
+# Логи всех сервисов
+make logs MODE=nginx
 
-# Конкретный сервис
-make logs-business
-make logs-data
+# Логи конкретного сервиса
+make logs-business MODE=nginx
+make logs-data MODE=nginx
 
-# Следить за логами
-docker compose logs -f free-ai-selector-business-api
+# Остановка
+make down MODE=nginx
+
+# Полная очистка (включая volume)
+docker compose -f docker-compose.nginx.yml down -v
 ```
 
-### Формат логов (JSON)
-
-```json
-{
-  "timestamp": "2025-01-20T12:00:00.000Z",
-  "level": "INFO",
-  "service": "business-api",
-  "message": "Prompt processed successfully",
-  "model": "DeepSeek Chat",
-  "response_time": 1.234
-}
-```
-
----
-
-## Мониторинг
-
-### Health Worker
-
-Health Worker выполняет каждый час:
-1. Отправляет тестовые промпты всем провайдерам
-2. Обновляет статистику в БД
-3. Помечает недоступных провайдеров
-
-### Проверка статуса
-
-```bash
-# Логи Health Worker
-docker compose logs free-ai-selector-health-worker
-
-# Статистика моделей
-curl http://localhost:8000/api/v1/models/stats
-```
+Для локального режима замените `MODE=nginx` на `MODE=loc`.
 
 ---
 
 ## Troubleshooting
 
-### Сервис не запускается
+### Сервисы не поднимаются
 
 ```bash
-# Проверить логи
-docker compose logs free-ai-selector-business-api
-
-# Проверить зависимости
-docker compose ps
+make status MODE=nginx
+docker compose -f docker-compose.nginx.yml logs free-ai-selector-business-api
 ```
 
 ### Ошибки подключения к БД
 
 ```bash
-# Проверить PostgreSQL
-docker compose exec postgres psql -U free_ai_selector_user -c "SELECT 1"
-
-# Проверить connection string
-echo $DATABASE_URL
+docker compose -f docker-compose.nginx.yml exec postgres \
+  psql -U free_ai_selector_user -c "SELECT 1"
 ```
 
 ### Провайдеры недоступны
 
 ```bash
-# Тест провайдеров
-curl -X POST http://localhost:8000/api/v1/providers/test
-
-# Проверить API ключи
-docker compose exec free-ai-selector-business-api env | grep API_KEY
-```
-
----
-
-## Полезные команды
-
-```bash
-# Остановить всё
-make down
-
-# Полная очистка (включая volumes)
-docker compose down -v
-
-# Shell в контейнере
-make shell-business
-
-# PostgreSQL shell
-make db-shell
-
-# Пересоздать контейнер
-docker compose up -d --force-recreate free-ai-selector-business-api
+docker compose -f docker-compose.nginx.yml exec free-ai-selector-business-api env | grep API_KEY
 ```
 
 ---
