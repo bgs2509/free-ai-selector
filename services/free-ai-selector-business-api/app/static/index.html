@@ -81,6 +81,20 @@
         .radio-group { display: flex; gap: 12px; }
         .radio-option { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; color: var(--text-light); }
         .radio-option input { cursor: pointer; }
+        .model-selector { margin-bottom: 16px; }
+        .model-select-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+        .model-select {
+            flex: 1;
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 14px;
+        }
+        .model-select:focus { outline: none; border-color: var(--primary); }
+        .model-help { margin-top: 6px; font-size: 12px; color: var(--text-muted); }
         .btn-primary {
             display: flex;
             align-items: center;
@@ -199,6 +213,7 @@
             .stats-table { font-size: 12px; }
             .stats-table th, .stats-table td { padding: 8px 4px; }
             .provider-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .model-select-row { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
@@ -231,6 +246,28 @@
                                 <span>JSON</span>
                             </label>
                         </div>
+                    </div>
+
+                    <div class="model-selector">
+                        <label class="format-label">Режим модели:</label>
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="model-mode" value="auto" checked>
+                                <span>Авто</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="model-mode" value="manual">
+                                <span>Конкретная</span>
+                            </label>
+                        </div>
+                        <div id="model-select-wrapper" class="model-select-row hidden">
+                            <select id="model-select" class="model-select" aria-label="Выбор AI модели">
+                                <option value="">Выберите модель</option>
+                            </select>
+                            <button id="refresh-models-btn" class="btn-icon" type="button" title="Обновить список моделей">↻</button>
+                        </div>
+                        <p class="model-help">Ручной список: только активные модели с score &gt; 0.4.</p>
+                        <div id="model-error" class="error-box hidden"></div>
                     </div>
 
                     <button id="send-btn" class="btn-primary" onclick="sendPrompt()">
@@ -303,6 +340,8 @@
         // На VPS: API_BASE = '/free-ai-selector'
         // Локально: API_BASE = ''
         const API_BASE = window.location.pathname.includes('/free-ai-selector/') ? '/free-ai-selector' : '';
+        const MANUAL_MODEL_MIN_SCORE = 0.4;
+        let manualModelsLoaded = false;
 
         // Исправляем ссылку API Docs для корректной работы за proxy
         document.addEventListener('DOMContentLoaded', () => {
@@ -328,6 +367,90 @@
         function formatPercent(v) { return v == null ? '—' : `${(Number(v) * 100).toFixed(1)}%`; }
         function getMedal(r) { return r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : ''; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+        function getCheckedValue(name) { return Array.from(document.getElementsByName(name)).find(r => r.checked)?.value; }
+
+        function setAutoModeWithError(message) {
+            const modelModeRadios = document.getElementsByName('model-mode');
+            const autoRadio = Array.from(modelModeRadios).find(r => r.value === 'auto');
+            const modelSelectWrapper = document.getElementById('model-select-wrapper');
+            const modelSelect = document.getElementById('model-select');
+            const modelError = document.getElementById('model-error');
+
+            if (autoRadio) autoRadio.checked = true;
+            hide(modelSelectWrapper);
+            modelSelect.value = '';
+            modelSelect.disabled = true;
+            manualModelsLoaded = false;
+            showError(modelError, `${message} Переключено в режим Авто.`);
+        }
+
+        async function loadManualModelOptions() {
+            const modelSelect = document.getElementById('model-select');
+            const modelError = document.getElementById('model-error');
+            hide(modelError);
+
+            modelSelect.disabled = true;
+            modelSelect.innerHTML = '<option value="">Загрузка моделей...</option>';
+
+            try {
+                const data = await apiCall('/api/v1/models/stats');
+                const models = (data.models || [])
+                    .filter(model => model.is_active && Number(model.reliability_score) > MANUAL_MODEL_MIN_SCORE)
+                    .sort((a, b) => Number(b.reliability_score || 0) - Number(a.reliability_score || 0));
+
+                if (models.length === 0) {
+                    modelSelect.innerHTML = '<option value="">Нет моделей выше порога</option>';
+                    setAutoModeWithError(`Нет доступных моделей с score > ${MANUAL_MODEL_MIN_SCORE}`);
+                    return false;
+                }
+
+                modelSelect.innerHTML = '<option value="">Выберите модель</option>';
+                models.forEach(model => {
+                    const score = Number(model.reliability_score || 0).toFixed(2);
+                    const option = document.createElement('option');
+                    option.value = String(model.id);
+                    option.textContent = `${model.name || 'Unknown'} (${model.provider || 'Unknown'}) — score: ${score}`;
+                    modelSelect.appendChild(option);
+                });
+                modelSelect.disabled = false;
+                manualModelsLoaded = true;
+                return true;
+            } catch (e) {
+                modelSelect.innerHTML = '<option value="">Ошибка загрузки моделей</option>';
+                setAutoModeWithError(`Не удалось загрузить список моделей: ${e.message}`);
+                return false;
+            }
+        }
+
+        function initModelSelector() {
+            const modeRadios = document.getElementsByName('model-mode');
+            const modelSelectWrapper = document.getElementById('model-select-wrapper');
+            const refreshModelsBtn = document.getElementById('refresh-models-btn');
+            const modelError = document.getElementById('model-error');
+
+            const onModeChange = async () => {
+                hide(modelError);
+                const selectedMode = getCheckedValue('model-mode') || 'auto';
+
+                if (selectedMode === 'manual') {
+                    show(modelSelectWrapper);
+                    if (!manualModelsLoaded) {
+                        await loadManualModelOptions();
+                    }
+                    return;
+                }
+
+                hide(modelSelectWrapper);
+            };
+
+            modeRadios.forEach(radio => radio.addEventListener('change', () => { void onModeChange(); }));
+
+            refreshModelsBtn.addEventListener('click', async () => {
+                if ((getCheckedValue('model-mode') || 'auto') !== 'manual') return;
+                manualModelsLoaded = false;
+                await loadManualModelOptions();
+            });
+        }
 
         function initTabs() {
             const tabs = document.querySelectorAll('.tab');
@@ -349,14 +472,18 @@
             const input = document.getElementById('prompt-input');
             const systemPromptInput = document.getElementById('system-prompt-input');
             const formatRadios = document.getElementsByName('response-format');
+            const modelModeRadios = document.getElementsByName('model-mode');
+            const modelSelect = document.getElementById('model-select');
             const sendBtn = document.getElementById('send-btn');
             const sendBtnText = document.getElementById('send-btn-text');
             const sendBtnLoader = document.getElementById('send-btn-loader');
             const responseBox = document.getElementById('chat-response');
             const errorBox = document.getElementById('chat-error');
+            const modelError = document.getElementById('model-error');
 
             const prompt = input.value.trim();
             if (!prompt) { showError(errorBox, 'Введите текст запроса'); return; }
+            hide(modelError);
 
             // Собрать payload
             const payload = { prompt };
@@ -375,6 +502,24 @@
             const selectedFormat = Array.from(formatRadios).find(r => r.checked)?.value;
             if (selectedFormat === 'json') {
                 payload.response_format = { type: "json_object" };
+            }
+
+            // Добавить model_id в ручном режиме
+            let selectedModelMode = Array.from(modelModeRadios).find(r => r.checked)?.value || 'auto';
+            if (selectedModelMode === 'manual') {
+                if (!manualModelsLoaded) {
+                    const loaded = await loadManualModelOptions();
+                    if (!loaded) selectedModelMode = 'auto';
+                }
+
+                if (selectedModelMode === 'manual') {
+                    const selectedModelId = Number.parseInt(modelSelect.value, 10);
+                    if (Number.isNaN(selectedModelId) || selectedModelId <= 0) {
+                        showError(errorBox, 'Выберите модель или переключитесь в режим Авто.');
+                        return;
+                    }
+                    payload.model_id = selectedModelId;
+                }
             }
 
             sendBtn.disabled = true; hide(sendBtnText); show(sendBtnLoader); hide(responseBox); hide(errorBox);
@@ -459,7 +604,7 @@
 
         function showError(box, msg) { box.textContent = msg; show(box); }
 
-        function init() { initTabs(); checkHealth(); setInterval(checkHealth, 30000); }
+        function init() { initTabs(); initModelSelector(); checkHealth(); setInterval(checkHealth, 30000); }
 
         document.addEventListener('DOMContentLoaded', init);
         document.addEventListener('DOMContentLoaded', () => {
