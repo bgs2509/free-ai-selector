@@ -1,6 +1,6 @@
 # Реестр фич проекта
 
-> Последнее обновление: 2026-02-11
+> Последнее обновление: 2026-02-13
 > Автоматически обновляется при создании/завершении фич.
 
 ---
@@ -9,9 +9,9 @@
 
 | Метрика | Значение |
 |---------|----------|
-| Всего фич | 3 |
+| Всего фич | 4 |
 | Deployed | 1 |
-| In Progress | 2 |
+| In Progress | 3 |
 | Archived | 0 |
 
 ---
@@ -22,6 +22,7 @@
 |-----|----------|--------|------|---------|-----------|
 | F012 | Rate Limit Handling для AI Провайдеров | IN_PROGRESS | 2026-01-29 | free-ai-selector-business-api | [PRD](_analysis/2026-01-29_F012_rate-limit-handling.md) |
 | F019 | Выбор модели по model_id с fallback на авто-выбор | IN_PROGRESS | 2026-02-11 | free-ai-selector-business-api | [PRD](_analysis/2026-02-11_F019_model-id-priority-fallback.md) |
+| F021 | Два независимых compose-файла: make nginx/make loc с корректным root_path | IN_PROGRESS | 2026-02-13 | free-ai-selector-business-api, free-ai-selector-data-postgres-api, free-ai-selector-telegram-bot, free-ai-selector-health-worker | [PRD](_analysis/2026-02-13_F021_compose-nginx-local-modes.md), [Research](_research/2026-02-13_F021_compose-nginx-local-modes.md) |
 
 ---
 
