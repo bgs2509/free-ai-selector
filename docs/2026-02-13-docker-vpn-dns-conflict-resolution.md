@@ -254,7 +254,31 @@ make loc
    - `make logs MODE=loc`
    - `make health MODE=loc`
 
-## 12. Команды для быстрой самопроверки
+## 12. Внешние подтверждения (что проблема типовая)
+
+Ниже зафиксированы источники, подтверждающие, что конфликт TUN-маршрутизации и Docker bridge
+является распространённым сценарием:
+
+1. Официальная документация sing-box TUN:
+   - `strict_route` на Linux делает неподдерживаемые сети недостижимыми (`unreachable`).
+   - `auto_redirect` на Linux рекомендован и отдельно отмечен как способ избегать конфликтов с Docker bridge.
+   - Источник: https://sing-box.sagernet.org/configuration/inbound/tun/
+2. Changelog sing-box:
+   - для ветки `1.12.0-beta.1` отдельно указано улучшение `auto_redirect` для совместимости TUN и Docker bridge.
+   - Источник: https://sing-box.sagernet.org/changelog/
+3. Публичный issue sing-box с тем же симптомом:
+   - при TUN в bridge-режиме Docker доступ через host-порт ломается, в `host`-режиме работает.
+   - Источник: https://github.com/SagerNet/sing-box/issues/2700
+4. Публичный issue sing-box про `strict_route` и localhost:
+   - локальный доступ восстанавливается при отключении `strict_route`.
+   - Источник: https://github.com/SagerNet/sing-box/issues/2096
+5. Публичные issue Hiddify (Linux/bypass LAN):
+   - есть открытые баги вокруг `bypass-lan` и Linux-маршрутизации, что подтверждает практическую распространённость класса проблем.
+   - Источники:
+     - https://github.com/hiddify/hiddify-app/issues/1431
+     - https://github.com/hiddify/hiddify-app/issues/1660
+
+## 13. Команды для быстрой самопроверки
 
 ```bash
 # DNS VPN
@@ -276,7 +300,7 @@ make logs MODE=loc
 curl -i http://127.0.0.1:8000/health
 ```
 
-## 13. Краткий итог
+## 14. Краткий итог
 
 Проблема с `pip` действительно была DNS/маршрутизацией из-за overlap `172.19.0.0/16`.  
 Перенос Docker address pool в `10.66.0.0/16` устранил корень проблемы.  
