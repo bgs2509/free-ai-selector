@@ -1,44 +1,37 @@
-.PHONY: help nginx loc build up down restart logs logs-data logs-business logs-bot logs-worker logs-db clean test test-data test-business lint format migrate seed health shell-data shell-business db-shell dev status
+.PHONY: help local vps build up down restart logs logs-data logs-business logs-bot logs-worker logs-db clean test test-data test-business lint format migrate seed health shell-data shell-business db-shell dev status
 
 # =============================================================================
 # Free AI Selector - Команды запуска и сопровождения
 # =============================================================================
-# Почему тут два режима:
-# 1) `nginx` — VPS/production режим за внешним reverse proxy. Порты API на host
-#    не публикуются, чтобы не раскрывать сервисы напрямую.
-# 2) `loc` — локальная разработка без nginx, с прямым доступом к 8000/8001.
+# Два режима работы:
+# 1) local — локальная разработка с прямым доступом к портам 8000/8001.
+#    Использует docker-compose.yml + docker-compose.override.yml (авто-загрузка).
+# 2) vps   — VPS/production за внешним nginx reverse proxy.
+#    Использует docker-compose.yml + docker-compose.vps.yml (явное указание).
 #
-# Почему не используем compose override:
-# - два независимых compose-файла проще читать и сопровождать;
-# - нет неочевидного merge-поведения docker compose.
-#
-# Почему `make up` оставляем:
-# - для обратной совместимости со старыми сценариями;
-# - по умолчанию `make up` эквивалентен `make nginx`.
+# По умолчанию MODE=local (безопаснее для разработки).
 # =============================================================================
 
-MODE ?= nginx
-COMPOSE_FILE_NGINX := docker-compose.nginx.yml
-COMPOSE_FILE_LOC := docker-compose.loc.yml
+MODE ?= local
 
-ifeq ($(MODE),nginx)
-COMPOSE_FILE := $(COMPOSE_FILE_NGINX)
-else ifeq ($(MODE),loc)
-COMPOSE_FILE := $(COMPOSE_FILE_LOC)
+ifeq ($(MODE),local)
+# docker compose автоматически загружает docker-compose.yml + docker-compose.override.yml
+COMPOSE := docker compose
+else ifeq ($(MODE),vps)
+# Явно указываем файлы, чтобы override НЕ подгружался
+COMPOSE := docker compose -f docker-compose.yml -f docker-compose.vps.yml
 else
-$(error Unsupported MODE='$(MODE)'. Use MODE=nginx or MODE=loc)
+$(error Unsupported MODE='$(MODE)'. Use MODE=local or MODE=vps)
 endif
-
-COMPOSE := docker compose -f $(COMPOSE_FILE)
 
 help:
 	@echo "Free AI Selector - Available Commands:"
 	@echo ""
-	@echo "  make nginx                 - Запуск VPS режима (docker-compose.nginx.yml)"
-	@echo "  make loc                   - Запуск локального режима (docker-compose.loc.yml)"
-	@echo "  make up                    - Алиас на nginx (обратная совместимость)"
-	@echo "  make <target> MODE=loc     - Выполнить target в локальном режиме"
-	@echo "  make <target> MODE=nginx   - Выполнить target в VPS режиме"
+	@echo "  make local                 - Запуск локального режима (порты 8000/8001)"
+	@echo "  make vps                   - Запуск VPS режима (за nginx reverse proxy)"
+	@echo "  make up                    - Запуск в текущем MODE (по умолчанию local)"
+	@echo "  make <target> MODE=local   - Выполнить target в локальном режиме"
+	@echo "  make <target> MODE=vps     - Выполнить target в VPS режиме"
 	@echo ""
 	@echo "  make build                 - Build all Docker images"
 	@echo "  make down                  - Stop all services"
@@ -64,19 +57,18 @@ help:
 	@echo ""
 
 # Явные команды запуска для двух режимов
-nginx:
-	@$(MAKE) up MODE=nginx
+local:
+	@$(MAKE) up MODE=local
 
-loc:
-	@$(MAKE) up MODE=loc
+vps:
+	@$(MAKE) up MODE=vps
 
 build:
-	@echo "Using $(COMPOSE_FILE) (MODE=$(MODE))"
+	@echo "Building images (MODE=$(MODE))"
 	$(COMPOSE) build
 
-# По умолчанию `up` работает как nginx (см. MODE ?= nginx).
 up:
-	@echo "Starting services with $(COMPOSE_FILE) (MODE=$(MODE))"
+	@echo "Starting services (MODE=$(MODE))"
 	$(COMPOSE) up -d --build
 	@echo "Waiting for services to be healthy..."
 	@sleep 5
@@ -154,10 +146,10 @@ migrate:
 seed:
 	$(COMPOSE) exec free-ai-selector-data-postgres-api python -m app.infrastructure.database.seed
 
-# В nginx режиме host-порты API могут быть закрыты, поэтому базовая проверка
-# идёт через контейнеры. Для loc дополнительно проверяем host-порты.
+# В VPS режиме host-порты API закрыты, проверка идёт через контейнеры.
+# Для local дополнительно проверяем host-порты.
 health:
-	@echo "Checking service health (MODE=$(MODE), compose=$(COMPOSE_FILE))..."
+	@echo "Checking service health (MODE=$(MODE))..."
 	@echo ""
 	@echo "PostgreSQL:"
 	@$(COMPOSE) exec postgres pg_isready -U free_ai_selector_user >/dev/null && echo "  ✅ Ready" || echo "  ❌ Not ready"
@@ -167,9 +159,9 @@ health:
 	@echo ""
 	@echo "Business API (container localhost:8000/health):"
 	@$(COMPOSE) exec free-ai-selector-business-api curl -f -s http://localhost:8000/health >/dev/null && echo "  ✅ Healthy" || echo "  ❌ Unhealthy"
-	@if [ "$(MODE)" = "loc" ]; then \
+	@if [ "$(MODE)" = "local" ]; then \
 		echo ""; \
-		echo "Host ports (loc mode only):"; \
+		echo "Host ports (local mode only):"; \
 		curl -f -s http://localhost:8001/health >/dev/null && echo "  ✅ Data API host port healthy" || echo "  ❌ Data API host port unavailable"; \
 		curl -f -s http://localhost:8000/health >/dev/null && echo "  ✅ Business API host port healthy" || echo "  ❌ Business API host port unavailable"; \
 	fi

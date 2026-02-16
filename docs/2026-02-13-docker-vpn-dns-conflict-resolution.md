@@ -149,12 +149,12 @@ docker network inspect $(docker network ls -q) --format '{{range .IPAM.Config}}{
 
 Дополнительный фактор диагностики:
 
-1. По умолчанию `make` использует `MODE=nginx`.
-2. После `make loc` команды вроде `make logs` без `MODE=loc` могут смотреть не тот compose-файл.
+1. По умолчанию `make` использует `MODE=local`.
+2. Для VPS-режима используйте `MODE=vps` явно в командах `make`.
 
 ## 7. Финальное решение
 
-Для локального режима (`docker-compose.loc.yml`) зафиксирована финальная схема:
+Для локального режима зафиксирована финальная схема:
 
 1. Оставить `default-address-pools` (устранение первопричины overlap).
 2. Удалить статический ключ `dns` из `/etc/docker/daemon.json`.
@@ -176,8 +176,8 @@ docker network inspect $(docker network ls -q) --format '{{range .IPAM.Config}}{
 
 ```bash
 sudo systemctl restart docker
-make down MODE=loc
-make loc
+make down
+make local
 ```
 
 ### 7.1 Дополнительный runtime-фикс для Hiddify (localhost ↔ Docker)
@@ -251,8 +251,8 @@ make loc
    - `docker network inspect ...`
 3. Для Hiddify/TUN-профилей отдельно проверять сочетание `strict-route` и `bypass-lan`.
 4. Для локального режима всегда явно указывать режим в командах диагностики:
-   - `make logs MODE=loc`
-   - `make health MODE=loc`
+   - `make logs`
+   - `make health`
 
 ## 12. Внешние подтверждения (что проблема типовая)
 
@@ -292,9 +292,9 @@ docker run --rm busybox nslookup pypi.org
 docker run --rm busybox nslookup api.telegram.org
 
 # Запуск и проверка в локальном режиме
-make loc
-make health MODE=loc
-make logs MODE=loc
+make local
+make health
+make logs
 
 # Проверка host-доступа к Business API
 curl -i http://127.0.0.1:8000/health

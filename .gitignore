@@ -338,7 +338,6 @@ datasets/
 .terraform.lock.hcl
 
 # Docker
-docker-compose.override.yml
 .dockerignore
 
 # Misc

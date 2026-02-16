@@ -2,8 +2,8 @@
 
 > Руководство по решению типичных проблем Free AI Selector.
 
-> Примеры ниже ориентированы на локальный режим (`make loc`).
-> Для VPS режима добавляйте `MODE=nginx` к командам `make` или используйте `-f docker-compose.nginx.yml`.
+> Примеры ниже ориентированы на локальный режим (`make local`, MODE=local по умолчанию).
+> Для VPS режима добавляйте `MODE=vps` к командам `make`.
 
 ---
 
@@ -16,7 +16,7 @@
 docker compose ps
 
 # 2. Health endpoints
-make health MODE=loc
+make health
 
 # 3. Логи ошибок
 docker compose logs --tail=50 | grep -i error
@@ -61,7 +61,7 @@ lsof -i :5432
 # Если порт занят, остановить локальный PostgreSQL
 sudo systemctl stop postgresql
 
-# Или изменить порт в docker-compose.loc.yml
+# Или изменить порт в docker-compose.override.yml
 ```
 
 ### Порты заняты
@@ -113,7 +113,7 @@ docker compose exec free-ai-selector-business-api env | grep API_KEY
 docker compose exec free-ai-selector-business-api env | grep -E "API_KEY|ACCOUNT_ID|API_TOKEN"
 
 # 3. Перезапустить сервисы
-make down MODE=loc && make loc
+make down && make local
 ```
 
 ### Rate Limit Exceeded
@@ -302,7 +302,7 @@ docker compose up -d
 LOG_LEVEL=DEBUG
 
 # Перезапустить
-make down MODE=loc && make loc
+make down && make local
 ```
 
 ### Просмотр логов конкретного сервиса

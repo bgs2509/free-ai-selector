@@ -12,8 +12,8 @@
 
 ## Getting Started
 
-> Для разработки используйте `loc` режим (`docker-compose.loc.yml`).
-> `nginx` режим нужен для VPS/proxy сценариев и запускается отдельно.
+> Для разработки используйте `local` режим (по умолчанию).
+> `vps` режим нужен для VPS/proxy сценариев и запускается отдельно.
 
 ### 1. Clone and Setup
 
@@ -46,17 +46,17 @@ Get free API keys from (all providers require NO credit card):
 
 ```bash
 # Build all services
-make build MODE=loc
+make build
 
-# Start local mode without nginx
-make loc
+# Start local mode
+make local
 
 # Initialize database
-make migrate MODE=loc
-make seed MODE=loc
+make migrate
+make seed
 
 # Verify health
-make health MODE=loc
+make health
 ```
 
 ## Development Workflow
@@ -65,13 +65,13 @@ make health MODE=loc
 
 ```bash
 # Run all tests
-make test MODE=loc
+make test
 
 # Run Data API tests only
-make test-data MODE=loc
+make test-data
 
 # Run Business API tests only
-make test-business MODE=loc
+make test-business
 ```
 
 **Level 2 Requirement**: >=75% code coverage
@@ -80,10 +80,10 @@ make test-business MODE=loc
 
 ```bash
 # Run linters
-make lint MODE=loc
+make lint
 
 # Format code
-make format MODE=loc
+make format
 ```
 
 Tools used:
@@ -95,29 +95,29 @@ Tools used:
 
 ```bash
 # Run migrations
-make migrate MODE=loc
+make migrate
 
 # Seed initial data
-make seed MODE=loc
+make seed
 
 # Open PostgreSQL shell
-make db-shell MODE=loc
+make db-shell
 
 # Reset database (WARNING: deletes all data)
-make clean MODE=loc
+make clean
 ```
 
 ### Viewing Logs
 
 ```bash
 # All services
-make logs MODE=loc
+make logs
 
 # Specific service
-make logs-data MODE=loc
-make logs-business MODE=loc
-make logs-bot MODE=loc
-make logs-worker MODE=loc
+make logs-data
+make logs-business
+make logs-bot
+make logs-worker
 ```
 
 ## Project Structure
@@ -161,8 +161,9 @@ free-ai-selector/
 │       ├── Dockerfile
 │       └── requirements.txt
 │
-├── docker-compose.nginx.yml    # VPS/proxy режим
-├── docker-compose.loc.yml      # Локальный режим
+├── docker-compose.yml          # Базовая конфигурация (все сервисы, без портов)
+├── docker-compose.override.yml # Локальный режим (порты 8000/8001)
+├── docker-compose.vps.yml      # VPS режим (proxy-network)
 ├── Makefile                    # Development commands
 ├── README.md                   # Project overview
 └── .env.example                # Environment template
@@ -297,7 +298,7 @@ make db-shell
 
 ```bash
 # Via Make
-make health MODE=loc
+make health
 
 # Via curl
 curl http://localhost:8001/health  # Data API
@@ -308,10 +309,10 @@ curl http://localhost:8000/health  # Business API
 
 ```bash
 # Real-time logs
-make logs-business MODE=loc
+make logs-business
 
 # Last 100 lines
-docker compose -f docker-compose.loc.yml logs --tail=100 free-ai-selector-business-api
+docker compose logs --tail=100 free-ai-selector-business-api
 ```
 
 ## Contributing
@@ -333,13 +334,13 @@ docker compose -f docker-compose.loc.yml logs --tail=100 free-ai-selector-busine
 
 ```bash
 # Check if postgres is running
-docker compose -f docker-compose.loc.yml ps postgres
+docker compose ps postgres
 
 # Restart postgres
-docker compose -f docker-compose.loc.yml restart postgres
+docker compose restart postgres
 
 # View postgres logs
-make logs-db MODE=loc
+make logs-db
 ```
 
 ### Port Already in Use

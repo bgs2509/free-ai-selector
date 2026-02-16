@@ -1,18 +1,18 @@
 # Deployment Guide
 
-> Руководство по развёртыванию Free AI Selector в двух режимах: `nginx` (VPS/proxy) и `loc` (локальная разработка).
+> Руководство по развёртыванию Free AI Selector в двух режимах: `local` (локальная разработка) и `vps` (VPS/proxy).
 
 ## Режимы запуска
 
-| Режим | Compose файл | Назначение | Доступ к API |
-|-------|--------------|------------|--------------|
-| `nginx` | `docker-compose.nginx.yml` | VPS/production за внешним reverse proxy | Через внешний nginx + `ROOT_PATH` |
-| `loc` | `docker-compose.loc.yml` | Локальная разработка без nginx | Прямо через `localhost:8000/8001` |
+| Режим | Compose файлы | Назначение | Доступ к API |
+|-------|---------------|------------|--------------|
+| `local` | `docker-compose.yml` + `docker-compose.override.yml` (авто) | Локальная разработка | Прямо через `localhost:8000/8001` |
+| `vps` | `docker-compose.yml` + `docker-compose.vps.yml` | VPS/production за внешним reverse proxy | Через внешний nginx + `ROOT_PATH` |
 
-Почему сделано именно так:
-- два независимых compose-файла проще читать и сопровождать;
-- нет скрытого merge-поведения override-конфигов;
-- меньше риск случайно открыть production-порты на VPS.
+Паттерн Docker Compose:
+- базовый `docker-compose.yml` содержит все сервисы без портов;
+- `docker-compose.override.yml` автоматически подгружается и добавляет порты для local;
+- `docker-compose.vps.yml` явно указывается для VPS и добавляет `proxy-network`.
 
 ---
 
@@ -20,22 +20,22 @@
 
 ```bash
 # 1. Сборка
-make build MODE=nginx
+make build MODE=vps
 
 # 2. Запуск
-make nginx
+make vps
 
 # 3. Проверка состояния
-make status MODE=nginx
-make health MODE=nginx
+make status MODE=vps
+make health MODE=vps
 
 # 4. Инициализация БД
-make migrate MODE=nginx
-make seed MODE=nginx
+make migrate MODE=vps
+make seed MODE=vps
 ```
 
 Важно:
-- в `nginx` режиме порты API на host не публикуются;
+- в `vps` режиме порты API на host не публикуются;
 - внешний nginx должен проксировать запросы в контейнер `free-ai-selector-business-api`;
 - значение `ROOT_PATH` (например `/free-ai-selector`) должно совпадать с конфигурацией reverse proxy.
 
@@ -45,18 +45,18 @@ make seed MODE=nginx
 
 ```bash
 # 1. Сборка
-make build MODE=loc
+make build
 
 # 2. Запуск
-make loc
+make local
 
 # 3. Проверка состояния
-make status MODE=loc
-make health MODE=loc
+make status
+make health
 
 # 4. Инициализация БД
-make migrate MODE=loc
-make seed MODE=loc
+make migrate
+make seed
 ```
 
 Локальные endpoint'ы:
@@ -69,7 +69,7 @@ make seed MODE=loc
 
 ## Порядок запуска сервисов
 
-Оба compose-файла используют одинаковую последовательность зависимостей:
+Базовый `docker-compose.yml` определяет единую последовательность зависимостей:
 1. `postgres`
 2. `free-ai-selector-data-postgres-api`
 3. `free-ai-selector-business-api`
@@ -84,18 +84,18 @@ make seed MODE=loc
 ### Статус контейнеров
 
 ```bash
-make status MODE=nginx
+make status MODE=vps
 # или
-make status MODE=loc
+make status
 ```
 
 ### Проверка health
 
 ```bash
 # Внутриконтейнерная проверка (подходит для обоих режимов)
-make health MODE=nginx
+make health MODE=vps
 
-# Для loc дополнительно доступны host-проверки
+# Для local дополнительно доступны host-проверки
 curl http://localhost:8000/health
 curl http://localhost:8001/health
 ```
@@ -103,10 +103,10 @@ curl http://localhost:8001/health
 ### Проверка провайдеров
 
 ```bash
-# loc mode
+# local mode
 curl -X POST http://localhost:8000/api/v1/providers/test
 
-# nginx mode
+# vps mode
 # Используйте URL reverse proxy с вашим ROOT_PATH
 # Пример: https://example.com/free-ai-selector/api/v1/providers/test
 ```
@@ -118,26 +118,26 @@ curl -X POST http://localhost:8000/api/v1/providers/test
 ### Миграции
 
 ```bash
-make migrate MODE=nginx
+make migrate MODE=vps
 # или
-make migrate MODE=loc
+make migrate
 ```
 
 ### Seed данные
 
 ```bash
-make seed MODE=nginx
+make seed MODE=vps
 # или
-make seed MODE=loc
+make seed
 ```
 
 ### Backup
 
 ```bash
-docker compose -f docker-compose.nginx.yml exec postgres \
+docker compose -f docker-compose.yml -f docker-compose.vps.yml exec postgres \
   pg_dump -U free_ai_selector_user free_ai_selector_db > backup.sql
 
-docker compose -f docker-compose.nginx.yml exec -T postgres \
+docker compose -f docker-compose.yml -f docker-compose.vps.yml exec -T postgres \
   psql -U free_ai_selector_user -d free_ai_selector_db < backup.sql
 ```
 
@@ -147,20 +147,20 @@ docker compose -f docker-compose.nginx.yml exec -T postgres \
 
 ```bash
 # Логи всех сервисов
-make logs MODE=nginx
+make logs MODE=vps
 
 # Логи конкретного сервиса
-make logs-business MODE=nginx
-make logs-data MODE=nginx
+make logs-business MODE=vps
+make logs-data MODE=vps
 
 # Остановка
-make down MODE=nginx
+make down MODE=vps
 
 # Полная очистка (включая volume)
-docker compose -f docker-compose.nginx.yml down -v
+docker compose -f docker-compose.yml -f docker-compose.vps.yml down -v
 ```
 
-Для локального режима замените `MODE=nginx` на `MODE=loc`.
+Для локального режима замените `MODE=vps` на `MODE=local` (или опустите — local по умолчанию).
 
 ---
 
@@ -169,21 +169,21 @@ docker compose -f docker-compose.nginx.yml down -v
 ### Сервисы не поднимаются
 
 ```bash
-make status MODE=nginx
-docker compose -f docker-compose.nginx.yml logs free-ai-selector-business-api
+make status MODE=vps
+docker compose -f docker-compose.yml -f docker-compose.vps.yml logs free-ai-selector-business-api
 ```
 
 ### Ошибки подключения к БД
 
 ```bash
-docker compose -f docker-compose.nginx.yml exec postgres \
+docker compose -f docker-compose.yml -f docker-compose.vps.yml exec postgres \
   psql -U free_ai_selector_user -c "SELECT 1"
 ```
 
 ### Провайдеры недоступны
 
 ```bash
-docker compose -f docker-compose.nginx.yml exec free-ai-selector-business-api env | grep API_KEY
+docker compose -f docker-compose.yml -f docker-compose.vps.yml exec free-ai-selector-business-api env | grep API_KEY
 ```
 
 ---

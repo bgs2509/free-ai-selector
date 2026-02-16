@@ -1,0 +1,34 @@
+# =============================================================================
+# Free AI Selector - Docker Compose Override (локальная разработка)
+# =============================================================================
+# Этот файл автоматически загружается при запуске `docker compose up`
+# без явного указания -f флагов (стандартное поведение Docker Compose).
+#
+# Что добавляет к базовому docker-compose.yml:
+# - Публикация портов Business API (8000) и Data API (8001) на host
+# - Пустой ROOT_PATH для прямого доступа к /docs и /health
+#
+# Для VPS/production используйте:
+#   docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d
+# =============================================================================
+
+services:
+  # Публикуем порт Data API для локального доступа к /docs и /health.
+  # http://localhost:8001/docs — OpenAPI документация Data API.
+  free-ai-selector-data-postgres-api:
+    ports:
+      - "8001:8001"
+    environment:
+      # Пустой ROOT_PATH: http://localhost:8001/docs работает без префиксов.
+      # Переопределяет ${DATA_API_ROOT_PATH:-} из базового файла.
+      ROOT_PATH: ""
+
+  # Публикуем порт Business API для локального доступа к /docs и /health.
+  # http://localhost:8000/docs — OpenAPI документация Business API.
+  free-ai-selector-business-api:
+    ports:
+      - "8000:8000"
+    environment:
+      # Пустой ROOT_PATH: http://localhost:8000/docs работает без префиксов.
+      # Переопределяет ${ROOT_PATH:-} из базового файла.
+      ROOT_PATH: ""

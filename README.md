@@ -132,7 +132,7 @@ BOT_ADMIN_IDS=123456789,987654321
 
 ```bash
 make build  # Build all Docker images
-make loc    # Local mode: direct access to localhost:8000/8001 (no nginx)
+make local  # Local mode: direct access to localhost:8000/8001
 ```
 
 Wait ~30 seconds for services to initialize, then verify health:
@@ -141,7 +141,7 @@ Wait ~30 seconds for services to initialize, then verify health:
 make health
 ```
 
-Expected output in `loc` mode:
+Expected output in `local` mode:
 ```
 ✅ PostgreSQL: Ready
 ✅ Data API (http://localhost:8001/health): Healthy
@@ -151,10 +151,10 @@ Expected output in `loc` mode:
 For VPS/reverse-proxy mode use:
 
 ```bash
-make nginx  # Uses docker-compose.nginx.yml
+make vps  # Uses docker-compose.yml + docker-compose.vps.yml
 ```
 
-`make up` is kept for backward compatibility and maps to `make nginx`.
+`make up` defaults to local mode (safe for development).
 
 ### 4. Initialize Database
 
@@ -276,16 +276,16 @@ All 6 providers are **100% free with NO credit card required**:
 
 ```bash
 make help           # Show all available commands
-make loc            # Start local mode without nginx
-make nginx          # Start VPS/proxy mode
-make up             # Alias to make nginx
-make down MODE=loc  # Stop local mode services
+make local          # Start local mode (ports 8000/8001)
+make vps            # Start VPS/proxy mode
+make up             # Start in current MODE (default: local)
+make down           # Stop services
 make logs           # View logs from all services
 make logs-business  # View Business API logs only
 make test           # Run all tests (≥75% coverage required)
 make lint           # Run linters (ruff, mypy, bandit)
 make format         # Format code with ruff
-make migrate MODE=loc        # Run database migrations for local mode
+make migrate        # Run database migrations
 make shell-business # Open shell in Business API container
 make db-shell       # Open PostgreSQL shell
 ```
@@ -320,8 +320,9 @@ free-ai-selector/
 │   └── free-ai-selector-health-worker/        # Background monitoring
 │       └── ...
 ├── shared/                     # Shared utilities (future)
-├── docker-compose.nginx.yml    # VPS/proxy mode (no direct API host ports)
-├── docker-compose.loc.yml      # Local mode (direct API host ports)
+├── docker-compose.yml          # Base config (all services, no ports)
+├── docker-compose.override.yml # Local mode override (ports 8000/8001)
+├── docker-compose.vps.yml      # VPS mode override (proxy-network)
 ├── Makefile                    # Development commands
 └── README.md                   # This file
 ```
@@ -342,10 +343,10 @@ Level 2 maturity requires **≥75% code coverage** for all services.
 
 Once services are running, visit:
 
-- **Local mode (`make loc`)**:
+- **Local mode (`make local`)**:
   - Business API Docs: http://localhost:8000/docs
   - Data API Docs: http://localhost:8001/docs
-- **Nginx/VPS mode (`make nginx`)**:
+- **VPS mode (`make vps`)**:
   - Docs are available via your reverse proxy prefix (for example `/free-ai-selector/docs`)
 
 ### Key Endpoints
