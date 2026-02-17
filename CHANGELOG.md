@@ -20,6 +20,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.0] - 2026-02-16
+
+### 🔄 Changed - Docker Compose Restructure
+
+- **Docker Compose base + override pattern** — разделение на `docker-compose.yml` (base) + `docker-compose.override.yml` (local dev) для чистого управления окружениями (011f114)
+
+---
+
+## [2.6.0] - 2026-02-13
+
+### ✨ Added - Features F020, F021 + Incident Documentation
+
+#### F020: Web Model Selector
+- Веб-интерфейс для выбора AI-модели (5f91821)
+- PRD, research, план реализации (8118132)
+
+#### F021: Independent Compose Modes
+- Разделение Docker Compose на nginx (VPS) и local (dev) режимы (e3adfdb)
+- Research, план, полный AIDD pipeline (c38509c, 192ee06)
+- Удалён устаревший deploy-скрипт (dd55188)
+
+#### Docker/VPN Incident
+- Подробный postmortem конфликта Docker DNS и VPN strict-route (f3876e0)
+- Документация workaround для Hiddify strict-route (318ff55)
+- Внешние ссылки на известные проблемы VPN + Docker (45f4164)
+- Обновление инцидента с runtime collision и финальным фиксом (6edd3c9)
+
+### 🐛 Fixed
+- Улучшена обработка сетевых ошибок в polling бота и логах worker (0fd5521)
+
+---
+
+## [2.5.0] - 2026-02-11
+
+### ✨ Added - Features F018, F019
+
+#### F018: Remove env_var from DB (SSOT via ProviderRegistry)
+- Удалён `env_var` из БД, `ProviderRegistry` стал единственным источником правды для API key env vars (570d109)
+- Полный AIDD pipeline: PRD → research → plan → implementation → completion report (ceaca89, 44e1a7d, 0d64cc9, 018622e)
+
+#### F019: model_id Priority with Fallback
+- Реализован приоритетный выбор модели по `model_id` с fallback на reliability score (b78443e)
+- PRD, pipeline metadata, completion report (d34926b, 78a40dd, 6041353)
+
+---
+
+## [2.4.2] - 2026-02-04
+
+### 🔄 Changed
+- Обновлён AIDD framework submodule до последней версии (cfacdb0)
+- Добавлены research и план реализации для F017 SQL optimization (a37f001)
+
+---
+
+## [2.4.1] - 2026-01-28 — 2026-01-30
+
+### ✨ Added - Features F012–F017
+
+#### F012: Rate Limit Handling
+- Обработка rate limit ответов от AI-провайдеров с retry логикой (c8ac9e4)
+
+#### F013: OpenAI-Compatible Provider Base Class
+- Консолидация AI-провайдеров через `OpenAICompatibleProvider` — единый базовый класс (6238653)
+
+#### F014: Error Handling Consolidation
+- Консолидация обработки ошибок в `ProcessPromptUseCase` (ef29541)
+
+#### F015: Data API DRY Refactoring
+- DRY-рефакторинг Data API — устранение дублирования кода (5c3daf9)
+
+#### F016: ReliabilityService as SSOT
+- `ReliabilityService` стал единственным источником правды для расчёта reliability score (dc16457)
+
+#### F017: SQL Aggregation Optimization
+- Оптимизация `get_statistics_for_period` — замена Python-агрегации на SQL (53b3571)
+
+#### Auto-cleanup
+- Автоматическая очистка `prompt_history` — хранение только 1000 последних записей (bccd06e)
+
+### 🔄 Changed - AIDD v4.0 Migration
+- Миграция на AIDD v4.0 naming v3: `prd/` → `_analysis/`, `architecture/` → `_plans/mvp/`, `reports/` → `_validation/` (14914c6)
+- Синхронизация AIDD framework до v2.4 с Migration Mode (84bee05)
+- Выравнивание путей артефактов в `.pipeline-state.json` (615d225)
+
+### 📄 Documentation
+- Расширены примеры REST API в README: `system_prompt`, `response_format` (c401056)
+- Completion reports для F012–F017 (990b5d6, 75af7fe, c47502d, 71664b1, 3117ec0, 308fbbf)
+
+---
+
 ## [2.4.0] - 2026-01-19
 
 ### ✨ Added - Migration Mode
