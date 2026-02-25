@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-02-25T07:57:56.113793",
+  "updated_at": "2026-02-25T08:01:11.908178",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -1212,6 +1212,157 @@
         "prd": "_analysis/2026-02-25_F022_error-classifier-fix.md",
         "research": "_research/2026-02-25_F022_error-classifier-fix.md"
       }
+    },
+    "F023": {
+      "branch": "feature/F023-error-resilience-and-telemetry",
+      "name": "error-resilience-and-telemetry",
+      "title": "Cooldown для постоянных ошибок, exponential backoff и per-request telemetry",
+      "stage": "IDEA",
+      "created": "2026-02-25",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-02-25T09:00:00.000000",
+          "artifact": "_analysis/2026-02-25_F023_error-resilience-and-telemetry.md"
+        },
+        "RESEARCH_DONE": {
+          "passed": false,
+          "passed_at": null
+        },
+        "PLAN_APPROVED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "IMPLEMENT_OK": {
+          "passed": false,
+          "passed_at": null
+        },
+        "REVIEW_OK": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "QA_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "ALL_GATES_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "DEPLOYED": {
+          "passed": false,
+          "passed_at": null
+        }
+      },
+      "artifacts": {
+        "prd": "_analysis/2026-02-25_F023_error-resilience-and-telemetry.md"
+      }
+    },
+    "F024": {
+      "branch": "feature/F024-circuit-breaker",
+      "name": "circuit-breaker",
+      "title": "Circuit Breaker для AI-провайдеров",
+      "stage": "IDEA",
+      "created": "2026-02-25",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-02-25T08:01:11.908178",
+          "artifact": "_analysis/2026-02-25_F024_circuit-breaker.md"
+        },
+        "RESEARCH_DONE": {
+          "passed": false,
+          "passed_at": null
+        },
+        "PLAN_APPROVED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null,
+          "approved_by": null
+        },
+        "IMPLEMENT_OK": {
+          "passed": false,
+          "passed_at": null
+        },
+        "REVIEW_OK": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "QA_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null,
+          "coverage": null
+        },
+        "ALL_GATES_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "DEPLOYED": {
+          "passed": false,
+          "passed_at": null
+        }
+      },
+      "artifacts": {
+        "prd": "_analysis/2026-02-25_F024_circuit-breaker.md"
+      }
+    },
+    "F025": {
+      "branch": "feature/F025-adaptive-concurrency",
+      "name": "adaptive-concurrency",
+      "title": "Адаптивный Concurrency для массового прогона",
+      "stage": "IDEA",
+      "created": "2026-02-25",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-02-25T08:01:11.908178",
+          "artifact": "_analysis/2026-02-25_F025_adaptive-concurrency.md"
+        },
+        "RESEARCH_DONE": {
+          "passed": false,
+          "passed_at": null
+        },
+        "PLAN_APPROVED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null,
+          "approved_by": null
+        },
+        "IMPLEMENT_OK": {
+          "passed": false,
+          "passed_at": null
+        },
+        "REVIEW_OK": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "QA_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null,
+          "coverage": null
+        },
+        "ALL_GATES_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "DEPLOYED": {
+          "passed": false,
+          "passed_at": null
+        }
+      },
+      "artifacts": {
+        "prd": "_analysis/2026-02-25_F025_adaptive-concurrency.md"
+      }
     }
   },
   "features_registry": {
@@ -1572,9 +1723,36 @@
       "services": [
         "free-ai-selector-business-api"
       ]
+    },
+    "F023": {
+      "name": "error-resilience-and-telemetry",
+      "title": "Cooldown для постоянных ошибок, exponential backoff и per-request telemetry",
+      "created": "2026-02-25",
+      "status": "IN_PROGRESS",
+      "services": [
+        "free-ai-selector-business-api"
+      ]
+    },
+    "F024": {
+      "name": "circuit-breaker",
+      "title": "Circuit Breaker для AI-провайдеров",
+      "created": "2026-02-25",
+      "status": "IN_PROGRESS",
+      "services": [
+        "free-ai-selector-business-api"
+      ]
+    },
+    "F025": {
+      "name": "adaptive-concurrency",
+      "title": "Адаптивный Concurrency для массового прогона",
+      "created": "2026-02-25",
+      "status": "IN_PROGRESS",
+      "services": [
+        "free-ai-selector-business-api"
+      ]
     }
   },
-  "next_feature_id": 23,
+  "next_feature_id": 26,
   "services": [],
   "gate_aliases": {
     "PRD_READY": "ANALYSIS_READY",
