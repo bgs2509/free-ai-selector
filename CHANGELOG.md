@@ -3,7 +3,7 @@
 **Примечание:** В этом документе встречаются устаревшие команды `/aidd-idea`, `/aidd-generate`, `/aidd-finalize`, `/aidd-feature-plan`. Актуальные команды: `/aidd-analyze`, `/aidd-code`, `/aidd-validate`, `/aidd-plan-feature`.
 
 
-All notable changes to AIDD-MVP Generator will be documented in this file.
+All notable changes to Free AI Selector will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -17,6 +17,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BREAKING**: Remove old role files (`architect.md`, `implementer.md`)
 - **BREAKING**: Only v3 naming conventions supported
 - Require migration to v3 before upgrade
+
+---
+
+## [2.8.0] - 2026-02-25
+
+### ✨ Added — Error Resilience Pipeline (F022–F025)
+
+Масштабное улучшение отказоустойчивости при работе с AI-провайдерами.
+Реализованы 4 связанные фичи в рамках единого плана из 8 стадий.
+
+#### F022: Error Classifier Fix
+- Исправлена потеря HTTP-кода при оборачивании `HTTPStatusError` в `ProviderError` (c50b662)
+- Добавлена классификация кодов 402, 404 в error classifier (c50b662)
+- Защита от слишком больших payload (> 6000 символов) (c50b662)
+- 36/36 тестов (b92366e)
+
+#### F023: Error Resilience, Exponential Backoff & Telemetry
+- Cooldown для провайдеров с постоянными ошибками (e55b8ed)
+- Exponential backoff вместо фиксированных retry-интервалов (e55b8ed)
+- Per-request telemetry: поля `attempts` и `fallback_used` в `ProcessPromptResponse` (e55b8ed)
+
+#### F024: Circuit Breaker
+- Паттерн Circuit Breaker (CLOSED → OPEN → HALF-OPEN) для AI-провайдеров (03a17e2)
+- Автоматическое отключение нестабильных провайдеров с постепенным восстановлением (03a17e2)
+
+#### F025: Server-Side Backpressure
+- HTTP 429 с `ErrorResponse` и заголовком `Retry-After` при rate limit всех провайдеров (399801f)
+- HTTP 503 с `ErrorResponse` и заголовком `Retry-After` при недоступности сервиса (399801f)
+- Structured `ErrorResponse` schema: `error`, `message`, `retry_after`, `attempts`, `providers_tried`, `providers_available` (591b293)
+- Кастомный обработчик slowapi rate limit в формате `ErrorResponse` (399801f)
+- Domain exceptions: `AllProvidersRateLimited`, `ServiceUnavailable` (399801f)
+
+### 📄 Documentation
+- Комплексный отчёт об анализе ошибок LLM API (45c45bb)
+- 8-стадийный план исправления ошибок (179e879)
+- PRD, research, plan и completion reports для F022–F025
+- Полностью обновлена API документация: `docs/api/data-api.md`, `business-api.md`, `errors.md`, `examples.md`
+- Обновлён CHANGELOG с отсутствующими изменениями
+
+### 🧪 Testing Infrastructure
+- Locust template для нагрузочного тестирования (8ee64d1)
+- Структура для load test reports (8ee64d1)
+- План нагрузочного тестирования (`docs/api-tests/load-testing-plan.md`)
 
 ---
 
