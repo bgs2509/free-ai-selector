@@ -46,6 +46,9 @@ class ProcessPromptResponse(BaseModel):
     provider: str = Field(..., description="AI provider name")
     response_time_seconds: Decimal = Field(..., description="Response time in seconds")
     success: bool = Field(..., description="Whether generation was successful")
+    # F023: Per-request telemetry
+    attempts: int = Field(1, description="Number of models tried before success")
+    fallback_used: bool = Field(False, description="Whether fallback model was used")
 
 
 # =============================================================================

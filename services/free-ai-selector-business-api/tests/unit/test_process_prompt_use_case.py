@@ -758,9 +758,225 @@ class TestF014ErrorHandlingConsolidation:
 
         for error in error_types:
             mock_data_api_client.increment_failure.reset_mock()
+            mock_data_api_client.set_availability.reset_mock()
             start_time = time.time()
 
             await use_case._handle_transient_error(model, error, start_time)
 
             # Each error type should trigger increment_failure
             mock_data_api_client.increment_failure.assert_called_once()
+
+
+@pytest.mark.unit
+class TestF023Cooldown:
+    """Test F023: Cooldown для AuthenticationError и ValidationError."""
+
+    async def test_authentication_error_triggers_cooldown(self, mock_data_api_client):
+        """TRQ-001: AuthenticationError -> set_availability(86400)."""
+        import time
+
+        from app.domain.exceptions import AuthenticationError
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        model = AIModelInfo(
+            id=1,
+            name="Test Model",
+            provider="TestProvider",
+            api_endpoint="https://test.com",
+            reliability_score=0.9,
+            is_active=True,
+        )
+        error = AuthenticationError("Invalid API key")
+        start_time = time.time()
+
+        await use_case._handle_transient_error(model, error, start_time)
+
+        mock_data_api_client.set_availability.assert_called_once_with(1, 86400)
+        mock_data_api_client.increment_failure.assert_called_once()
+
+    async def test_validation_error_triggers_cooldown(self, mock_data_api_client):
+        """TRQ-002: ValidationError -> set_availability(86400)."""
+        import time
+
+        from app.domain.exceptions import ValidationError
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        model = AIModelInfo(
+            id=2,
+            name="Test Model",
+            provider="TestProvider",
+            api_endpoint="https://test.com",
+            reliability_score=0.9,
+            is_active=True,
+        )
+        error = ValidationError("Endpoint not found")
+        start_time = time.time()
+
+        await use_case._handle_transient_error(model, error, start_time)
+
+        mock_data_api_client.set_availability.assert_called_once_with(2, 86400)
+        mock_data_api_client.increment_failure.assert_called_once()
+
+    async def test_server_error_does_not_trigger_cooldown(self, mock_data_api_client):
+        """ServerError НЕ должен вызывать cooldown."""
+        import time
+
+        from app.domain.exceptions import ServerError
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        model = AIModelInfo(
+            id=3,
+            name="Test Model",
+            provider="TestProvider",
+            api_endpoint="https://test.com",
+            reliability_score=0.9,
+            is_active=True,
+        )
+        error = ServerError("Internal server error")
+        start_time = time.time()
+
+        await use_case._handle_transient_error(model, error, start_time)
+
+        mock_data_api_client.set_availability.assert_not_called()
+        mock_data_api_client.increment_failure.assert_called_once()
+
+    async def test_cooldown_failure_does_not_break_flow(self, mock_data_api_client):
+        """TRQ-008: set_availability ошибка не ломает запрос."""
+        import time
+
+        from app.domain.exceptions import AuthenticationError
+
+        mock_data_api_client.set_availability.side_effect = Exception("Data API down")
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        model = AIModelInfo(
+            id=1,
+            name="Test Model",
+            provider="TestProvider",
+            api_endpoint="https://test.com",
+            reliability_score=0.9,
+            is_active=True,
+        )
+        error = AuthenticationError("Invalid API key")
+        start_time = time.time()
+
+        # Не должен бросить исключение
+        await use_case._handle_transient_error(model, error, start_time)
+
+        mock_data_api_client.set_availability.assert_called_once()
+        mock_data_api_client.increment_failure.assert_called_once()
+
+
+@pytest.mark.unit
+class TestF023Telemetry:
+    """Test F023: Per-request telemetry."""
+
+    @patch.dict(os.environ, {"HUGGINGFACE_API_KEY": "test_key"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_success_first_model_telemetry(self, mock_registry, mock_data_api_client):
+        """TRQ-006: attempts=1, fallback_used=False при успехе первой модели."""
+        mock_provider = AsyncMock()
+        mock_provider.generate.return_value = "response"
+        mock_registry.get_provider.return_value = mock_provider
+        mock_registry.get_api_key_env.return_value = "HUGGINGFACE_API_KEY"
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Model",
+                provider="HuggingFace",
+                api_endpoint="https://test.com",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(user_id="test", prompt_text="test")
+        response = await use_case.execute(request)
+
+        assert response.attempts == 1
+        assert response.fallback_used is False
+
+    @patch.dict(os.environ, {"KEY1": "key1", "KEY2": "key2"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_fallback_model_telemetry(self, mock_registry, mock_data_api_client):
+        """TRQ-006: attempts>=2, fallback_used=True при fallback."""
+        from app.domain.exceptions import ServerError
+
+        mock_primary = AsyncMock()
+        mock_primary.generate.side_effect = ServerError("Error")
+        mock_fallback = AsyncMock()
+        mock_fallback.generate.return_value = "fallback response"
+
+        mock_registry.get_provider.side_effect = [mock_primary, mock_fallback]
+        mock_registry.get_api_key_env.side_effect = lambda p: {
+            "Primary": "KEY1", "Fallback": "KEY2"
+        }.get(p, "")
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Primary",
+                provider="Primary",
+                api_endpoint="https://test.com",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+            ),
+            AIModelInfo(
+                id=2,
+                name="Fallback",
+                provider="Fallback",
+                api_endpoint="https://test2.com",
+                reliability_score=0.8,
+                is_active=True,
+                effective_reliability_score=0.8,
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(user_id="test", prompt_text="test")
+        response = await use_case.execute(request)
+
+        assert response.attempts == 2
+        assert response.fallback_used is True
+
+    def test_prompt_response_has_telemetry_defaults(self):
+        """TRQ-006: PromptResponse defaults: attempts=1, fallback_used=False."""
+        from decimal import Decimal
+
+        from app.domain.models import PromptResponse
+
+        response = PromptResponse(
+            prompt_text="test",
+            response_text="result",
+            selected_model_name="Model",
+            selected_model_provider="Provider",
+            response_time=Decimal("1.5"),
+            success=True,
+        )
+
+        assert response.attempts == 1
+        assert response.fallback_used is False
+
+    def test_process_prompt_response_has_telemetry_fields(self):
+        """TRQ-007: ProcessPromptResponse содержит attempts и fallback_used."""
+        from decimal import Decimal
+
+        from app.api.v1.schemas import ProcessPromptResponse
+
+        response = ProcessPromptResponse(
+            prompt="test",
+            response="result",
+            selected_model="Model",
+            provider="Provider",
+            response_time_seconds=Decimal("1.5"),
+            success=True,
+            attempts=3,
+            fallback_used=True,
+        )
+
+        assert response.attempts == 3
+        assert response.fallback_used is True

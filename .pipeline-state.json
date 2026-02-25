@@ -1228,7 +1228,7 @@
       "branch": "feature/F023-error-resilience-and-telemetry",
       "name": "error-resilience-and-telemetry",
       "title": "Cooldown для постоянных ошибок, exponential backoff и per-request telemetry",
-      "stage": "PLAN",
+      "stage": "IMPLEMENT",
       "created": "2026-02-25",
       "gates": {
         "PRD_READY": {
@@ -1241,13 +1241,14 @@
           "passed_at": "2026-02-25T07:37:25.518900"
         },
         "PLAN_APPROVED": {
-          "passed": false,
-          "passed_at": null,
-          "artifact": "_plans/features/2026-02-25_F023_error-resilience-and-telemetry.md"
+          "passed": true,
+          "passed_at": "2026-02-25T10:00:00.000000",
+          "artifact": "_plans/features/2026-02-25_F023_error-resilience-and-telemetry.md",
+          "approved_by": "user"
         },
         "IMPLEMENT_OK": {
-          "passed": false,
-          "passed_at": null
+          "passed": true,
+          "passed_at": "2026-02-25T10:30:00.000000"
         },
         "REVIEW_OK": {
           "passed": false,

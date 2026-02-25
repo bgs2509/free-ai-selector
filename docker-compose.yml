@@ -113,9 +113,16 @@ services:
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
       ROOT_PATH: ${ROOT_PATH:-}
       # F012: Rate Limit Handling
-      MAX_RETRIES: ${MAX_RETRIES:-10}
-      RETRY_DELAY_SECONDS: ${RETRY_DELAY_SECONDS:-10}
       RATE_LIMIT_DEFAULT_COOLDOWN: ${RATE_LIMIT_DEFAULT_COOLDOWN:-3600}
+      # F023: Retry configuration (exponential backoff)
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      RETRY_DELAY_SECONDS: ${RETRY_DELAY_SECONDS:-10}
+      RETRY_BASE_DELAY: ${RETRY_BASE_DELAY:-2.0}
+      RETRY_MAX_DELAY: ${RETRY_MAX_DELAY:-30.0}
+      RETRY_JITTER: ${RETRY_JITTER:-1.0}
+      # F023: Cooldown for permanent errors
+      AUTH_ERROR_COOLDOWN_SECONDS: ${AUTH_ERROR_COOLDOWN_SECONDS:-86400}
+      VALIDATION_ERROR_COOLDOWN_SECONDS: ${VALIDATION_ERROR_COOLDOWN_SECONDS:-86400}
     depends_on:
       free-ai-selector-data-postgres-api:
         condition: service_healthy

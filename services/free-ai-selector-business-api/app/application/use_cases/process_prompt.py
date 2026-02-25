@@ -10,10 +10,15 @@ Core business logic for AI Manager Platform:
 
 F012: Rate Limit Handling
 - Error Classification: classify errors by type
-- Retry Mechanism: 10×10s for 5xx/timeout
+- Retry Mechanism: exponential backoff for 5xx/timeout (F023)
 - Availability Cooldown: 429 → set_availability()
 - Full Fallback: iterate through all available models
 - Graceful Degradation: 429 doesn't reduce reliability_score
+
+F023: Error Resilience and Telemetry
+- Cooldown 24h for AuthenticationError (401/402/403) and ValidationError (404)
+- Exponential backoff: 2s → 4s → 8s with jitter (MAX_RETRIES=3)
+- Per-request telemetry: attempts, fallback_used in response
 
 Note:
     Provider instances are obtained from ProviderRegistry (F008 SSOT).
@@ -27,7 +32,7 @@ from decimal import Decimal
 from typing import Optional
 
 from app.application.services.error_classifier import classify_error
-from app.application.services.retry_service import retry_with_fixed_delay
+from app.application.services.retry_service import retry_with_exponential_backoff
 from app.domain.exceptions import (
     AuthenticationError,
     ProviderError,
@@ -51,6 +56,10 @@ RATE_LIMIT_DEFAULT_COOLDOWN = int(os.getenv("RATE_LIMIT_DEFAULT_COOLDOWN", "3600
 
 # F022: Payload budget — максимальный размер промпта перед отправкой провайдеру
 MAX_PROMPT_CHARS = int(os.getenv("MAX_PROMPT_CHARS", "6000"))
+
+# F023: Cooldown для постоянных ошибок (auth, validation)
+AUTH_ERROR_COOLDOWN_SECONDS = int(os.getenv("AUTH_ERROR_COOLDOWN_SECONDS", "86400"))
+VALIDATION_ERROR_COOLDOWN_SECONDS = int(os.getenv("VALIDATION_ERROR_COOLDOWN_SECONDS", "86400"))
 
 
 class ProcessPromptUseCase:
@@ -190,8 +199,11 @@ class ProcessPromptUseCase:
         last_error_message: Optional[str] = None
         successful_model: Optional[AIModelInfo] = None
         response_text: Optional[str] = None
+        # F023: Telemetry counters
+        attempts = 0
 
         for model in candidate_models:
+            attempts += 1
             try:
                 provider = self._get_provider_for_model(model)
 
@@ -303,6 +315,9 @@ class ProcessPromptUseCase:
             response_time=response_time,
             success=True,
             error_message=None,
+            # F023: Per-request telemetry
+            attempts=attempts,
+            fallback_used=(successful_model.id != first_model.id),
         )
 
     def _build_candidate_models(
@@ -367,7 +382,7 @@ class ProcessPromptUseCase:
         """
         Generate response with retry for retryable errors.
 
-        Uses retry_with_fixed_delay for ServerError and TimeoutError.
+        Uses retry_with_exponential_backoff for ServerError and TimeoutError (F023).
         RateLimitError and other errors are raised immediately.
 
         Args:
@@ -394,7 +409,7 @@ class ProcessPromptUseCase:
                 response_format=request.response_format,
             )
 
-        return await retry_with_fixed_delay(
+        return await retry_with_exponential_backoff(
             func=generate_func,
             provider_name=model.provider,
             model_name=model.name,
@@ -460,10 +475,10 @@ class ProcessPromptUseCase:
         start_time: float,
     ) -> None:
         """
-        Handle transient error: log and record failure (F012: FR-3, FR-4, F014).
+        Handle transient error: log, optionally set cooldown, and record failure.
 
-        Transient errors (server, timeout, auth, validation, generic provider)
-        are counted as failures for reliability_score calculation.
+        F023: AuthenticationError и ValidationError получают cooldown 24ч
+        в дополнение к increment_failure.
 
         Args:
             model: Model info for logging and API calls
@@ -478,6 +493,17 @@ class ProcessPromptUseCase:
             error_type=type(error).__name__,
             error=sanitize_error_message(error),
         )
+
+        # F023 FR-001/FR-002: Cooldown для постоянных ошибок
+        if isinstance(error, AuthenticationError):
+            await self._set_cooldown_safe(
+                model, AUTH_ERROR_COOLDOWN_SECONDS, type(error).__name__
+            )
+        elif isinstance(error, ValidationError):
+            await self._set_cooldown_safe(
+                model, VALIDATION_ERROR_COOLDOWN_SECONDS, type(error).__name__
+            )
+
         try:
             await self.data_api_client.increment_failure(
                 model_id=model.id,
@@ -488,4 +514,34 @@ class ProcessPromptUseCase:
                 "stats_update_failed",
                 model=model.name,
                 error=sanitize_error_message(stats_error),
+            )
+
+    async def _set_cooldown_safe(
+        self,
+        model: AIModelInfo,
+        cooldown_seconds: int,
+        error_type: str,
+    ) -> None:
+        """
+        Set provider cooldown with graceful error handling (F023).
+
+        Args:
+            model: Model info for logging and API calls
+            cooldown_seconds: Duration of cooldown in seconds
+            error_type: Error type name for logging
+        """
+        logger.warning(
+            "permanent_error_cooldown",
+            model=model.name,
+            provider=model.provider,
+            error_type=error_type,
+            cooldown_seconds=cooldown_seconds,
+        )
+        try:
+            await self.data_api_client.set_availability(model.id, cooldown_seconds)
+        except Exception as avail_error:
+            logger.error(
+                "set_availability_failed",
+                model=model.name,
+                error=sanitize_error_message(avail_error),
             )

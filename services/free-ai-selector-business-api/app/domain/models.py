@@ -66,3 +66,6 @@ class PromptResponse:
     response_time: Decimal
     success: bool
     error_message: Optional[str] = None
+    # F023: Per-request telemetry
+    attempts: int = 1
+    fallback_used: bool = False
