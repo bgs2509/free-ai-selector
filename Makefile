@@ -42,7 +42,7 @@ help:
 	@echo "  make logs-bot              - Tail logs from Telegram Bot"
 	@echo "  make logs-worker           - Tail logs from Health Worker"
 	@echo "  make clean                 - Remove all containers and volumes"
-	@echo "  make test                  - Run all tests"
+	@echo "  make test                  - Run all tests in containers with final report"
 	@echo "  make test-data             - Run Data API tests"
 	@echo "  make test-business         - Run Business API tests"
 	@echo "  make lint                  - Run linters (ruff, mypy, bandit)"
@@ -111,11 +111,7 @@ clean:
 	fi
 
 test:
-	@echo "Running Data API tests..."
-	$(COMPOSE) exec free-ai-selector-data-postgres-api pytest tests/ -v --cov=app --cov-report=term-missing
-	@echo ""
-	@echo "Running Business API tests..."
-	$(COMPOSE) exec free-ai-selector-business-api pytest tests/ -v --cov=app --cov-report=term-missing
+	@COMPOSE_CMD='$(COMPOSE)' python3 scripts/run_container_tests.py
 
 test-data:
 	$(COMPOSE) exec free-ai-selector-data-postgres-api pytest tests/ -v --cov=app --cov-report=term-missing
