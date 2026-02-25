@@ -238,6 +238,7 @@ load-test:
 		LOCUST_CMD="$$LOCUST_CMD --headless --users $(LOAD_TEST_USERS) --spawn-rate $(LOAD_TEST_SPAWN_RATE) --run-time $(LOAD_TEST_RUN_TIME) --csv $(LOAD_TEST_RESULTS_DIR)/$(LOAD_TEST_PREFIX) --html $(LOAD_TEST_RESULTS_DIR)/$(LOAD_TEST_PREFIX).html"; \
 	fi; \
 	docker run --rm $$DOCKER_PORT_ARG \
+		--entrypoint /bin/sh \
 		--network free-ai-selector-network \
 		-v "$(PWD):/work" \
 		-w /work \
@@ -249,7 +250,7 @@ load-test:
 		-e PROMPT_PATH="/api/v1/prompts/process" \
 		-e MODEL_STATS_PATH="/api/v1/models/stats" \
 		-e HEALTH_PATH="/health" \
-		$(LOCUST_IMAGE) sh -c "$$LOCUST_CMD"; \
+		$(LOCUST_IMAGE) -c "$$LOCUST_CMD"; \
 	echo "Load test finished. Reports are in $(LOAD_TEST_RESULTS_DIR)"
 
 load-test-ui:
