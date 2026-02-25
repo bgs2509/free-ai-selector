@@ -3,6 +3,7 @@
 **Feature ID**: F022
 **Дата**: 2026-02-25
 **Статус**: RESEARCH_DONE
+**Версия**: 2 (углублённое исследование)
 
 ---
 
@@ -67,17 +68,7 @@ Catch-блоки в порядке:
 
 **Критическое наблюдение**: после исправления в `base.py`, `httpx.HTTPStatusError` НЕ будет пойман ни блоком 1 (он не `RateLimitError`), ни блоком 2 (он не `ProviderError`). Он попадёт в блок 3 (`except Exception`), где `classify_error()` правильно классифицирует его. **Это работает корректно без дополнительных изменений**.
 
-Однако для явности и производительности рекомендуется добавить `except httpx.HTTPStatusError` перед `except Exception`:
-
-```python
-except httpx.HTTPStatusError as e:
-    classified = classify_error(e)
-    if isinstance(classified, RateLimitError):
-        await self._handle_rate_limit(model, classified)
-    else:
-        await self._handle_transient_error(model, classified, start_time)
-    last_error_message = sanitize_error_message(e)
-```
+**Но важный нюанс**: `retry_with_fixed_delay()` внутри ловит `Exception`, классифицирует через `classify_error()`, и если non-retryable — пробрасывает **уже классифицированный** тип (`ValidationError`, `AuthenticationError`). Поэтому в fallback loop на строке 201–206 `httpx.HTTPStatusError` **НЕ дойдёт** — вместо него придёт уже `ValidationError` или `AuthenticationError`. Они будут пойманы блоком 2.
 
 ### 1.4 Payload validation (schemas.py + _build_payload)
 
@@ -92,9 +83,148 @@ except httpx.HTTPStatusError as e:
 
 ---
 
-## 2. Анализ существующих тестов
+## 2. Полная матрица провайдеров
 
-### 2.1 test_error_classifier.py (221 строка, 20 тестов)
+### 2.1 Наследование и error handling
+
+| Провайдер | Базовый класс | Свой generate()? | Error handling | Переопределённые методы |
+|-----------|---------------|------------------|----------------|------------------------|
+| Groq | `OpenAICompatibleProvider` | Нет | base.py | — |
+| Cerebras | `OpenAICompatibleProvider` | Нет | base.py | — |
+| SambaNova | `OpenAICompatibleProvider` | Нет | base.py | — |
+| HuggingFace | `OpenAICompatibleProvider` | Нет | base.py | — |
+| DeepSeek | `OpenAICompatibleProvider` | Нет | base.py | — |
+| OpenRouter | `OpenAICompatibleProvider` | Нет | base.py | `_build_headers()` (EXTRA_HEADERS) |
+| GitHubModels | `OpenAICompatibleProvider` | Нет | base.py | `_is_health_check_success()` |
+| Fireworks | `OpenAICompatibleProvider` | Нет | base.py | — |
+| Hyperbolic | `OpenAICompatibleProvider` | Нет | base.py | — |
+| Novita | `OpenAICompatibleProvider` | Нет | base.py | — |
+| Scaleway | `OpenAICompatibleProvider` | Нет | base.py | — |
+| Kluster | `OpenAICompatibleProvider` | Нет | base.py | — |
+| Nebius | `OpenAICompatibleProvider` | Нет | base.py | — |
+| **Cloudflare** | **`AIProviderBase`** | **Да** (строки 51–141) | **Собственный** | Все 3 метода |
+
+**Вывод**: 12 из 14 провайдеров используют единственный `generate()` из `base.py:174–203`. Исправление в одном месте автоматически фиксит все 12 провайдеров.
+
+### 2.2 Cloudflare — отдельный анализ
+
+```python
+# cloudflare.py строки 139-141:
+except httpx.HTTPError as e:
+    logger.error(f"Cloudflare Workers AI API error: {sanitize_error_message(e)}")
+    raise  # ← ПРОБРАСЫВАЕТ оригинал, НЕ оборачивает в ProviderError
+```
+
+Cloudflare **уже** пробрасывает `httpx.HTTPStatusError` напрямую. `classify_error()` уже получает оригинал от Cloudflare. **F022 не затрагивает Cloudflare**.
+
+### 2.3 ProviderRegistry (F008 SSOT)
+
+**Файл**: `app/infrastructure/ai_providers/registry.py`
+
+- `PROVIDER_CLASSES: dict[str, type[AIProviderBase]]` — статический dict (14 провайдеров)
+- `get_provider(name)` — ленивая инициализация, Singleton-паттерн через `_instances`
+- `get_api_key_env(name)` — получение env-переменной без создания экземпляра
+- `reset()` — очистка кэша (для тестов)
+
+---
+
+## 3. Domain models — PromptRequest
+
+### 3.1 Определение
+
+**Файл**: `app/domain/models.py`
+
+```python
+@dataclass
+class PromptRequest:
+    user_id: str
+    prompt_text: str              # ← ВНИМАНИЕ: поле называется prompt_text, НЕ prompt
+    model_id: Optional[int] = None
+    system_prompt: Optional[str] = None
+    response_format: Optional[dict] = None
+```
+
+> **КРИТИЧЕСКИЙ НЮАНС**: поле `PromptRequest` называется **`prompt_text`**, не `prompt`.
+> В Pydantic-схеме API (`ProcessPromptRequest`) поле называется `prompt`.
+> В domain-модели (`PromptRequest`) — `prompt_text`.
+
+### 3.2 Подтверждение из process_prompt.py
+
+- Строка 375: `request.prompt_text` — используется при вызове `provider.generate()`
+- Строка ~103: `PromptRequest` конструируется в `prompts.py` роутере
+
+### 3.3 Создание нового экземпляра
+
+`@dataclass` без `frozen=True`, без `__post_init__`. Безопасно создавать:
+
+```python
+request = PromptRequest(
+    user_id=request.user_id,
+    prompt_text=request.prompt_text[:MAX_PROMPT_CHARS],  # prompt_text, не prompt!
+    model_id=request.model_id,
+    system_prompt=request.system_prompt,
+    response_format=request.response_format,
+)
+```
+
+---
+
+## 4. Domain exceptions — иерархия и конструкторы
+
+**Файл**: `app/domain/exceptions.py` (107 строк)
+
+| Класс | Строки | Свой `__init__`? | Параметры |
+|-------|--------|-----------------|-----------|
+| `ProviderError` | 19–36 | Да (строка 26) | `message: str`, `original_exception: Optional[Exception] = None` |
+| `RateLimitError` | 39–62 | Да (строка 47) | `message`, `retry_after_seconds: Optional[int] = None`, `original_exception` |
+| `ServerError` | 65–73 | Нет (pass) | Наследует конструктор `ProviderError` |
+| `TimeoutError` | 76–84 | Нет (pass) | Наследует конструктор `ProviderError` |
+| `AuthenticationError` | 87–95 | Нет (pass) | Наследует конструктор `ProviderError` |
+| `ValidationError` | 98–106 | Нет (pass) | Наследует конструктор `ProviderError` |
+
+**Для FR-002/003** — конструкторы единообразны:
+
+```python
+AuthenticationError(message="...", original_exception=exception)
+ValidationError(message="...", original_exception=exception)
+```
+
+---
+
+## 5. retry_service.py — детальный анализ пути httpx.HTTPStatusError
+
+**Файл**: `app/application/services/retry_service.py` (106 строк)
+
+### 5.1 Единственный except-блок (строка 61)
+
+```python
+except Exception as e:                          # строка 61
+    classified_error = classify_error(e)        # строка 63
+    if not is_retryable(classified_error):      # строка 66
+        raise classified_error                  # строка 76 — пробрасывает КЛАССИФИЦИРОВАННЫЙ тип
+    last_error = classified_error               # строка 78 — сохраняет для следующей итерации
+```
+
+### 5.2 Путь httpx.HTTPStatusError(404) через retry_service (после FR-001)
+
+1. `generate()` бросает `httpx.HTTPStatusError(404)`
+2. `except Exception` ловит
+3. `classify_error(HTTPStatusError(404))` → `ValidationError("Endpoint or model not found: ...")`
+4. `is_retryable(ValidationError)` → `False`
+5. `raise ValidationError(...)` — пробрасывается немедленно (без retry, без sleep)
+6. В `process_prompt.py` fallback loop: `except (ServerError, ... ValidationError, ProviderError)` ловит `ValidationError` на строке 201–206
+
+**Вывод**: `httpx.HTTPStatusError` трансформируется в `ValidationError`/`AuthenticationError` ВНУТРИ retry_service, до попадания в fallback loop. Блок `except Exception` на строке 212 process_prompt.py **НЕ будет задействован** для этих ошибок. FR-010 не нужен функционально.
+
+### 5.3 Побочные эффекты при пробросе — нет
+
+Тест `test_http_status_error_classified_and_handled` (`test_retry_service.py:185`) уже проверяет, что `httpx.HTTPStatusError(503)` правильно классифицируется как `ServerError` и ретраится. Этот тест **НЕ сломается** — retry_service.py не изменяется.
+
+---
+
+## 6. Анализ существующих тестов
+
+### 6.1 test_error_classifier.py (221 строка, 20 тестов)
 
 | Класс | Тестов | Покрытие |
 |-------|--------|----------|
@@ -106,23 +236,35 @@ except httpx.HTTPStatusError as e:
 - `test_classify_402_as_authentication_error` — HTTP 402 → AuthenticationError
 - `test_classify_404_as_validation_error` — HTTP 404 → ValidationError
 
-### 2.2 test_retry_service.py (244 строки, 11 тестов)
+### 6.2 test_retry_service.py (244 строки, 11 тестов)
 
-Покрывает: успех, retry на ServerError/TimeoutError, no-retry на 429/401/422, exhausted, delay, httpx classification.
+| Тест | Что проверяет | Сломается? |
+|------|---------------|------------|
+| `test_success_on_first_attempt` | Успешный вызов | Нет |
+| `test_retry_on_server_error` | Retry при ServerError | Нет |
+| `test_retry_on_timeout_error` | Retry при TimeoutError | Нет |
+| `test_no_retry_on_rate_limit_error` | No-retry при 429 | Нет |
+| `test_no_retry_on_authentication_error` | No-retry при 401 | Нет |
+| `test_no_retry_on_validation_error` | No-retry при 422 | Нет |
+| `test_exhausted_retries_raises_last_error` | Exhausted | Нет |
+| `test_mixed_errors_retry_only_retryable` | Mix errors | Нет |
+| `test_delay_between_retries` | asyncio.sleep | Нет |
+| `test_http_status_error_classified_and_handled` | HTTPStatusError(503) | Нет |
+| `test_max_retries_zero_means_single_attempt` | max_retries=0 | Нет |
 
-**Нет изменений для F022** — retry_service не меняется.
+**Вывод**: ни один тест не сломается. retry_service.py не изменяется в F022.
 
-### 2.3 Тесты на ProcessPromptUseCase
+### 6.3 Тесты на ProcessPromptUseCase
 
-**Не найдены**. Файл `test_process_prompt_use_case.py` не существует. Это снижает уверенность в безопасности изменений fallback loop. Рекомендуется добавить хотя бы smoke-тест на HTTPStatusError propagation.
+**Не найдены**. Нет файла `test_process_prompt*.py`. Покрытие use case — через интеграционные тесты.
 
-### 2.4 Тесты на OpenAICompatibleProvider.generate()
+### 6.4 Тесты на OpenAICompatibleProvider.generate()
 
-**Не найдены** отдельные unit-тесты на `base.py`. Провайдеры тестируются через integration.
+**Не найдены** отдельные unit-тесты. Провайдеры тестируются интеграционно.
 
 ---
 
-## 3. Зависимости между изменениями
+## 7. Зависимости между изменениями
 
 ```
                   ┌──────────────────┐
@@ -134,61 +276,55 @@ except httpx.HTTPStatusError as e:
               ┌────────────┼────────────┐
               ▼                         ▼
 ┌──────────────────────┐  ┌──────────────────────┐
-│ FR-002/003: Добавить │  │ FR-010: Добавить     │
-│ 402/404 в            │  │ except HTTPStatusError│
-│ classify_error()     │  │ в fallback loop      │
+│ FR-002/003: Добавить │  │ FR-010 (optional):   │
+│ 402/404 в            │  │ explicit except в    │
+│ classify_error()     │  │ fallback loop        │
 └──────────────────────┘  └──────────────────────┘
+
+┌──────────────────────┐
+│ FR-004: Payload      │  ← ПОЛНОСТЬЮ НЕЗАВИСИМ
+│ budget               │
+└──────────────────────┘
 ```
 
-**FR-001 (base.py)** должен быть первым — иначе FR-002/003 не имеют эффекта для 12 из 14 провайдеров.
-
-**FR-004 (payload budget)** — полностью независим, можно делать в любом порядке.
+**Порядок реализации**: FR-001 (base.py) → FR-002/003 (error_classifier.py) → FR-004 (process_prompt.py) → тесты.
 
 ---
 
-## 4. Риски и ограничения
+## 8. Риски и ограничения
 
-### 4.1 Риск: Cloudflare провайдер
+### 8.1 Риск: порядок except-блоков в base.py
 
-Cloudflare (`app/infrastructure/ai_providers/cloudflare.py`) имеет **свой** `generate()` и не наследует `OpenAICompatibleProvider`. Его error handling:
+`httpx.HTTPStatusError` — подкласс `httpx.HTTPError`. Если перепутать порядок, `HTTPStatusError` будет перехвачен широким блоком. **Правильный порядок**: `except httpx.HTTPStatusError` ПЕРЕД `except httpx.HTTPError`.
 
-```python
-except httpx.HTTPError as e:
-    raise ProviderError(f"Cloudflare error: {e}") from e
-```
+### 8.2 Риск: Cloudflare провайдер
 
-Аналогичная проблема, но Cloudflare стабилен (6 ошибок за 48ч). **Решение**: не трогать Cloudflare в F022 — оставить на P2.
+Cloudflare уже пробрасывает `httpx.HTTPError` напрямую. **F022 его не затрагивает** — не нужно менять.
 
-### 4.2 Риск: retry_service ловит Exception
+### 8.3 Ограничение: sanitize_error_message в base.py
 
-`retry_service.py:29` — `retry_with_fixed_delay()` использует:
-```python
-except Exception as e:
-    classified = classify_error(e)
-```
-
-После FR-001, `httpx.HTTPStatusError` будет пойман этим блоком и правильно классифицирован. **Риск отсутствует**.
-
-### 4.3 Ограничение: отсутствие тестов на ProcessPromptUseCase
-
-Нет unit-тестов на fallback loop. Изменение FR-010 нельзя проверить автоматически. Но текущий `except Exception` (строка 212) поймает `httpx.HTTPStatusError` корректно даже без FR-010.
-
-### 4.4 Ограничение: sanitize_error_message
-
-В `base.py:201` вызывается `sanitize_error_message(e)` перед `raise`. После FR-001 (проброс HTTPStatusError) этот лог сохранится — нужно вынести логирование ДО `raise`:
+В `base.py:201` вызывается `sanitize_error_message(e)` + логирование перед raise. Это **нужно сохранить** при разделении except:
 
 ```python
 except httpx.HTTPStatusError as e:
     err_msg = sanitize_error_message(e)
     logger.error(f"{self.PROVIDER_NAME} API error: {err_msg}")
-    raise  # пробрасываем оригинал
+    raise  # пробрасываем оригинал с HTTP-кодом
 ```
+
+### 8.4 Ограничение: отсутствие тестов на ProcessPromptUseCase
+
+Нет unit-тестов на fallback loop. Изменения FR-004 нельзя проверить unit-тестами без mock'ов DataAPIClient.
+
+### 8.5 Ограничение: `import httpx` в process_prompt.py
+
+`httpx` не импортирован в `process_prompt.py`. Если реализовывать FR-010, нужно добавить `import httpx`. Но FR-010 не обязателен функционально.
 
 ---
 
-## 5. Точные изменения по файлам
+## 9. Точные изменения по файлам
 
-### 5.1 error_classifier.py
+### 9.1 error_classifier.py
 
 **Строки 80–91** — добавить 2 ветки между `ValidationError` и generic `ProviderError`:
 
@@ -217,12 +353,11 @@ except httpx.HTTPStatusError as e:
     return ProviderError(...)
 ```
 
-### 5.2 base.py
+### 9.2 base.py
 
 **Строки 200–203** — разделить один except на два:
 
 ```python
-            # === ИЗМЕНЕНО (F022: FR-001) ===
             except httpx.HTTPStatusError as e:
                 err_msg = sanitize_error_message(e)
                 logger.error(f"{self.PROVIDER_NAME} API error: {err_msg}")
@@ -234,37 +369,42 @@ except httpx.HTTPStatusError as e:
                 raise ProviderError(f"{self.PROVIDER_NAME} error: {e}") from e
 ```
 
-### 5.3 process_prompt.py
+### 9.3 process_prompt.py
 
-**Вставка в execute()** — payload budget (после строки ~170, перед fallback loop):
-
+**Строка ~51** (уровень модуля, рядом с `RATE_LIMIT_DEFAULT_COOLDOWN`):
 ```python
-        # === НОВОЕ (F022: FR-004) ===
-        MAX_PROMPT_CHARS = int(os.getenv("MAX_PROMPT_CHARS", "6000"))
-        if len(request.prompt) > MAX_PROMPT_CHARS:
+MAX_PROMPT_CHARS = int(os.getenv("MAX_PROMPT_CHARS", "6000"))
+```
+
+**После строки ~173** (перед `for model in candidate_models:`):
+```python
+        # F022: Payload budget — обрезка промпта для предотвращения HTTP 422
+        if len(request.prompt_text) > MAX_PROMPT_CHARS:
             logger.warning(
                 "prompt_truncated",
-                original_length=len(request.prompt),
+                original_length=len(request.prompt_text),
                 max_length=MAX_PROMPT_CHARS,
             )
             request = PromptRequest(
-                prompt=request.prompt[:MAX_PROMPT_CHARS],
-                model_id=request.model_id,
                 user_id=request.user_id,
+                prompt_text=request.prompt_text[:MAX_PROMPT_CHARS],
+                model_id=request.model_id,
                 system_prompt=request.system_prompt,
                 response_format=request.response_format,
             )
 ```
 
-### 5.4 test_error_classifier.py
+> **ВНИМАНИЕ**: поле называется `prompt_text`, не `prompt`.
 
-Добавить 2 теста в `TestClassifyError`:
+### 9.4 test_error_classifier.py
+
+Добавить 2 теста в класс `TestClassifyError` (после строки 139):
 
 ```python
     def test_classify_402_as_authentication_error(self):
         """F022: HTTP 402 → AuthenticationError (payment required)."""
         request = Request("POST", "https://api.test.com")
-        response = Response(402, request=request, content=b"Payment Required")
+        response = Response(402, request=request)
         exception = httpx.HTTPStatusError("Payment required", request=request, response=response)
         result = classify_error(exception)
         assert isinstance(result, AuthenticationError)
@@ -273,7 +413,7 @@ except httpx.HTTPStatusError as e:
     def test_classify_404_as_validation_error(self):
         """F022: HTTP 404 → ValidationError (endpoint not found)."""
         request = Request("POST", "https://api.test.com")
-        response = Response(404, request=request, content=b"Not Found")
+        response = Response(404, request=request)
         exception = httpx.HTTPStatusError("Not found", request=request, response=response)
         result = classify_error(exception)
         assert isinstance(result, ValidationError)
@@ -282,9 +422,46 @@ except httpx.HTTPStatusError as e:
 
 ---
 
-## 6. Рекомендации для /aidd-plan-feature
+## 10. Quality Cascade Checklist
 
-1. **Порядок реализации**: FR-001 (base.py) → FR-002/003 (error_classifier.py) → FR-004 (process_prompt.py) → тесты.
-2. **FR-010** (explicit except в fallback) — опционален. `except Exception` на строке 212 уже корректно обработает `httpx.HTTPStatusError`. Добавление FR-010 — улучшение читаемости, не функциональная необходимость.
-3. **FR-020** (обрезка по предложению) — отложить. Посимвольная обрезка достаточна для MVP.
-4. **Тесты**: обязательны для error_classifier (2 новых). Для base.py и process_prompt.py — желательны, но не блокируют.
+### DRY
+- `classify_error()` — единственная функция классификации. Расширяем, не дублируем.
+- `sanitize_error_message()` — уже используется в error handling. Сохраняем.
+- Паттерн `os.getenv("X", "default")` — уже используется на строке 50 process_prompt.py.
+- `MAX_PROMPT_CHARS` вынести на уровень модуля (аналогично `RATE_LIMIT_DEFAULT_COOLDOWN`).
+
+### KISS
+- FR-001: одна строка `raise` вместо `raise ProviderError(...)`.
+- FR-002, FR-003: два `if status_code == X: return Y(...)`.
+- FR-004: 8 строк кода, нет новых зависимостей.
+- FR-010, FR-020: **не реализуем** — YAGNI.
+
+### SoC
+- Классификация ошибок: только в `error_classifier.py`.
+- Transport-level exceptions: до границы `classify_error` не конвертируются.
+- Payload validation: в use case слое (`process_prompt.py`), не в провайдере.
+
+### SSoT
+| Тип данных | Файл-источник |
+|------------|---------------|
+| HTTP code → error type | `error_classifier.py:classify_error()` |
+| Retryable error types | `error_classifier.py:is_retryable()` |
+| Provider names | `registry.py:PROVIDER_CLASSES` |
+| Exception hierarchy | `domain/exceptions.py` |
+| MAX_PROMPT_CHARS | `process_prompt.py` (модульная константа) |
+
+### Security
+- `sanitize_error_message()` сохраняется при логировании в изменённом `base.py`.
+- При проброске `raise` логирование происходит ДО, не после.
+- `prompt_text[:N]` — безопасная строковая операция.
+
+---
+
+## 11. Рекомендации для /aidd-plan-feature
+
+1. **Порядок**: FR-001 (base.py) → FR-002/003 (error_classifier.py) → FR-004 (process_prompt.py) → тесты.
+2. **FR-010** — не реализовывать. `retry_service` уже трансформирует `httpx.HTTPStatusError` в типизированные `ProviderError`-подклассы до fallback loop.
+3. **FR-020** — отложить. Посимвольная обрезка достаточна.
+4. **FR-011** — не нужен. Имя провайдера уже логируется в `base.py:202` до raise.
+5. **Тесты**: обязательны 2 новых для error_classifier. Для base.py и process_prompt.py — через integration.
+6. **Поле `prompt_text`** — не `prompt`. Критически важно для FR-004.
