@@ -17,6 +17,7 @@ from app.domain.models import AIModel
 from app.infrastructure.database.connection import get_db
 from app.infrastructure.repositories.ai_model_repository import AIModelRepository
 from app.infrastructure.repositories.prompt_history_repository import PromptHistoryRepository
+from app.utils.audit import audit_event
 
 router = APIRouter(prefix="/models", tags=["AI Models"])
 
@@ -290,6 +291,15 @@ async def set_model_availability(
     retry_after_seconds: int = Query(
         ..., ge=0, description="Seconds until model becomes available (0 = clear cooldown)"
     ),
+    reason: str | None = Query(
+        None, max_length=64, description="Machine-readable reason for availability change"
+    ),
+    error_type: str | None = Query(
+        None, max_length=64, description="Error type that triggered cooldown"
+    ),
+    source: str | None = Query(
+        None, max_length=64, description="Source component that requested availability update"
+    ),
     db: AsyncSession = Depends(get_db),
 ) -> AIModelResponse:
     """
@@ -310,6 +320,12 @@ async def set_model_availability(
         HTTPException: 404 if model not found
     """
     repository = AIModelRepository(db)
+    current_model = await repository.get_by_id(model_id)
+
+    if current_model is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"AI model with ID {model_id} not found"
+        )
 
     updated_model = await repository.set_availability(
         model_id=model_id, retry_after_seconds=retry_after_seconds
@@ -321,6 +337,25 @@ async def set_model_availability(
         )
 
     await db.commit()
+
+    audit_event(
+        "availability_changed",
+        {
+            "model_id": model_id,
+            "model": current_model.name,
+            "provider": current_model.provider,
+            "retry_after_seconds": retry_after_seconds,
+            "reason": reason,
+            "error_type": error_type,
+            "source": source,
+            "available_at_before": (
+                current_model.available_at.isoformat() if current_model.available_at else None
+            ),
+            "available_at_after": (
+                updated_model.available_at.isoformat() if updated_model.available_at else None
+            ),
+        },
+    )
 
     return _model_to_response(updated_model)
 
@@ -425,5 +460,4 @@ def _calculate_recent_metrics(
             "effective_reliability_score": round(model.reliability_score, 4),
             "decision_reason": "fallback",
         }
-
 

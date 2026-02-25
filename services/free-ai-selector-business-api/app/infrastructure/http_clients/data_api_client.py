@@ -8,10 +8,11 @@ Business services must never access database directly.
 import logging
 import os
 from decimal import Decimal
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import httpx
 from app.utils.security import sanitize_error_message
+from app.utils.request_id import REQUEST_ID_HEADER, create_tracing_headers
 
 from app.domain.models import AIModelInfo
 
@@ -51,9 +52,12 @@ class DataAPIClient:
         Returns:
             Headers dictionary
         """
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            **create_tracing_headers(),
+        }
         if self.request_id:
-            headers["X-Request-ID"] = self.request_id
+            headers.setdefault(REQUEST_ID_HEADER, self.request_id)
         return headers
 
     async def get_all_models(
@@ -199,7 +203,14 @@ class DataAPIClient:
             logger.error(f"Failed to increment failure for model {model_id}: {sanitize_error_message(e)}")
             raise
 
-    async def set_availability(self, model_id: int, retry_after_seconds: int) -> None:
+    async def set_availability(
+        self,
+        model_id: int,
+        retry_after_seconds: int,
+        reason: str | None = None,
+        error_type: str | None = None,
+        source: str | None = None,
+    ) -> None:
         """
         Set model availability cooldown (F012: Rate Limit Handling).
 
@@ -209,21 +220,35 @@ class DataAPIClient:
         Args:
             model_id: AI model ID
             retry_after_seconds: Seconds until model becomes available (0 = clear cooldown)
+            reason: Причина изменения доступности (например: rate_limit)
+            error_type: Тип ошибки, вызвавшей cooldown
+            source: Источник вызова (например: process_prompt)
 
         Raises:
             httpx.HTTPError: If request fails
         """
         try:
+            params: dict[str, Any] = {"retry_after_seconds": retry_after_seconds}
+            if reason:
+                params["reason"] = reason
+            if error_type:
+                params["error_type"] = error_type
+            if source:
+                params["source"] = source
+
             response = await self.client.patch(
                 f"{self.base_url}/api/v1/models/{model_id}/availability",
-                params={"retry_after_seconds": retry_after_seconds},
+                params=params,
                 headers=self._get_headers(),
             )
             response.raise_for_status()
             logger.info(
-                "availability_updated",
-                model_id=model_id,
-                retry_after_seconds=retry_after_seconds,
+                "availability_updated "
+                f"model_id={model_id} "
+                f"retry_after_seconds={retry_after_seconds} "
+                f"reason={reason} "
+                f"error_type={error_type} "
+                f"source={source}"
             )
 
         except httpx.HTTPError as e:

@@ -23,6 +23,7 @@ import json
 import os
 import random
 import time
+import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -112,6 +113,7 @@ OVERSIZE_PROMPT_CHARS = _env_int("OVERSIZE_PROMPT_CHARS", 7200)
 ENABLE_MONITORING = _env_bool("ENABLE_MONITORING", True)
 INCLUDE_OVERSIZE_PROMPT = _env_bool("INCLUDE_OVERSIZE_PROMPT", False)
 WRITE_RESULTS_JSONL = _env_bool("WRITE_RESULTS_JSONL", True)
+AUDIT_ENABLED = _env_bool("AUDIT_ENABLED", True)
 
 HOST = os.getenv("LOCUST_HOST", "http://localhost:8000").strip()
 API_PREFIX = os.getenv("API_PREFIX", "/api/v1").strip()
@@ -122,6 +124,10 @@ REQUEST_TIMEOUT_SECONDS = _env_float("REQUEST_TIMEOUT_SECONDS", 90.0)
 
 SCENARIO = os.getenv("LOCUST_SCENARIO", "baseline").strip().lower()
 MODEL_ID_OVERRIDE = os.getenv("MODEL_ID_OVERRIDE")
+RUN_ID = os.getenv("RUN_ID", "").strip()
+RUN_SOURCE = os.getenv("RUN_SOURCE", "locust").strip()
+RUN_SCENARIO = os.getenv("RUN_SCENARIO", SCENARIO).strip() or SCENARIO
+RUN_STARTED_AT = os.getenv("RUN_STARTED_AT", "").strip()
 
 DEFAULT_RESULTS_PATH = (
     Path("docs")
@@ -130,6 +136,9 @@ DEFAULT_RESULTS_PATH = (
 )
 RESULTS_JSONL_PATH = Path(
     os.getenv("RESULTS_JSONL_PATH", str(DEFAULT_RESULTS_PATH)).strip()
+)
+AUDIT_JSONL_PATH = Path(
+    os.getenv("AUDIT_JSONL_PATH", "docs/api-tests/results/audit/audit.jsonl").strip()
 )
 
 
@@ -224,12 +233,46 @@ class JsonlWriter:
 
 
 RESULT_WRITER: JsonlWriter | None = None
+AUDIT_WRITER: JsonlWriter | None = None
 
 
 def _write_result(payload: dict[str, Any]) -> None:
     if RESULT_WRITER is None:
         return
     RESULT_WRITER.write(payload)
+
+
+def _write_audit(payload: dict[str, Any]) -> None:
+    if AUDIT_WRITER is None:
+        return
+    AUDIT_WRITER.write(payload)
+
+
+def _run_context_payload() -> dict[str, Any]:
+    return {
+        "run_id": RUN_ID or None,
+        "run_source": RUN_SOURCE,
+        "run_scenario": RUN_SCENARIO,
+        "run_started_at": RUN_STARTED_AT or None,
+    }
+
+
+def _build_request_headers() -> dict[str, str]:
+    request_id = uuid.uuid4().hex
+    headers: dict[str, str] = {
+        "Content-Type": "application/json",
+        "X-Request-ID": request_id,
+        "X-Correlation-ID": RUN_ID or request_id,
+    }
+    if RUN_ID:
+        headers["X-Run-Id"] = RUN_ID
+    if RUN_SOURCE:
+        headers["X-Run-Source"] = RUN_SOURCE
+    if RUN_SCENARIO:
+        headers["X-Run-Scenario"] = RUN_SCENARIO
+    if RUN_STARTED_AT:
+        headers["X-Run-Started-At"] = RUN_STARTED_AT
+    return headers
 
 
 def _generate_prompt(profile: PromptProfile) -> str:
@@ -254,12 +297,16 @@ def _choose_prompt_profile(config: ScenarioConfig) -> PromptProfile:
 
 @events.test_start.add_listener
 def on_test_start(environment: Environment, **kwargs: Any) -> None:
-    global RESULT_WRITER
+    global RESULT_WRITER, AUDIT_WRITER
 
     if not WRITE_RESULTS_JSONL:
-        return
+        RESULT_WRITER = None
+    else:
+        RESULT_WRITER = JsonlWriter(RESULTS_JSONL_PATH)
 
-    RESULT_WRITER = JsonlWriter(RESULTS_JSONL_PATH)
+    if AUDIT_ENABLED:
+        AUDIT_WRITER = JsonlWriter(AUDIT_JSONL_PATH)
+
     parsed_options = getattr(environment, "parsed_options", None)
 
     _write_result(
@@ -276,18 +323,31 @@ def on_test_start(environment: Environment, **kwargs: Any) -> None:
             "run_time": getattr(parsed_options, "run_time", None),
             "enable_monitoring": ENABLE_MONITORING,
             "include_oversize_prompt": INCLUDE_OVERSIZE_PROMPT,
+            **_run_context_payload(),
+        }
+    )
+
+    _write_audit(
+        {
+            "event": "locust_test_start",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "host": HOST,
+            "users": getattr(parsed_options, "users", None),
+            "spawn_rate": getattr(parsed_options, "spawn_rate", None),
+            "run_time": getattr(parsed_options, "run_time", None),
+            "locust_scenario": SCENARIO,
+            **_run_context_payload(),
         }
     )
 
     print(f"[locustfile] RESULTS_JSONL_PATH={RESULTS_JSONL_PATH}")
+    if AUDIT_ENABLED:
+        print(f"[locustfile] AUDIT_JSONL_PATH={AUDIT_JSONL_PATH}")
 
 
 @events.test_stop.add_listener
 def on_test_stop(environment: Environment, **kwargs: Any) -> None:
-    global RESULT_WRITER
-
-    if RESULT_WRITER is None:
-        return
+    global RESULT_WRITER, AUDIT_WRITER
 
     total = environment.stats.total
     _write_result(
@@ -302,10 +362,26 @@ def on_test_stop(environment: Environment, **kwargs: Any) -> None:
             "p99_response_time_ms": total.get_response_time_percentile(0.99),
             "current_rps": total.current_rps,
             "current_fail_per_sec": total.current_fail_per_sec,
+            **_run_context_payload(),
         }
     )
-    RESULT_WRITER.close()
-    RESULT_WRITER = None
+    _write_audit(
+        {
+            "event": "locust_test_stop",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "requests": total.num_requests,
+            "failures": total.num_failures,
+            "current_rps": total.current_rps,
+            **_run_context_payload(),
+        }
+    )
+
+    if RESULT_WRITER is not None:
+        RESULT_WRITER.close()
+        RESULT_WRITER = None
+    if AUDIT_WRITER is not None:
+        AUDIT_WRITER.close()
+        AUDIT_WRITER = None
 
 
 class FreeAISelectorUser(HttpUser):
@@ -340,12 +416,14 @@ class FreeAISelectorUser(HttpUser):
         self._request_prompt_process()
 
     def _request_health(self) -> None:
+        request_headers = _build_request_headers()
         started = time.perf_counter()
         with self.client.get(
             HEALTH_PATH,
             name="GET /health",
             catch_response=True,
             timeout=REQUEST_TIMEOUT_SECONDS,
+            headers=request_headers,
         ) as response:
             elapsed_ms = round((time.perf_counter() - started) * 1000.0, 2)
             body = _safe_json(response)
@@ -364,21 +442,37 @@ class FreeAISelectorUser(HttpUser):
                     "http_status": response.status_code,
                     "duration_ms": elapsed_ms,
                     "success": response.status_code == 200,
+                    "request_id": request_headers["X-Request-ID"],
                     "error": _extract_error_text(
                         response.status_code, body, response.text
                     )
                     if response.status_code != 200
                     else None,
+                    **_run_context_payload(),
+                }
+            )
+            _write_audit(
+                {
+                    "event": "locust_http_request",
+                    "timestamp": datetime.now(UTC).isoformat(),
+                    "endpoint": "GET /health",
+                    "http_status": response.status_code,
+                    "duration_ms": elapsed_ms,
+                    "success": response.status_code == 200,
+                    "request_id": request_headers["X-Request-ID"],
+                    **_run_context_payload(),
                 }
             )
 
     def _request_model_stats(self) -> None:
+        request_headers = _build_request_headers()
         started = time.perf_counter()
         with self.client.get(
             MODEL_STATS_PATH,
             name="GET /api/v1/models/stats",
             catch_response=True,
             timeout=REQUEST_TIMEOUT_SECONDS,
+            headers=request_headers,
         ) as response:
             elapsed_ms = round((time.perf_counter() - started) * 1000.0, 2)
             body = _safe_json(response)
@@ -398,11 +492,25 @@ class FreeAISelectorUser(HttpUser):
                     "duration_ms": elapsed_ms,
                     "success": response.status_code == 200,
                     "models_total": body.get("total_models"),
+                    "request_id": request_headers["X-Request-ID"],
                     "error": _extract_error_text(
                         response.status_code, body, response.text
                     )
                     if response.status_code != 200
                     else None,
+                    **_run_context_payload(),
+                }
+            )
+            _write_audit(
+                {
+                    "event": "locust_http_request",
+                    "timestamp": datetime.now(UTC).isoformat(),
+                    "endpoint": "GET /api/v1/models/stats",
+                    "http_status": response.status_code,
+                    "duration_ms": elapsed_ms,
+                    "success": response.status_code == 200,
+                    "request_id": request_headers["X-Request-ID"],
+                    **_run_context_payload(),
                 }
             )
 
@@ -410,6 +518,7 @@ class FreeAISelectorUser(HttpUser):
         prompt_profile = _choose_prompt_profile(self.scenario)
         prompt = _generate_prompt(prompt_profile)
         payload: dict[str, Any] = {"prompt": prompt}
+        request_headers = _build_request_headers()
 
         if MODEL_ID_OVERRIDE:
             try:
@@ -424,6 +533,7 @@ class FreeAISelectorUser(HttpUser):
             name="POST /api/v1/prompts/process",
             catch_response=True,
             timeout=REQUEST_TIMEOUT_SECONDS,
+            headers=request_headers,
         ) as response:
             elapsed_ms = round((time.perf_counter() - started) * 1000.0, 2)
             body = _safe_json(response)
@@ -450,9 +560,26 @@ class FreeAISelectorUser(HttpUser):
                     "provider": body.get("provider"),
                     "attempts": body.get("attempts"),
                     "fallback_used": body.get("fallback_used"),
-                    "request_id": response.headers.get("x-request-id"),
+                    "request_id": request_headers["X-Request-ID"],
+                    "backend_request_id": response.headers.get("x-request-id"),
                     "error": None
                     if is_success
                     else _extract_error_text(response.status_code, body, response.text),
+                    **_run_context_payload(),
+                }
+            )
+            _write_audit(
+                {
+                    "event": "locust_http_request",
+                    "timestamp": datetime.now(UTC).isoformat(),
+                    "endpoint": "POST /api/v1/prompts/process",
+                    "http_status": response.status_code,
+                    "duration_ms": elapsed_ms,
+                    "success": is_success,
+                    "prompt_profile": prompt_profile.name,
+                    "prompt_chars": len(prompt),
+                    "request_id": request_headers["X-Request-ID"],
+                    "backend_request_id": response.headers.get("x-request-id"),
+                    **_run_context_payload(),
                 }
             )

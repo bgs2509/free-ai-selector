@@ -19,6 +19,10 @@ from app.utils.request_id import (
     generate_id,
     REQUEST_ID_HEADER,
     CORRELATION_ID_HEADER,
+    RUN_ID_HEADER,
+    RUN_SOURCE_HEADER,
+    RUN_SCENARIO_HEADER,
+    RUN_STARTED_AT_HEADER,
 )
 from app.utils.log_helpers import log_request_started, log_request_completed
 from app.utils.security import sanitize_error_message
@@ -54,6 +58,10 @@ RATE_LIMIT_PERIOD = int(os.getenv("RATE_LIMIT_PERIOD", "60"))
 
 # Root path for reverse proxy (для работы за nginx-proxy)
 ROOT_PATH = os.getenv("ROOT_PATH", "")
+DEFAULT_RUN_ID = os.getenv("RUN_ID", "").strip() or None
+DEFAULT_RUN_SOURCE = os.getenv("RUN_SOURCE", "").strip() or None
+DEFAULT_RUN_SCENARIO = os.getenv("RUN_SCENARIO", "").strip() or None
+DEFAULT_RUN_STARTED_AT = os.getenv("RUN_STARTED_AT", "").strip() or None
 
 # =============================================================================
 # Logging Configuration (AIDD Framework: structlog)
@@ -193,12 +201,24 @@ async def add_request_id_middleware(request: Request, call_next):
     # Get or generate IDs
     request_id = request.headers.get(REQUEST_ID_HEADER, generate_id())
     correlation_id = request.headers.get(CORRELATION_ID_HEADER, request_id)
+    run_id = request.headers.get(RUN_ID_HEADER, DEFAULT_RUN_ID)
+    run_source = request.headers.get(RUN_SOURCE_HEADER, DEFAULT_RUN_SOURCE)
+    run_scenario = request.headers.get(RUN_SCENARIO_HEADER, DEFAULT_RUN_SCENARIO)
+    run_started_at = request.headers.get(RUN_STARTED_AT_HEADER, DEFAULT_RUN_STARTED_AT)
 
     # Setup tracing context (ContextVars + structlog binding)
-    setup_tracing_context(request_id=request_id, correlation_id=correlation_id)
+    setup_tracing_context(
+        request_id=request_id,
+        correlation_id=correlation_id,
+        run_id=run_id,
+        run_source=run_source,
+        run_scenario=run_scenario,
+        run_started_at=run_started_at,
+    )
 
     # Add request ID to request state (for backwards compatibility)
     request.state.request_id = request_id
+    request.state.run_id = run_id
 
     # Log incoming request with duration tracking
     start_time = log_request_started(
@@ -211,6 +231,8 @@ async def add_request_id_middleware(request: Request, call_next):
 
         # Add IDs to response headers
         response.headers[REQUEST_ID_HEADER] = request_id
+        if run_id:
+            response.headers[RUN_ID_HEADER] = run_id
 
         # Log response with duration_ms
         log_request_completed(

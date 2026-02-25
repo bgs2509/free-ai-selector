@@ -51,6 +51,7 @@ from app.infrastructure.http_clients.data_api_client import DataAPIClient
 from app.utils.log_helpers import log_decision
 from app.utils.logger import get_logger
 from app.utils.security import sanitize_error_message
+from app.utils.audit import audit_event
 
 logger = get_logger(__name__)
 
@@ -234,6 +235,27 @@ class ProcessPromptUseCase:
                 continue
 
             attempts += 1
+            model_attempt_started = time.perf_counter()
+            logger.info(
+                "model_call_start",
+                attempt=attempts,
+                model_id=model.id,
+                model=model.name,
+                provider=model.provider,
+                prompt_chars=len(request.prompt_text),
+                requested_model_id=request.model_id,
+            )
+            audit_event(
+                "model_call_start",
+                {
+                    "attempt": attempts,
+                    "model_id": model.id,
+                    "model": model.name,
+                    "provider": model.provider,
+                    "prompt_chars": len(request.prompt_text),
+                    "requested_model_id": request.model_id,
+                },
+            )
             try:
                 provider = self._get_provider_for_model(model)
 
@@ -246,6 +268,7 @@ class ProcessPromptUseCase:
 
                 # Success!
                 successful_model = model
+                model_duration_ms = round((time.perf_counter() - model_attempt_started) * 1000.0, 2)
                 # F024: Circuit breaker — запись успеха
                 CircuitBreakerManager.record_success(model.provider)
                 logger.info(
@@ -253,12 +276,57 @@ class ProcessPromptUseCase:
                     model=model.name,
                     provider=model.provider,
                 )
+                logger.info(
+                    "model_call_success",
+                    attempt=attempts,
+                    model_id=model.id,
+                    model=model.name,
+                    provider=model.provider,
+                    duration_ms=model_duration_ms,
+                    response_chars=len(response_text),
+                )
+                audit_event(
+                    "model_call_success",
+                    {
+                        "attempt": attempts,
+                        "model_id": model.id,
+                        "model": model.name,
+                        "provider": model.provider,
+                        "duration_ms": model_duration_ms,
+                        "response_chars": len(response_text),
+                    },
+                )
                 break
 
             except RateLimitError as e:
                 # F014: Rate limit - don't count as failure, set availability
                 await self._handle_rate_limit(model, e)
                 last_error_message = sanitize_error_message(e)
+                model_duration_ms = round((time.perf_counter() - model_attempt_started) * 1000.0, 2)
+                logger.warning(
+                    "model_call_error",
+                    attempt=attempts,
+                    model_id=model.id,
+                    model=model.name,
+                    provider=model.provider,
+                    duration_ms=model_duration_ms,
+                    error_type=type(e).__name__,
+                    error=last_error_message,
+                    retry_after_seconds=e.retry_after_seconds,
+                )
+                audit_event(
+                    "model_call_error",
+                    {
+                        "attempt": attempts,
+                        "model_id": model.id,
+                        "model": model.name,
+                        "provider": model.provider,
+                        "duration_ms": model_duration_ms,
+                        "error_type": type(e).__name__,
+                        "error": last_error_message,
+                        "retry_after_seconds": e.retry_after_seconds,
+                    },
+                )
                 # F025: трекинг типа ошибки
                 error_types.append(type(e))
                 providers_tried += 1
@@ -277,6 +345,29 @@ class ProcessPromptUseCase:
                 # F014: Transient errors - record as failure
                 await self._handle_transient_error(model, e, start_time)
                 last_error_message = sanitize_error_message(e)
+                model_duration_ms = round((time.perf_counter() - model_attempt_started) * 1000.0, 2)
+                logger.warning(
+                    "model_call_error",
+                    attempt=attempts,
+                    model_id=model.id,
+                    model=model.name,
+                    provider=model.provider,
+                    duration_ms=model_duration_ms,
+                    error_type=type(e).__name__,
+                    error=last_error_message,
+                )
+                audit_event(
+                    "model_call_error",
+                    {
+                        "attempt": attempts,
+                        "model_id": model.id,
+                        "model": model.name,
+                        "provider": model.provider,
+                        "duration_ms": model_duration_ms,
+                        "error_type": type(e).__name__,
+                        "error": last_error_message,
+                    },
+                )
                 # F025: трекинг типа ошибки
                 error_types.append(type(e))
                 providers_tried += 1
@@ -298,6 +389,29 @@ class ProcessPromptUseCase:
                     # F025: трекинг типа ошибки
                     error_types.append(type(classified))
                 last_error_message = sanitize_error_message(e)
+                model_duration_ms = round((time.perf_counter() - model_attempt_started) * 1000.0, 2)
+                logger.warning(
+                    "model_call_error",
+                    attempt=attempts,
+                    model_id=model.id,
+                    model=model.name,
+                    provider=model.provider,
+                    duration_ms=model_duration_ms,
+                    error_type=type(classified).__name__,
+                    error=last_error_message,
+                )
+                audit_event(
+                    "model_call_error",
+                    {
+                        "attempt": attempts,
+                        "model_id": model.id,
+                        "model": model.name,
+                        "provider": model.provider,
+                        "duration_ms": model_duration_ms,
+                        "error_type": type(classified).__name__,
+                        "error": last_error_message,
+                    },
+                )
                 providers_tried += 1
 
         response_time = Decimal(str(time.time() - start_time))
@@ -533,7 +647,13 @@ class ProcessPromptUseCase:
             retry_after_seconds=retry_after,
         )
         try:
-            await self.data_api_client.set_availability(model.id, retry_after)
+            await self.data_api_client.set_availability(
+                model_id=model.id,
+                retry_after_seconds=retry_after,
+                reason="rate_limit",
+                error_type=type(error).__name__,
+                source="process_prompt",
+            )
         except Exception as avail_error:
             logger.error(
                 "set_availability_failed",
@@ -611,7 +731,13 @@ class ProcessPromptUseCase:
             cooldown_seconds=cooldown_seconds,
         )
         try:
-            await self.data_api_client.set_availability(model.id, cooldown_seconds)
+            await self.data_api_client.set_availability(
+                model_id=model.id,
+                retry_after_seconds=cooldown_seconds,
+                reason="permanent_error",
+                error_type=error_type,
+                source="process_prompt",
+            )
         except Exception as avail_error:
             logger.error(
                 "set_availability_failed",

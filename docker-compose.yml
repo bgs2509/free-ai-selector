@@ -58,6 +58,12 @@ services:
       ENVIRONMENT: ${ENVIRONMENT}
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
       ROOT_PATH: ${DATA_API_ROOT_PATH:-}
+      RUN_ID: ${RUN_ID:-}
+      RUN_SOURCE: ${RUN_SOURCE:-docker-compose}
+      RUN_SCENARIO: ${RUN_SCENARIO:-}
+      RUN_STARTED_AT: ${RUN_STARTED_AT:-}
+      AUDIT_ENABLED: ${AUDIT_ENABLED:-false}
+      AUDIT_JSONL_PATH: ${AUDIT_JSONL_PATH:-/audit/audit.jsonl}
     depends_on:
       postgres:
         condition: service_healthy
@@ -73,6 +79,7 @@ services:
     volumes:
       - ./services/free-ai-selector-data-postgres-api:/app
       - /app/__pycache__
+      - ./docs/api-tests/results/audit:/audit
 
   # ---------------------------------------------------------------------------
   # Business API Service (Business Logic Layer)
@@ -123,6 +130,12 @@ services:
       # F023: Cooldown for permanent errors
       AUTH_ERROR_COOLDOWN_SECONDS: ${AUTH_ERROR_COOLDOWN_SECONDS:-86400}
       VALIDATION_ERROR_COOLDOWN_SECONDS: ${VALIDATION_ERROR_COOLDOWN_SECONDS:-86400}
+      RUN_ID: ${RUN_ID:-}
+      RUN_SOURCE: ${RUN_SOURCE:-docker-compose}
+      RUN_SCENARIO: ${RUN_SCENARIO:-}
+      RUN_STARTED_AT: ${RUN_STARTED_AT:-}
+      AUDIT_ENABLED: ${AUDIT_ENABLED:-false}
+      AUDIT_JSONL_PATH: ${AUDIT_JSONL_PATH:-/audit/audit.jsonl}
     depends_on:
       free-ai-selector-data-postgres-api:
         condition: service_healthy
@@ -138,6 +151,7 @@ services:
     volumes:
       - ./services/free-ai-selector-business-api:/app
       - /app/__pycache__
+      - ./docs/api-tests/results/audit:/audit
 
   # ---------------------------------------------------------------------------
   # Telegram Bot Service (User Interface Layer)
@@ -196,6 +210,12 @@ services:
       SYNTHETIC_TEST_PROMPT: ${SYNTHETIC_TEST_PROMPT}
       ENVIRONMENT: ${ENVIRONMENT}
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
+      RUN_ID: ${RUN_ID:-}
+      RUN_SOURCE: ${RUN_SOURCE:-docker-compose}
+      RUN_SCENARIO: ${RUN_SCENARIO:-}
+      RUN_STARTED_AT: ${RUN_STARTED_AT:-}
+      AUDIT_ENABLED: ${AUDIT_ENABLED:-false}
+      AUDIT_JSONL_PATH: ${AUDIT_JSONL_PATH:-/audit/audit.jsonl}
     depends_on:
       free-ai-selector-data-postgres-api:
         condition: service_healthy
@@ -205,6 +225,7 @@ services:
     volumes:
       - ./services/free-ai-selector-health-worker:/app
       - /app/__pycache__
+      - ./docs/api-tests/results/audit:/audit
 
 # =============================================================================
 # Networks

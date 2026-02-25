@@ -26,6 +26,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from app.utils.logger import setup_logging, get_logger
 from app.utils.security import sanitize_error_message
+from app.utils.audit import audit_event
 
 # =============================================================================
 # Configuration
@@ -36,6 +37,10 @@ LOG_LEVEL = os.getenv("WORKER_LOG_LEVEL", "INFO")
 HEALTH_CHECK_INTERVAL = int(os.getenv("HEALTH_CHECK_INTERVAL", "3600"))  # seconds
 DATA_API_URL = os.getenv("DATA_API_URL", "http://localhost:8001")
 SYNTHETIC_TEST_PROMPT = os.getenv("SYNTHETIC_TEST_PROMPT", "Generate a simple greeting message")
+RUN_ID = os.getenv("RUN_ID", "").strip()
+RUN_SOURCE = os.getenv("RUN_SOURCE", "").strip()
+RUN_SCENARIO = os.getenv("RUN_SCENARIO", "").strip()
+RUN_STARTED_AT = os.getenv("RUN_STARTED_AT", "").strip()
 
 # Special env vars for Cloudflare (needs account_id)
 CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
@@ -245,6 +250,30 @@ API_FORMAT_CHECKERS = {
 }
 
 
+def _build_trace_headers() -> dict[str, str]:
+    """
+    Собирает headers для межсервисных запросов в Data API.
+
+    Хедеры нужны для end-to-end трассировки:
+    - X-Request-ID / X-Correlation-ID
+    - X-Run-* (если задан run context).
+    """
+    request_id = uuid.uuid4().hex
+    headers: dict[str, str] = {
+        "X-Request-ID": request_id,
+        "X-Correlation-ID": RUN_ID or request_id,
+    }
+    if RUN_ID:
+        headers["X-Run-Id"] = RUN_ID
+    if RUN_SOURCE:
+        headers["X-Run-Source"] = RUN_SOURCE
+    if RUN_SCENARIO:
+        headers["X-Run-Scenario"] = RUN_SCENARIO
+    if RUN_STARTED_AT:
+        headers["X-Run-Started-At"] = RUN_STARTED_AT
+    return headers
+
+
 async def universal_health_check(
     endpoint: str,
     api_format: str,
@@ -316,13 +345,23 @@ async def run_health_checks():
     # Генерируем job_id для этого цикла проверок
     job_id = uuid.uuid4().hex[:12]
     logger.info("health_check_job_started", job_id=job_id)
+    audit_event(
+        "health_check_job_started",
+        {
+            "job_id": job_id,
+            "run_id": RUN_ID or None,
+            "run_source": RUN_SOURCE or None,
+            "run_scenario": RUN_SCENARIO or None,
+        },
+    )
 
     try:
         # Fetch all active models from Data API (F008: includes api_format)
         # F012: available_only=true excludes rate-limited providers
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(
-                f"{DATA_API_URL}/api/v1/models?active_only=true&available_only=true"
+                f"{DATA_API_URL}/api/v1/models?active_only=true&available_only=true",
+                headers=_build_trace_headers(),
             )
             response.raise_for_status()
             models = response.json()
@@ -349,6 +388,18 @@ async def run_health_checks():
                 provider=provider,
                 api_format=api_format,
             )
+            audit_event(
+                "model_call_start",
+                {
+                    "source": "health_worker",
+                    "job_id": job_id,
+                    "model_id": model_id,
+                    "model": model_name,
+                    "provider": provider,
+                    "api_format": api_format,
+                    "prompt_chars": len(SYNTHETIC_TEST_PROMPT),
+                },
+            )
 
             # F008: Use universal health check with api_format dispatch
             # F018: env_var resolved inside via PROVIDER_ENV_VARS
@@ -361,6 +412,19 @@ async def run_health_checks():
             # Skip if no API key configured (response_time == 0.0 indicates missing key)
             if response_time == 0.0 and not is_healthy:
                 skipped_count += 1
+                audit_event(
+                    "model_call_error",
+                    {
+                        "source": "health_worker",
+                        "job_id": job_id,
+                        "model_id": model_id,
+                        "model": model_name,
+                        "provider": provider,
+                        "duration_ms": 0.0,
+                        "error_type": "ProviderNotConfigured",
+                        "error": "Provider API key missing or provider env var unknown",
+                    },
+                )
                 continue
 
             # Update model statistics in Data API
@@ -375,9 +439,22 @@ async def run_health_checks():
                             provider=provider,
                             response_time_seconds=round(response_time, 2),
                         )
+                        audit_event(
+                            "model_call_success",
+                            {
+                                "source": "health_worker",
+                                "job_id": job_id,
+                                "model_id": model_id,
+                                "model": model_name,
+                                "provider": provider,
+                                "duration_ms": round(response_time * 1000.0, 2),
+                                "response_chars": None,
+                            },
+                        )
                         await client.post(
                             f"{DATA_API_URL}/api/v1/models/{model_id}/increment-success",
                             params={"response_time": response_time},
+                            headers=_build_trace_headers(),
                         )
                     else:
                         unhealthy_count += 1
@@ -387,9 +464,23 @@ async def run_health_checks():
                             model=model_name,
                             provider=provider,
                         )
+                        audit_event(
+                            "model_call_error",
+                            {
+                                "source": "health_worker",
+                                "job_id": job_id,
+                                "model_id": model_id,
+                                "model": model_name,
+                                "provider": provider,
+                                "duration_ms": round(response_time * 1000.0, 2),
+                                "error_type": "UnhealthyResponse",
+                                "error": "Provider health check returned non-healthy status",
+                            },
+                        )
                         await client.post(
                             f"{DATA_API_URL}/api/v1/models/{model_id}/increment-failure",
                             params={"response_time": response_time},
+                            headers=_build_trace_headers(),
                         )
             except Exception as update_error:
                 logger.error(
@@ -397,6 +488,16 @@ async def run_health_checks():
                     job_id=job_id,
                     model=model_name,
                     error=format_exception_message(update_error),
+                )
+                audit_event(
+                    "health_stats_update_failed",
+                    {
+                        "job_id": job_id,
+                        "model_id": model_id,
+                        "model": model_name,
+                        "provider": provider,
+                        "error": format_exception_message(update_error),
+                    },
                 )
 
         logger.info(
@@ -407,9 +508,26 @@ async def run_health_checks():
             skipped=skipped_count,
             total=len(models),
         )
+        audit_event(
+            "health_check_job_completed",
+            {
+                "job_id": job_id,
+                "healthy": healthy_count,
+                "unhealthy": unhealthy_count,
+                "skipped": skipped_count,
+                "total": len(models),
+            },
+        )
 
     except Exception as e:
         logger.error("health_check_job_failed", job_id=job_id, error=format_exception_message(e))
+        audit_event(
+            "health_check_job_failed",
+            {
+                "job_id": job_id,
+                "error": format_exception_message(e),
+            },
+        )
 
 
 # =============================================================================
@@ -434,7 +552,7 @@ async def main():
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             # Check Data API health
-            response = await client.get(f"{DATA_API_URL}/health")
+            response = await client.get(f"{DATA_API_URL}/health", headers=_build_trace_headers())
             if response.status_code == 200:
                 logger.info("data_api_connected", status="healthy")
             else:
@@ -445,7 +563,10 @@ async def main():
                 )
 
             # F008 SSOT: Fetch providers from Data API to log configured ones
-            models_response = await client.get(f"{DATA_API_URL}/api/v1/models?active_only=true")
+            models_response = await client.get(
+                f"{DATA_API_URL}/api/v1/models?active_only=true",
+                headers=_build_trace_headers(),
+            )
             if models_response.status_code == 200:
                 models = models_response.json()
                 # F018: Check which providers have API keys configured via PROVIDER_ENV_VARS
