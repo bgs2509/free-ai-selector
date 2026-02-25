@@ -49,6 +49,9 @@ logger = get_logger(__name__)
 # F012: Configuration
 RATE_LIMIT_DEFAULT_COOLDOWN = int(os.getenv("RATE_LIMIT_DEFAULT_COOLDOWN", "3600"))
 
+# F022: Payload budget — максимальный размер промпта перед отправкой провайдеру
+MAX_PROMPT_CHARS = int(os.getenv("MAX_PROMPT_CHARS", "6000"))
+
 
 class ProcessPromptUseCase:
     """
@@ -166,6 +169,21 @@ class ProcessPromptUseCase:
                 "selection_mode": selection_mode,
             },
         )
+
+        # F022: Payload budget — обрезка промпта для предотвращения HTTP 422
+        if len(request.prompt_text) > MAX_PROMPT_CHARS:
+            logger.warning(
+                "prompt_truncated",
+                original_length=len(request.prompt_text),
+                max_length=MAX_PROMPT_CHARS,
+            )
+            request = PromptRequest(
+                user_id=request.user_id,
+                prompt_text=request.prompt_text[:MAX_PROMPT_CHARS],
+                model_id=request.model_id,
+                system_prompt=request.system_prompt,
+                response_format=request.response_format,
+            )
 
         # Step 4: Full fallback loop (F012: FR-9)
         start_time = time.time()

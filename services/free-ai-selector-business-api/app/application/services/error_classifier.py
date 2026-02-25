@@ -9,8 +9,8 @@ Classification rules:
 - 500 with "429" in text → RateLimitError (some providers wrap 429)
 - 5xx → ServerError
 - Timeout → TimeoutError
-- 401, 403 → AuthenticationError
-- 400, 422 → ValidationError
+- 401, 402, 403 → AuthenticationError
+- 400, 404, 422 → ValidationError
 """
 
 from email.utils import parsedate_to_datetime
@@ -81,6 +81,20 @@ def classify_error(exception: Exception) -> ProviderError:
         if status_code in (400, 422):
             return ValidationError(
                 message=str(exception),
+                original_exception=exception,
+            )
+
+        # F022: Payment required (402) — free tier exhausted
+        if status_code == 402:
+            return AuthenticationError(
+                message=f"Payment required: {str(exception)}",
+                original_exception=exception,
+            )
+
+        # F022: Not found (404) — wrong endpoint or model ID
+        if status_code == 404:
+            return ValidationError(
+                message=f"Endpoint or model not found: {str(exception)}",
                 original_exception=exception,
             )
 

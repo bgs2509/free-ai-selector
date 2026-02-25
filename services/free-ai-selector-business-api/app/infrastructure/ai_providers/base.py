@@ -197,6 +197,12 @@ class OpenAICompatibleProvider(AIProviderBase):
                 result = response.json()
                 return self._parse_response(result)
 
+            except httpx.HTTPStatusError as e:
+                # F022: Пробрасываем с HTTP-кодом для classify_error()
+                err_msg = sanitize_error_message(e)
+                logger.error(f"{self.PROVIDER_NAME} API error: {err_msg}")
+                raise
+
             except httpx.HTTPError as e:
                 err_msg = sanitize_error_message(e)
                 logger.error(f"{self.PROVIDER_NAME} API error: {err_msg}")

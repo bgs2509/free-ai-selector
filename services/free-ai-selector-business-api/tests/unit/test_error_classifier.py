@@ -138,6 +138,32 @@ class TestClassifyError:
 
         assert isinstance(result, ValidationError)
 
+    def test_classify_402_as_authentication_error(self):
+        """F022: HTTP 402 → AuthenticationError (payment required)."""
+        request = Request("POST", "https://api.test.com")
+        response = Response(402, request=request)
+        exception = httpx.HTTPStatusError(
+            "Payment required", request=request, response=response
+        )
+
+        result = classify_error(exception)
+
+        assert isinstance(result, AuthenticationError)
+        assert "Payment required" in result.message
+
+    def test_classify_404_as_validation_error(self):
+        """F022: HTTP 404 → ValidationError (endpoint not found)."""
+        request = Request("POST", "https://api.test.com")
+        response = Response(404, request=request)
+        exception = httpx.HTTPStatusError(
+            "Not found", request=request, response=response
+        )
+
+        result = classify_error(exception)
+
+        assert isinstance(result, ValidationError)
+        assert "not found" in result.message.lower()
+
     def test_classify_unknown_exception_as_provider_error(self):
         """Test that unknown exceptions are classified as generic ProviderError."""
         exception = RuntimeError("Some unknown error")
