@@ -25,7 +25,7 @@ from app.utils.security import sanitize_error_message
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
@@ -66,7 +66,7 @@ logger = get_logger(__name__)
 # Rate Limiter
 # =============================================================================
 
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(key_func=get_remote_address, headers_enabled=True)
 
 
 # =============================================================================
@@ -140,7 +140,24 @@ app = FastAPI(
 
 # Add rate limiter to app state
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    """F025: Кастомный обработчик slowapi rate limit в формате ErrorResponse."""
+    return JSONResponse(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        content={
+            "error": "client_rate_limited",
+            "message": f"Rate limit exceeded: {exc.detail}",
+            "retry_after": 60,
+            "attempts": 0,
+            "providers_tried": 0,
+            "providers_available": 0,
+        },
+    )
+
+
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
 # =============================================================================
 # Static Files для веб-интерфейса

@@ -35,10 +35,12 @@ from app.application.services.circuit_breaker import CircuitBreakerManager
 from app.application.services.error_classifier import classify_error
 from app.application.services.retry_service import retry_with_exponential_backoff
 from app.domain.exceptions import (
+    AllProvidersRateLimited,
     AuthenticationError,
     ProviderError,
     RateLimitError,
     ServerError,
+    ServiceUnavailable,
     TimeoutError,
     ValidationError,
 )
@@ -61,6 +63,10 @@ MAX_PROMPT_CHARS = int(os.getenv("MAX_PROMPT_CHARS", "6000"))
 # F023: Cooldown для постоянных ошибок (auth, validation)
 AUTH_ERROR_COOLDOWN_SECONDS = int(os.getenv("AUTH_ERROR_COOLDOWN_SECONDS", "86400"))
 VALIDATION_ERROR_COOLDOWN_SECONDS = int(os.getenv("VALIDATION_ERROR_COOLDOWN_SECONDS", "86400"))
+
+# F025: Default Retry-After для backpressure
+ALL_RATE_LIMITED_RETRY_AFTER = int(os.getenv("ALL_RATE_LIMITED_RETRY_AFTER", "60"))
+SERVICE_UNAVAILABLE_RETRY_AFTER = int(os.getenv("SERVICE_UNAVAILABLE_RETRY_AFTER", "30"))
 
 
 class ProcessPromptUseCase:
@@ -128,7 +134,11 @@ class ProcessPromptUseCase:
 
         if not models:
             logger.error("no_active_models_available")
-            raise Exception("No active AI models available")
+            raise ServiceUnavailable(
+                message="No active AI models available",
+                retry_after_seconds=SERVICE_UNAVAILABLE_RETRY_AFTER,
+                reason="no_active_models",
+            )
 
         # Step 2: Filter to configured providers only (FR-8)
         configured_models = self._filter_configured_models(models)
@@ -138,7 +148,11 @@ class ProcessPromptUseCase:
                 "no_configured_models_available",
                 total_models=len(models),
             )
-            raise Exception("No configured AI models available (missing API keys)")
+            raise ServiceUnavailable(
+                message="No configured AI models available (missing API keys)",
+                retry_after_seconds=SERVICE_UNAVAILABLE_RETRY_AFTER,
+                reason="no_api_keys",
+            )
 
         # Step 3: Sort by effective reliability score (F010)
         sorted_models = sorted(
@@ -202,6 +216,11 @@ class ProcessPromptUseCase:
         response_text: Optional[str] = None
         # F023: Telemetry counters
         attempts = 0
+        # F025: агрегация типов ошибок для backpressure
+        error_types: list[type] = []
+        retry_after_values: list[int] = []
+        skipped_by_cb: int = 0
+        providers_tried: int = 0
 
         for model in candidate_models:
             # F024: Circuit breaker — пропуск провайдера в OPEN
@@ -211,6 +230,7 @@ class ProcessPromptUseCase:
                     model=model.name,
                     provider=model.provider,
                 )
+                skipped_by_cb += 1
                 continue
 
             attempts += 1
@@ -239,6 +259,11 @@ class ProcessPromptUseCase:
                 # F014: Rate limit - don't count as failure, set availability
                 await self._handle_rate_limit(model, e)
                 last_error_message = sanitize_error_message(e)
+                # F025: трекинг типа ошибки
+                error_types.append(type(e))
+                providers_tried += 1
+                if e.retry_after_seconds:
+                    retry_after_values.append(e.retry_after_seconds)
 
             except (
                 ServerError,
@@ -252,6 +277,9 @@ class ProcessPromptUseCase:
                 # F014: Transient errors - record as failure
                 await self._handle_transient_error(model, e, start_time)
                 last_error_message = sanitize_error_message(e)
+                # F025: трекинг типа ошибки
+                error_types.append(type(e))
+                providers_tried += 1
 
             except Exception as e:
                 # F014: Unexpected error - classify and handle
@@ -259,11 +287,18 @@ class ProcessPromptUseCase:
                 if isinstance(classified, RateLimitError):
                     # F024: RateLimitError НЕ считается failure для CB
                     await self._handle_rate_limit(model, classified)
+                    # F025: трекинг типа ошибки
+                    error_types.append(RateLimitError)
+                    if classified.retry_after_seconds:
+                        retry_after_values.append(classified.retry_after_seconds)
                 else:
                     # F024: Circuit breaker — запись ошибки
                     CircuitBreakerManager.record_failure(model.provider)
                     await self._handle_transient_error(model, classified, start_time)
+                    # F025: трекинг типа ошибки
+                    error_types.append(type(classified))
                 last_error_message = sanitize_error_message(e)
+                providers_tried += 1
 
         response_time = Decimal(str(time.time() - start_time))
 
@@ -295,6 +330,23 @@ class ProcessPromptUseCase:
                 logger.error(
                     "history_record_failed",
                     error=sanitize_error_message(history_error),
+                )
+
+            # F025: определить причину отказа для backpressure
+            if attempts == 0:
+                raise ServiceUnavailable(
+                    message="All providers unavailable (circuit breaker open)",
+                    retry_after_seconds=SERVICE_UNAVAILABLE_RETRY_AFTER,
+                    reason="all_circuit_breaker_open",
+                )
+
+            if error_types and all(t == RateLimitError for t in error_types):
+                retry_after = min(retry_after_values) if retry_after_values else ALL_RATE_LIMITED_RETRY_AFTER
+                raise AllProvidersRateLimited(
+                    message=f"All {providers_tried} providers are rate limited",
+                    retry_after_seconds=retry_after,
+                    attempts=attempts,
+                    providers_tried=providers_tried,
                 )
 
             raise Exception(f"All AI providers failed. Last error: {last_error_message}")

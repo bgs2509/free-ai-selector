@@ -77,6 +77,22 @@ class ModelsStatsResponse(BaseModel):
 
 
 # =============================================================================
+# F025: Error Response Schema
+# =============================================================================
+
+
+class ErrorResponse(BaseModel):
+    """F025: Структурированный ответ при ошибке (429/503)."""
+
+    error: str = Field(..., description="Error code: all_rate_limited, service_unavailable, client_rate_limited")
+    message: str = Field(..., description="Human-readable error message")
+    retry_after: Optional[int] = Field(None, description="Seconds until retry is allowed")
+    attempts: int = Field(0, description="Number of providers attempted")
+    providers_tried: int = Field(0, description="Number of providers that returned errors")
+    providers_available: int = Field(0, description="Total number of configured providers")
+
+
+# =============================================================================
 # Health Check Schema
 # =============================================================================
 

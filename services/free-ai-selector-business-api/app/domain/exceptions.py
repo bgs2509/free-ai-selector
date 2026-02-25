@@ -104,3 +104,33 @@ class ValidationError(ProviderError):
     """
 
     pass
+
+
+class AllProvidersRateLimited(ProviderError):
+    """F025: Все провайдеры вернули RateLimitError."""
+
+    def __init__(
+        self,
+        message: str = "All providers are rate limited",
+        retry_after_seconds: int = 60,
+        attempts: int = 0,
+        providers_tried: int = 0,
+    ):
+        super().__init__(message)
+        self.retry_after_seconds = retry_after_seconds
+        self.attempts = attempts
+        self.providers_tried = providers_tried
+
+
+class ServiceUnavailable(ProviderError):
+    """F025: Сервис недоступен (нет моделей, нет ключей, все CB open)."""
+
+    def __init__(
+        self,
+        message: str = "Service temporarily unavailable",
+        retry_after_seconds: int = 30,
+        reason: str = "unknown",
+    ):
+        super().__init__(message)
+        self.retry_after_seconds = retry_after_seconds
+        self.reason = reason

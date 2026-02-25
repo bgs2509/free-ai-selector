@@ -128,18 +128,22 @@ class TestProcessPromptUseCase:
         mock_registry.get_provider.assert_called_with("HuggingFace")
 
     async def test_execute_no_active_models(self, mock_data_api_client):
-        """Test error when no active models available."""
+        """Test error when no active models available (F025: ServiceUnavailable)."""
+        from app.domain.exceptions import ServiceUnavailable
+
         mock_data_api_client.get_all_models.return_value = []
 
         use_case = ProcessPromptUseCase(mock_data_api_client)
         request = PromptRequest(user_id="test_user", prompt_text="Test prompt")
 
-        with pytest.raises(Exception, match="No active AI models available"):
+        with pytest.raises(ServiceUnavailable, match="No active AI models available"):
             await use_case.execute(request)
 
     @patch.dict(os.environ, {}, clear=True)
     async def test_execute_no_configured_models(self, mock_data_api_client):
-        """Test error when no models have configured API keys (F012: FR-8)."""
+        """Test error when no models have configured API keys (F025: ServiceUnavailable)."""
+        from app.domain.exceptions import ServiceUnavailable
+
         # Models exist but none have API keys configured
         mock_data_api_client.get_all_models.return_value = [
             AIModelInfo(
@@ -156,7 +160,7 @@ class TestProcessPromptUseCase:
         use_case = ProcessPromptUseCase(mock_data_api_client)
         request = PromptRequest(user_id="test_user", prompt_text="Test prompt")
 
-        with pytest.raises(Exception, match="No configured AI models available"):
+        with pytest.raises(ServiceUnavailable, match="No configured AI models available"):
             await use_case.execute(request)
 
     @patch.dict(os.environ, {"HIGH_KEY": "high", "LOW_KEY": "low"})
@@ -1072,3 +1076,238 @@ class TestF024CircuitBreaker:
         statuses = CircuitBreakerManager.get_all_statuses()
         assert statuses["FailProvider"] == "closed"  # 1 failure < threshold
         assert CircuitBreakerManager._circuits["FailProvider"].failure_count == 1
+
+
+@pytest.mark.unit
+class TestF025Backpressure:
+    """F025: Server-side backpressure (HTTP 429/503)."""
+
+    @patch.dict(os.environ, {"KEY1": "key1", "KEY2": "key2"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_all_rate_limited_raises_all_providers_rate_limited(
+        self, mock_registry, mock_data_api_client
+    ):
+        """TRQ-001: Все провайдеры RateLimited → AllProvidersRateLimited."""
+        from app.domain.exceptions import AllProvidersRateLimited, RateLimitError
+
+        mock_provider = AsyncMock()
+        mock_provider.generate.side_effect = RateLimitError(
+            "Rate limited", retry_after_seconds=30
+        )
+        mock_registry.get_provider.return_value = mock_provider
+        mock_registry.get_api_key_env.side_effect = lambda p: {
+            "Provider1": "KEY1", "Provider2": "KEY2"
+        }.get(p, "")
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Model1",
+                provider="Provider1",
+                api_endpoint="https://test1.com",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+            ),
+            AIModelInfo(
+                id=2,
+                name="Model2",
+                provider="Provider2",
+                api_endpoint="https://test2.com",
+                reliability_score=0.8,
+                is_active=True,
+                effective_reliability_score=0.8,
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(user_id="test", prompt_text="test")
+
+        with pytest.raises(AllProvidersRateLimited) as exc_info:
+            await use_case.execute(request)
+
+        assert exc_info.value.retry_after_seconds == 30
+        assert exc_info.value.attempts == 2
+        assert exc_info.value.providers_tried == 2
+
+    async def test_no_models_raises_service_unavailable(self, mock_data_api_client):
+        """TRQ-002: Нет моделей → ServiceUnavailable с reason='no_active_models'."""
+        from app.domain.exceptions import ServiceUnavailable
+
+        mock_data_api_client.get_all_models.return_value = []
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(user_id="test", prompt_text="test")
+
+        with pytest.raises(ServiceUnavailable) as exc_info:
+            await use_case.execute(request)
+
+        assert exc_info.value.reason == "no_active_models"
+
+    @patch.dict(os.environ, {"KEY1": "key1", "KEY2": "key2"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_all_cb_open_raises_service_unavailable(
+        self, mock_registry, mock_data_api_client
+    ):
+        """TRQ-003: Все CB open → ServiceUnavailable с reason='all_circuit_breaker_open'."""
+        from app.domain.exceptions import ServiceUnavailable
+
+        mock_registry.get_api_key_env.side_effect = lambda p: {
+            "Provider1": "KEY1", "Provider2": "KEY2"
+        }.get(p, "")
+
+        # Открыть CB для обоих провайдеров
+        for _ in range(CB_FAILURE_THRESHOLD):
+            CircuitBreakerManager.record_failure("Provider1")
+            CircuitBreakerManager.record_failure("Provider2")
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Model1",
+                provider="Provider1",
+                api_endpoint="https://test1.com",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+            ),
+            AIModelInfo(
+                id=2,
+                name="Model2",
+                provider="Provider2",
+                api_endpoint="https://test2.com",
+                reliability_score=0.8,
+                is_active=True,
+                effective_reliability_score=0.8,
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(user_id="test", prompt_text="test")
+
+        with pytest.raises(ServiceUnavailable) as exc_info:
+            await use_case.execute(request)
+
+        assert exc_info.value.reason == "all_circuit_breaker_open"
+
+    @patch.dict(os.environ, {}, clear=True)
+    async def test_no_api_keys_raises_service_unavailable(self, mock_data_api_client):
+        """TRQ-004: Нет API-ключей → ServiceUnavailable с reason='no_api_keys'."""
+        from app.domain.exceptions import ServiceUnavailable
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Model1",
+                provider="Provider1",
+                api_endpoint="https://test.com",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(user_id="test", prompt_text="test")
+
+        with pytest.raises(ServiceUnavailable) as exc_info:
+            await use_case.execute(request)
+
+        assert exc_info.value.reason == "no_api_keys"
+
+    @patch.dict(os.environ, {"KEY1": "key1", "KEY2": "key2"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_mixed_errors_raises_exception(
+        self, mock_registry, mock_data_api_client
+    ):
+        """TRQ-005: Смешанные ошибки (RateLimit + Server) → Exception (HTTP 500)."""
+        from app.domain.exceptions import RateLimitError, ServerError
+
+        mock_provider1 = AsyncMock()
+        mock_provider1.generate.side_effect = RateLimitError("Rate limited")
+        mock_provider2 = AsyncMock()
+        mock_provider2.generate.side_effect = ServerError("Server error")
+
+        mock_registry.get_provider.side_effect = [mock_provider1, mock_provider2]
+        mock_registry.get_api_key_env.side_effect = lambda p: {
+            "Provider1": "KEY1", "Provider2": "KEY2"
+        }.get(p, "")
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Model1",
+                provider="Provider1",
+                api_endpoint="https://test1.com",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+            ),
+            AIModelInfo(
+                id=2,
+                name="Model2",
+                provider="Provider2",
+                api_endpoint="https://test2.com",
+                reliability_score=0.8,
+                is_active=True,
+                effective_reliability_score=0.8,
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(user_id="test", prompt_text="test")
+
+        with pytest.raises(Exception, match="All AI providers failed"):
+            await use_case.execute(request)
+
+    @patch.dict(os.environ, {"KEY1": "key1"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_rate_limited_retry_after_uses_min(
+        self, mock_registry, mock_data_api_client
+    ):
+        """TRQ-007: retry_after_seconds = min(значений провайдеров)."""
+        from app.domain.exceptions import AllProvidersRateLimited, RateLimitError
+
+        # Два вызова с разными retry_after
+        call_count = 0
+
+        async def rate_limit_generator(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise RateLimitError("Rate limited", retry_after_seconds=120)
+            raise RateLimitError("Rate limited", retry_after_seconds=45)
+
+        mock_provider = AsyncMock()
+        mock_provider.generate.side_effect = rate_limit_generator
+        mock_registry.get_provider.return_value = mock_provider
+        mock_registry.get_api_key_env.return_value = "KEY1"
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Model1",
+                provider="Provider1",
+                api_endpoint="https://test1.com",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+            ),
+            AIModelInfo(
+                id=2,
+                name="Model2",
+                provider="Provider1",
+                api_endpoint="https://test2.com",
+                reliability_score=0.8,
+                is_active=True,
+                effective_reliability_score=0.8,
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(user_id="test", prompt_text="test")
+
+        with pytest.raises(AllProvidersRateLimited) as exc_info:
+            await use_case.execute(request)
+
+        assert exc_info.value.retry_after_seconds == 45

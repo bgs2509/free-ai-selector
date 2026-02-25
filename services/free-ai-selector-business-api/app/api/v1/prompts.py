@@ -2,17 +2,24 @@
 Prompt Processing API routes for AI Manager Platform - Business API Service
 """
 
-import logging
+import os
+
 from app.utils.security import sanitize_error_message
 
 from fastapi import APIRouter, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 
-from app.api.v1.schemas import ProcessPromptRequest, ProcessPromptResponse
+from app.api.v1.schemas import ErrorResponse, ProcessPromptRequest, ProcessPromptResponse
 from app.application.use_cases.process_prompt import ProcessPromptUseCase
+from app.domain.exceptions import AllProvidersRateLimited, ServiceUnavailable
 from app.domain.models import PromptRequest
 from app.infrastructure.http_clients.data_api_client import DataAPIClient
+from app.utils.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+
+# F025: Rate limit для /process endpoint
+PROCESS_RATE_LIMIT = os.getenv("PROCESS_RATE_LIMIT", "100/minute")
 
 router = APIRouter(prefix="/prompts", tags=["Prompts"])
 
@@ -22,6 +29,10 @@ router = APIRouter(prefix="/prompts", tags=["Prompts"])
     response_model=ProcessPromptResponse,
     status_code=status.HTTP_200_OK,
     summary="Process prompt with AI",
+    responses={
+        429: {"model": ErrorResponse, "description": "All providers rate limited"},
+        503: {"model": ErrorResponse, "description": "Service unavailable"},
+    },
 )
 async def process_prompt(
     prompt_data: ProcessPromptRequest, request: Request
@@ -76,6 +87,47 @@ async def process_prompt(
             # F023: Per-request telemetry
             attempts=response.attempts,
             fallback_used=response.fallback_used,
+        )
+
+    except AllProvidersRateLimited as e:
+        # F025: Все провайдеры rate-limited → HTTP 429
+        retry_after = e.retry_after_seconds
+        logger.warning(
+            "backpressure_applied",
+            status=429,
+            reason="all_rate_limited",
+            retry_after=retry_after,
+            attempts=e.attempts,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            headers={"Retry-After": str(retry_after)},
+            content=ErrorResponse(
+                error="all_rate_limited",
+                message="All AI providers are rate limited. Please retry later.",
+                retry_after=retry_after,
+                attempts=e.attempts,
+                providers_tried=e.providers_tried,
+            ).model_dump(),
+        )
+
+    except ServiceUnavailable as e:
+        # F025: Сервис недоступен → HTTP 503
+        retry_after = e.retry_after_seconds
+        logger.warning(
+            "backpressure_applied",
+            status=503,
+            reason=e.reason,
+            retry_after=retry_after,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            headers={"Retry-After": str(retry_after)},
+            content=ErrorResponse(
+                error="service_unavailable",
+                message=str(e),
+                retry_after=retry_after,
+            ).model_dump(),
         )
 
     except Exception as e:
