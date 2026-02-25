@@ -1,341 +1,277 @@
 ---
 feature_id: "F025"
-feature_name: "adaptive-concurrency"
-title: "Адаптивный Concurrency для массового прогона"
+feature_name: "server-backpressure"
+title: "Серверная защита от перегрузки: HTTP 429/503 + backpressure"
 created: "2026-02-25"
 author: "AI (Researcher)"
 type: "research"
 status: "RESEARCH_DONE"
-version: 1
+version: 2
 mode: "FEATURE"
 ---
 
-# Research Report: F025 — Adaptive Concurrency
+# Research Report: F025 — Server-side Backpressure (HTTP 429/503)
 
 **Feature ID**: F025
 **Дата**: 2026-02-25
 **Режим**: FEATURE
-**Исследователь**: AI (Researcher)
+**Версия PRD**: 2.0 (серверная защита, не клиентский AC)
 
 ---
 
 ## 1. Краткое резюме
 
-F025 предполагает создание компонента `AdaptiveConcurrency` для динамического управления параллелизмом в скрипте массового прогона LLM-запросов. Компонент реагирует на скользящий error rate: снижает concurrency при высоком error rate (> 50%), повышает при низком (< 20%), добавляет cooldown-паузу между запросами.
+F025 добавляет дифференциацию HTTP-ответов при ошибках: 429 (все провайдеры rate-limited), 503 (сервис недоступен), 500 (реальный баг). Включает стандартные заголовки `Retry-After` и `X-RateLimit-*`.
 
-**Ключевой вывод**: Business API и Data API **не затрагиваются**. AdaptiveConcurrency — standalone-компонент уровня `app/application/services/`, аналогичный `circuit_breaker.py`. Скрипт массового прогона **не существует** в репозитории — нужно создать.
-
----
-
-## 2. Анализ существующего кода
-
-### 2.1 Структура обработки запросов
-
-```
-POST /api/v1/prompts/process
-  → ProcessPromptUseCase.execute()
-    → get_all_models() [Data API HTTP]
-    → _filter_configured_models()
-    → sort by effective_reliability_score
-    → fallback loop:
-        → CircuitBreakerManager.is_available() [F024]
-        → retry_with_exponential_backoff() [F023]
-          → provider.generate() [httpx.AsyncClient per-call]
-        → classify_error() [F022]
-        → record_success/failure + history
-```
-
-### 2.2 Существующие сервисы устойчивости
-
-| Сервис | Файл | Назначение | Паттерн |
-|--------|------|------------|---------|
-| Error Classifier | `error_classifier.py` | Классификация HTTP-ошибок → доменные типы | Stateless функция |
-| Retry Service | `retry_service.py` | Exponential backoff для retryable ошибок | Stateless async функция |
-| Circuit Breaker | `circuit_breaker.py` | In-memory CB: CLOSED→OPEN→HALF-OPEN | ClassVar singleton |
-
-**AdaptiveConcurrency — другой уровень абстракции**: существующие сервисы работают на уровне единичного запроса (внутри Business API), а AC работает на уровне пакетной обработки (внешний клиент Business API).
-
-### 2.3 Скрипт массового прогона
-
-**Статус: НЕ существует в репозитории.**
-
-| Место поиска | Результат |
-|-------------|-----------|
-| `scripts/` | Директория не существует |
-| `tools/` | Директория не существует |
-| `docs/api-tests/` | 3 markdown-файла (аналитические отчёты, нет кода) |
-| Grep: batch, reclassif, Semaphore, gather | Нет результатов в Python-файлах |
-
-В `docs/api-tests/fix_plan_llm_errors.md` содержится **предложенный** класс `AdaptiveConcurrency` (строки 673-726) — это план, не реализация.
-
-### 2.4 Компоненты с параллельной обработкой
-
-В кодовой базе **полностью отсутствуют** паттерны параллельной обработки:
-- Health Worker — последовательный `for model in models:`
-- TestAllProviders — последовательный `for model in models:`
-- ProcessPromptUseCase — последовательный fallback loop
-- Нет `asyncio.Semaphore`, `asyncio.gather`, `aiohttp`
-
-### 2.5 Технические ограничения
-
-| # | Ограничение | Влияние на F025 |
-|---|------------|----------------|
-| 1 | Скрипт прогона НЕ существует | Нужно создать с нуля или создать только компонент AC |
-| 2 | Business API rate limiter: 100 req/60s (slowapi) | При max_concurrency > ~1.6 req/s скрипт может упереться в rate limiter |
-| 3 | Каждый `generate()` создаёт новый httpx.AsyncClient | При высоком concurrency возможно исчерпание сокетов |
-| 4 | CB и retry работают ВНУТРИ Business API | AC видит только финальный HTTP-ответ (200/5xx), не промежуточные retry |
-| 5 | Пересоздание Semaphore при смене concurrency | Кратковременный всплеск параллелизма (старые in-flight запросы) |
+**Главные находки исследования:**
+1. Все ошибки сейчас → HTTP 500 (единый catch-all в `prompts.py:81-88`)
+2. Типы ошибок **не агрегируются** в fallback loop — `last_error_message` хранит только строку последней ошибки
+3. slowapi rate limit применён только к `/api`, НЕ к `/api/v1/prompts/process`
+4. `headers_enabled=False` — заголовки `X-RateLimit-*` и `Retry-After` отключены
+5. Endpoint `POST /process` **не тестируется** через HTTP (только use_case.execute() через моки)
 
 ---
 
-## 3. Рекомендации по интеграции
+## 2. Карта изменений по файлам
 
-### 3.1 Размещение файлов
+### 2.1 `app/domain/exceptions.py` (107 строк)
 
-| Файл | Описание |
-|------|----------|
-| `app/application/services/adaptive_concurrency.py` | Класс AdaptiveConcurrency |
-| `tests/unit/test_adaptive_concurrency.py` | Unit-тесты |
+**Текущая иерархия:**
+```
+ProviderError (base)
+  +-- RateLimitError     (retry_after_seconds)
+  +-- ServerError
+  +-- TimeoutError
+  +-- AuthenticationError
+  +-- ValidationError
+```
 
-### 3.2 Конфигурация через env (паттерн проекта)
+**Что добавить:**
+```
+  +-- AllProvidersRateLimited  (retry_after_seconds, attempts, providers_tried)
+  +-- ServiceUnavailable       (retry_after_seconds, reason)
+```
 
-| Переменная | Default | Описание |
-|-----------|---------|----------|
-| `AC_WINDOW_SIZE` | 50 | Размер скользящего окна |
-| `AC_HIGH_THRESHOLD` | 0.5 | Порог снижения concurrency |
-| `AC_LOW_THRESHOLD` | 0.2 | Порог повышения concurrency |
-| `AC_COOLDOWN_SECONDS` | 5.0 | Пауза при высоком error rate |
-| `AC_INITIAL_CONCURRENCY` | 8 | Начальный concurrency |
-| `AC_MIN_CONCURRENCY` | 1 | Минимальный concurrency |
-| `AC_MAX_CONCURRENCY` | 16 | Максимальный concurrency |
+Оба наследуют от `ProviderError`. `RateLimitError.retry_after_seconds` — существующий паттерн для переиспользования.
 
-### 3.3 Интерфейс (рекомендуемый)
+### 2.2 `app/application/use_cases/process_prompt.py` (569 строк)
 
+**Проблема**: типы ошибок НЕ собираются в fallback loop.
+
+Строки 200-204 — текущие переменные:
 ```python
-class AdaptiveConcurrency:
-    """F025: Adaptive concurrency для массового прогона."""
+last_error_message: Optional[str] = None
+successful_model: Optional[AIModelInfo] = None
+response_text: Optional[str] = None
+attempts = 0
+```
+Нет `error_types: list[type]`, нет `retry_after_values: list[int]`.
 
-    def __init__(self, initial_concurrency, min_concurrency, max_concurrency,
-                 window_size, high_threshold, low_threshold, cooldown_seconds): ...
+**Что менять:**
+1. Добавить `error_types: list[type] = []` и `retry_after_values: list[int] = []`
+2. В каждом `except` добавить `error_types.append(type(e))`
+3. Добавить `skipped_by_cb: int = 0` для трекинга CB-пропусков
+4. После loop определять причину:
+   - `attempts == 0` (все CB open) или нет моделей → `raise ServiceUnavailable(...)`
+   - Все `error_types == RateLimitError` → `raise AllProvidersRateLimited(retry_after=min(...))`
+   - Смешанные ошибки → `raise Exception(...)` (как сейчас → HTTP 500)
+5. Заменить `raise Exception("No active AI models available")` → `raise ServiceUnavailable("No active AI models available")`
+6. Заменить `raise Exception("No configured AI models available...")` → `raise ServiceUnavailable("No configured AI models available")`
 
-    async def acquire(self) -> None:
-        """Ожидание семафора + cooldown при высоком error_rate."""
+**Важный edge case**: провайдер пропущен по CB (строка 207-214) — `attempts` не увеличивается, но `skipped_by_cb++`. Если ВСЕ пропущены по CB → `attempts == 0`, `skipped_by_cb > 0` → `ServiceUnavailable`.
 
-    def record(self, success: bool) -> None:
-        """Запись результата в скользящее окно + _adjust()."""
+### 2.3 `app/api/v1/prompts.py` (93 строки)
 
-    def release(self) -> None:
-        """Освобождение семафора."""
-
-    @property
-    def error_rate(self) -> float: ...
-
-    @property
-    def current_concurrency(self) -> int: ...
-
-    def get_report(self) -> dict:
-        """Post-run отчёт (FR-011)."""
+**Текущий catch-all** (строки 81-88):
+```python
+except Exception as e:
+    raise HTTPException(status_code=500, detail=f"Failed to process prompt [{error_type}]: ...")
 ```
 
-### 3.4 Паттерны тестирования
+**Что менять** — заменить на цепочку:
+```python
+except AllProvidersRateLimited as e:
+    → HTTP 429 + Retry-After + структурированный body (FR-001, FR-010)
+except ServiceUnavailable as e:
+    → HTTP 503 + Retry-After + структурированный body (FR-002, FR-010)
+except Exception as e:
+    → HTTP 500 (как сейчас, только реальные баги)
+```
 
-| Паттерн из проекта | Применение в F025 |
-|-------------------|-------------------|
-| `setup_method()` + reset | Сброс состояния AC между тестами |
-| `@patch("...asyncio.sleep", new_callable=AsyncMock)` | Мокание cooldown-паузы (FR-004) |
-| `@patch("...time.time")` | Контроль времени (если AC использует time) |
-| `pytest.approx()` | Проверка float error_rate |
-| Реальный `asyncio.Semaphore` | Не мокать — детерминированный в single-threaded event loop |
-| `asyncio_mode = auto` | Не нужен `@pytest.mark.asyncio` внутри `@pytest.mark.unit` классов |
+Добавить `@limiter.limit(...)` декоратор (FR-004).
+
+### 2.4 `app/api/v1/schemas.py` (91 строка)
+
+**Что добавить** — `ErrorResponse` Pydantic-схема для FR-010:
+```python
+class ErrorResponse(BaseModel):
+    error: str                    # "all_rate_limited", "service_unavailable"
+    message: str                  # Human-readable
+    retry_after: Optional[int]    # Секунды до повтора
+    attempts: int                 # Сколько моделей попробовали
+    providers_tried: int          # Сколько провайдеров опросили
+    providers_available: int      # Сколько доступно всего
+```
+
+Использовать `responses={429: {"model": ErrorResponse}, 503: {"model": ErrorResponse}}` в декораторе эндпоинта для OpenAPI.
+
+### 2.5 `app/main.py` (328 строк)
+
+**Строка 69** — изменить:
+```python
+# Было:
+limiter = Limiter(key_func=get_remote_address)
+# Стало:
+limiter = Limiter(key_func=get_remote_address, headers_enabled=True)
+```
+
+**Строка 143** — опционально заменить `_rate_limit_exceeded_handler` на кастомный, возвращающий JSON в формате `ErrorResponse` (для согласованности с FR-010).
+
+### 2.6 Тесты
+
+| Файл | Что менять |
+|------|-----------|
+| `test_process_prompt_use_case.py` | Обновить `pytest.raises(Exception, match="No active")` → `pytest.raises(ServiceUnavailable)`. Добавить тесты для `AllProvidersRateLimited`. |
+| **Новый**: `test_backpressure_responses.py` или расширить `test_process_prompt_use_case.py` | Тесты: все 429 → AllProvidersRateLimited, все CB open → ServiceUnavailable, смешанные → Exception |
+
+**Endpoint-тесты** (через AsyncClient) — желательно, но не обязательно. Существующий паттерн из `test_static_files.py`:
+```python
+async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    response = await client.post("/api/v1/prompts/process", json={...})
+    assert response.status_code == 429
+```
 
 ---
 
-## 4. Код для переиспользования
+## 3. Технические ограничения
+
+| # | Ограничение | Влияние |
+|---|------------|---------|
+| 1 | `Retry-After` при 429 зависит от `retry_after_seconds` провайдеров — если не возвращают, default 60 сек | Используем default, настраиваемый через env |
+| 2 | slowapi in-memory storage — счётчики сбрасываются при рестарте | Приемлемо для MVP |
+| 3 | `X-RateLimit-*` показывают лимит slowapi (клиентский), а не лимит LLM-провайдеров | Задокументировать в API docs |
+| 4 | Два независимых "rate limit": slowapi (входящий) vs провайдерский (upstream) | Клиент получит 429 от обоих, но с разным `Retry-After` |
+| 5 | Смешанные ошибки (часть 429, часть 500) → HTTP 500 | По дизайну: 429 только если ВСЕ ошибки = RateLimit |
+
+---
+
+## 4. Зависимости
+
+**Новые pip-зависимости: НЕ нужны.** Всё из стандартной библиотеки + уже установленные пакеты:
+- `slowapi==0.1.9` — уже установлен, `headers_enabled=True` просто включить
+- `fastapi==0.115.0` — поддерживает `responses={}` в декораторе
+- `pydantic==2.9.2` — для `ErrorResponse` схемы
+
+---
+
+## 5. Существующие тесты — влияние F025
+
+| Тест | Что ловит сейчас | Что будет после F025 | Нужно менять? |
+|------|-----------------|---------------------|---------------|
+| `test_execute_no_active_models` | `Exception("No active AI models")` | `ServiceUnavailable("No active AI models")` | Да — обновить `pytest.raises` |
+| `test_execute_no_configured_models` | `Exception("No configured AI models")` | `ServiceUnavailable("No configured AI models")` | Да — обновить `pytest.raises` |
+| `test_all_providers_fail_raises_exception` | `Exception("All AI providers failed")` | Может быть `AllProvidersRateLimited` или `Exception` (зависит от ошибок) | Да — добавить вариант |
+| `test_failure_records_to_circuit_breaker` | `Exception("All AI providers failed")` | Без изменений (ServerError → не RateLimit → Exception) | Нет |
+| Все остальные тесты | — | Без изменений | Нет |
+
+**Вывод**: только 3 теста нужно обновить. Остальные ~70 тестов не затронуты.
+
+---
+
+## 6. Код для переиспользования
 
 | Модуль | Что использовать |
 |--------|-----------------|
-| `app/utils/logger.py` | `get_logger(__name__)` для structlog-логирования |
-| Паттерн `os.getenv("NAME", "default")` | Конфигурация AC через env |
-| `collections.deque(maxlen=N)` | Скользящее окно (stdlib) |
-| `asyncio.Semaphore` | Ограничение параллелизма (stdlib) |
-| Формат docstring `"""F025: ..."""` | Конвенция проекта |
-
-**Дополнительные зависимости НЕ нужны** — всё из стандартной библиотеки Python.
+| `RateLimitError.retry_after_seconds` | Паттерн для `AllProvidersRateLimited.retry_after_seconds` |
+| `CircuitBreakerManager.get_all_statuses()` | Определение "все CB open" |
+| `sanitize_error_message()` | Фильтрация секретов в error body |
+| `get_logger(__name__)` | structlog логирование backpressure |
+| AsyncClient + ASGITransport | Паттерн endpoint-тестов из `test_static_files.py` |
 
 ---
 
-## 5. Анализ сложности PRD
-
-| Компонент | Сложность | Необходимость | Рекомендация |
-|-----------|-----------|---------------|-------------|
-| FR-001: Скользящее окно | Низкая (deque) | Must Have | Включить |
-| FR-002: Снижение concurrency | Низкая (// 2) | Must Have | Включить |
-| FR-003: Повышение concurrency | Низкая (+ 1) | Must Have | Включить |
-| FR-004: Cooldown пауза | Низкая (sleep) | Must Have | Включить |
-| FR-005: Semaphore | Низкая (stdlib) | Must Have | Включить |
-| FR-010: Логирование | Низкая (structlog) | Should Have | Включить |
-| FR-011: Post-run отчёт | Низкая (dict) | Should Have | Включить |
-| FR-020: Early stop | Низкая (~5 строк) | Could Have | Включить (тривиально) |
-
----
-
-## 6. Фильтрация scope
-
-| Компонент | В scope? | Обоснование |
-|-----------|----------|-------------|
-| AdaptiveConcurrency class | Да | Core функциональность |
-| FR-001..FR-005 (Must Have) | Да | Минимальная рабочая версия |
-| FR-010, FR-011 (Should Have) | Да | Необходимы для диагностики |
-| FR-020 (Early stop) | Да | Тривиальная реализация, высокая ценность |
-| Скрипт batch_run.py | Отложить | F025 создаёт только компонент AC, не скрипт |
-| Предиктивная адаптация | Нет | PRD сам исключает |
-| Dashboard/UI мониторинг | Нет | Не в scope PRD |
-
----
-
-## 7. Архитектура существующего кода
+## 7. Порядок middleware (важно для F025)
 
 ```
-app/
-├── api/v1/              # HTTP endpoints (prompts.py, routers)
-│   └── POST /process    # Точка входа для промптов
-├── application/
-│   ├── use_cases/       # Бизнес-логика
-│   │   ├── process_prompt.py    # Выбор модели + fallback loop
-│   │   └── test_all_providers.py
-│   └── services/        # Cross-cutting concerns  ← СЮДА adaptive_concurrency.py
-│       ├── error_classifier.py  # HTTP → доменные ошибки
-│       ├── retry_service.py     # Exponential backoff
-│       └── circuit_breaker.py   # CLOSED→OPEN→HALF-OPEN
-├── domain/
-│   ├── models.py        # AIModelInfo, PromptRequest/Response
-│   └── exceptions.py    # ProviderError hierarchy
-├── infrastructure/
-│   ├── ai_providers/    # 14 провайдеров + base.py + registry.py
-│   └── http_clients/    # DataAPIClient
-└── utils/
-    ├── logger.py        # structlog get_logger()
-    ├── log_helpers.py   # log_decision()
-    └── security.py      # sanitize_error_message()
+Запрос → CORSMiddleware → error_handling_middleware → request_id_middleware
+  → Route handler (exception_handlers: RateLimitExceeded)
+  → Ответ ←
 ```
 
-### Ответственности модулей
-
-| Модуль | Ответственность | Граница |
-|--------|----------------|---------|
-| `process_prompt.py` | Выбор модели, fallback, retry, CB check | Единичный запрос |
-| `error_classifier.py` | HTTP status → доменное исключение | Stateless, per-error |
-| `retry_service.py` | Retry с backoff для retryable ошибок | Stateless, per-attempt |
-| `circuit_breaker.py` | Исключение мёртвых провайдеров | Stateful, per-provider |
-| **adaptive_concurrency.py** | **Управление параллелизмом пакета** | **Stateful, per-run** |
-
----
-
-## 8. Источники данных (SSoT)
-
-| Тип данных | Файл-источник |
-|-----------|--------------|
-| Retry config | `retry_service.py`: MAX_RETRIES, RETRY_BASE_DELAY, RETRY_MAX_DELAY |
-| CB config | `circuit_breaker.py`: CB_FAILURE_THRESHOLD, CB_RECOVERY_TIMEOUT |
-| AC config (новый) | `adaptive_concurrency.py`: AC_WINDOW_SIZE, AC_HIGH/LOW_THRESHOLD |
-| Доменные модели | `domain/models.py` |
-| Исключения | `domain/exceptions.py` |
-| Provider registry | `infrastructure/ai_providers/registry.py` |
-| Rate limiter | `main.py`: 100 req/60s (slowapi) |
-
----
-
-## 9. Конвенции проекта
-
-| Конвенция | Пример из кода |
-|-----------|----------------|
-| Env constants на уровне модуля | `CB_FAILURE_THRESHOLD = int(os.getenv("CB_FAILURE_THRESHOLD", "5"))` |
-| ClassVar dict для singleton state | `_circuits: ClassVar[dict[str, ProviderCircuit]] = {}` |
-| `reset()` classmethod для тестов | `CircuitBreakerManager.reset()` |
-| Autouse fixture для cleanup | `conftest.py: reset_circuit_breaker` |
-| Docstring с Feature ID | `"""F024: In-memory circuit breaker..."""` |
-| Тесты с Feature ID в class name | `class TestF024CircuitBreaker` |
-| Логирование structlog | `logger.info("event_name", key=value)` |
-| asyncio_mode = auto | Нет `@pytest.mark.asyncio` в `@pytest.mark.unit` классах |
-| Маркер `@pytest.mark.unit` на всех test-классах | Обязателен (strict markers) |
-
----
-
-## 10. Security-контекст
-
-- AdaptiveConcurrency **не обрабатывает** пользовательские данные — только счётчики success/failure
-- Нет sensitive данных в логах — только concurrency, error_rate, window_stats
-- `sanitize_error_message()` — существующая утилита для фильтрации секретов
-- `sensitive_filter.py` — structlog-фильтр для автоочистки логов
-
-**Security-рисков для F025 нет** — компонент работает только с числовыми метриками.
-
----
-
-## 11. Риски
-
-| # | Риск | Вероятность | Влияние | Митигация |
-|---|------|-------------|---------|-----------|
-| 1 | Business API rate limiter (100/60s) блокирует скрипт при высоком concurrency | Med | Med | Настроить AC_MAX_CONCURRENCY с учётом rate limit или увеличить лимит для batch |
-| 2 | Скрипт batch_run.py не тестируем в CI (нет живых провайдеров) | High | Low | Unit-тесты для AC покрывают логику; integration — ручной |
-| 3 | Пересоздание Semaphore при изменении concurrency — race condition | Low | Low | Старые in-flight запросы завершатся штатно со старым semaphore |
-| 4 | AC не учитывает какой именно провайдер упал | Med | Low | AC работает с агрегированным error_rate; дифференциация — отдельная фича |
-| 5 | Зависимость от F022/F023/F024 — без них базовый error rate высокий | Low | High | Все 3 фичи уже реализованы |
+`RateLimitExceeded` (slowapi) обрабатывается exception handler **внутри** route layer, до middleware. Новые `AllProvidersRateLimited` и `ServiceUnavailable` будут обрабатываться **внутри** endpoint function (explicit except), не через exception handlers.
 
 ---
 
 ## Quality Cascade Checklist (7/7)
 
 ### DRY ✅
-- [x] Поиск похожих модулей: retry_service, circuit_breaker — другой уровень абстракции, не дублируют AC
-- [x] Утилиты для переиспользования: get_logger(), os.getenv() паттерн
-- [x] Дополнительные зависимости не нужны — stdlib only
-→ Рекомендация: Использовать существующие утилиты, НЕ создавать новые
+- [x] `RateLimitError.retry_after_seconds` — переиспользовать паттерн
+- [x] `sanitize_error_message()` — для error body
+- [x] `CircuitBreakerManager.get_all_statuses()` — для определения "все CB open"
+- [x] slowapi уже установлен и настроен — включить `headers_enabled`
+→ Рекомендация: переиспользовать существующие, НЕ создавать дубли
 
 ### KISS ✅
-- [x] Все FR-001..FR-005 — минимально сложные (5-15 строк каждый)
-- [x] Один класс, один файл, stdlib only
-- [x] FR-020 (early stop) тривиален — включить
-→ Рекомендация: Один файл adaptive_concurrency.py с классом AdaptiveConcurrency
+- [x] 2 новых исключения + 1 Pydantic-схема + правки в 3 файлах
+- [x] Нет новых pip-зависимостей
+- [x] slowapi уже делает большую часть работы с заголовками — просто включить
+→ Рекомендация: минимальные изменения, максимальный эффект
 
 ### YAGNI ✅
-- [x] Предиктивная адаптация — за scope
-- [x] Dashboard/UI — за scope
-- [x] Скрипт batch_run.py — отложить, создать только компонент AC
-→ Рекомендация: Scope ограничен FR-001..FR-011 + FR-020
+- [x] FR-020 (X-Providers-Available) — полезно, тривиально, включить
+- [x] FR-021 (debug mode) — усложняет, отложить или включить минимально
+→ Рекомендация: FR-020 включить, FR-021 на усмотрение
 
 ### SoC ✅
-- [x] AC — application service (cross-cutting concern)
-- [x] Не касается domain, infrastructure, api
-- [x] Чёткая граница: AC работает с bool (success/failure) и int (concurrency)
-→ Рекомендация: Разместить в app/application/services/
+- [x] Domain (`exceptions.py`) — типы ошибок
+- [x] Application (`process_prompt.py`) — определение ПОЧЕМУ все провайдеры провалились
+- [x] API (`prompts.py`) — маппинг исключений на HTTP-коды
+- [x] Infrastructure (`main.py`) — rate limiting на уровне сервера
+→ Рекомендация: строго разделять — use case бросает доменные исключения, API маппит на HTTP
 
 ### SSoT ✅
-- [x] Конфигурация: env-переменные AC_* (один источник)
-- [x] State: единственный экземпляр AC per-run
-→ Рекомендация: Следовать паттерну circuit_breaker.py
+| Тип данных | Файл-источник |
+|-----------|---------------|
+| Типы ошибок | `domain/exceptions.py` |
+| Error body schema | `api/v1/schemas.py` (ErrorResponse) |
+| Rate limit config (slowapi) | `main.py` (env: RATE_LIMIT_*, PROCESS_RATE_LIMIT) |
+| Retry-After defaults | `process_prompt.py` (env: SERVICE_UNAVAILABLE_RETRY_AFTER) |
+→ Рекомендация: env vars в одном месте (тот файл где используются)
 
 ### CoC ✅
-- [x] Именование: adaptive_concurrency.py (snake_case)
-- [x] Тесты: test_adaptive_concurrency.py, @pytest.mark.unit
-- [x] Логирование: structlog через get_logger()
-- [x] Docstring: "F025: ..." prefix
-→ Рекомендация: Полное соответствие конвенциям проекта
+- [x] Исключения: `ProviderError` → `AllProvidersRateLimited`, `ServiceUnavailable`
+- [x] Тесты: `@pytest.mark.unit`, fixture из conftest, `asyncio_mode = auto`
+- [x] Логирование: `logger.info("backpressure_applied", status=429, ...)`
+- [x] Env vars: `UPPER_SNAKE_CASE` с defaults
+→ Рекомендация: следовать конвенциям проекта
 
 ### Security ✅
-- [x] Нет обработки пользовательских данных
-- [x] Нет sensitive данных в логах
-- [x] Нет security-рисков
-→ Рекомендация: Security-контекст минимальный
+- [x] Error body: числовые метрики без имён провайдеров (FR-010)
+- [x] Debug mode (FR-021): выключен по умолчанию, только через env
+- [x] `sanitize_error_message()` для всех логируемых ошибок
+- [x] `X-RateLimit-*` — не содержат sensitive данных
+→ Рекомендация: НЕ включать `last_error_message` в error body (может содержать URL провайдера)
+
+---
+
+## Риски
+
+| # | Риск | Вероятность | Влияние | Митигация |
+|---|------|-------------|---------|-----------|
+| 1 | Смешанные ошибки (часть 429, часть 500) — как классифицировать | Med | Low | По дизайну: 429 только если ВСЕ error_types == RateLimitError |
+| 2 | CB skip + RateLimit: все доступные вернули 429, остальные в CB | Med | Low | attempts > 0 и все RateLimit → 429. attempts == 0 (все CB) → 503 |
+| 3 | Telegram Bot не обрабатывает 429/503 | Med | Med | Bot показывает generic ошибку — не ломается, просто менее информативно |
+| 4 | slowapi vs provider 429 — путаница в Retry-After | Low | Low | slowapi 429: клиент шлёт слишком быстро. Provider 429: upstream перегружен. Разные причины, оба корректны |
+| 5 | 3 существующих теста сломаются | 100% | Low | Обновить pytest.raises на новые типы исключений |
 
 ---
 
 ## Качественные ворота RESEARCH_DONE
 
-- [x] Существующий код проанализирован
-- [x] Архитектурные паттерны выявлены (DDD/Hexagonal, singleton services, env config)
+- [x] Существующий код проанализирован (prompts.py, process_prompt.py, main.py, exceptions.py, schemas.py)
+- [x] Архитектурные паттерны выявлены (catch-all → дифференциация, middleware порядок)
 - [x] Технические ограничения определены (5 ограничений)
-- [x] Зависимости определены (stdlib only, нет новых pip-зависимостей)
-- [x] Рекомендации сформулированы (размещение, интерфейс, конвенции)
+- [x] Зависимости определены (нет новых pip-зависимостей)
+- [x] Рекомендации сформулированы (карта изменений по 6 файлам)
 - [x] Риски идентифицированы (5 рисков с митигацией)
-- [x] Quality Cascade Checklist (7/7) включён и пройден
+- [x] Quality Cascade Checklist (7/7) пройден
