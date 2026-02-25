@@ -1268,12 +1268,18 @@
         "DEPLOYED": {
           "passed": false,
           "passed_at": null
+        },
+        "DOCUMENTED": {
+          "passed": true,
+          "passed_at": "2026-02-25T11:00:00.000000",
+          "mode": "quick"
         }
       },
       "artifacts": {
         "prd": "_analysis/2026-02-25_F023_error-resilience-and-telemetry.md",
         "research": "_research/2026-02-25_F023_error-resilience-and-telemetry.md",
-        "plan": "_plans/features/2026-02-25_F023_error-resilience-and-telemetry.md"
+        "plan": "_plans/features/2026-02-25_F023_error-resilience-and-telemetry.md",
+        "completion": "_validation/2026-02-25_F023_error-resilience-and-telemetry.md"
       }
     },
     "F024": {
