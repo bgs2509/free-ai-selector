@@ -1,6 +1,6 @@
 ---
 feature_id: "F025"
-feature_name: "adaptive-concurrency"
+feature_name: "server-backpressure"
 title: "Серверная защита от перегрузки: HTTP 429/503 + backpressure"
 created: "2026-02-25"
 author: "AI (Analyst)"
