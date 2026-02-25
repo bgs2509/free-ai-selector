@@ -14,8 +14,8 @@
 #   во все сервисы и в Locust.
 # =============================================================================
 
-.PHONY: help local vps build up down restart logs logs-data logs-business logs-bot logs-worker logs-db clean test test-data test-business lint format migrate seed health shell-data shell-business db-shell dev status \
-	load-test load-test-ui load-test-baseline load-test-ramp-up load-test-sustained load-test-failover load-test-recovery load-test-oversize load-test-all
+.PHONY: help local vps build up down restart restart-recreate logs logs-data logs-business logs-bot logs-worker logs-db clean test test-data test-business lint format migrate seed health health-check ensure-up-with-context shell-data shell-business db-shell dev status \
+	load-test load-test-ui load-test-ui-up load-test-ui-down load-test-ui-logs load-test-baseline load-test-ramp-up load-test-sustained load-test-failover load-test-recovery load-test-oversize load-test-all cleanup-load-test
 
 # =============================================================================
 # Core Mode Configuration
@@ -43,19 +43,23 @@ endif
 # =============================================================================
 
 # Уникальный идентификатор прогона.
-# Можно передать извне: `make load-test-baseline RUN_ID=my-run-001`.
-RUN_ID ?= lt-$(shell date -u +%Y%m%dT%H%M%SZ)-$(shell cut -c1-8 /proc/sys/kernel/random/uuid)
+# Можно передать извне: `make test RUN_ID=my-run-001`.
+RUN_ID ?= run-$(shell date -u +%Y%m%dT%H%M%SZ)-$(shell cut -c1-8 /proc/sys/kernel/random/uuid)
+RUN_ID := $(RUN_ID)
 
 # Источник запуска (скрипт/команда), используется в аудит-логах.
-# По умолчанию содержит имя текущего make target.
-RUN_SOURCE ?= make:$(MAKECMDGOALS)
+# По умолчанию содержит первый target в текущем make-вызове.
+RUN_SOURCE ?= make:$(or $(firstword $(MAKECMDGOALS)),manual)
+RUN_SOURCE := $(RUN_SOURCE)
 
 # Сценарий прогона для трассировки.
-# Для load-test обычно совпадает с LOAD_TEST_SCENARIO.
-RUN_SCENARIO ?= baseline
+# Значение должно отражать тип операции (test/lint/load-test/...).
+RUN_SCENARIO ?= general
+RUN_SCENARIO := $(RUN_SCENARIO)
 
 # UTC-время старта прогона (ISO-8601).
 RUN_STARTED_AT ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+RUN_STARTED_AT := $(RUN_STARTED_AT)
 
 # Включение audit-логирования во всех сервисах и Locust.
 # true  -> писать audit.jsonl
@@ -65,9 +69,19 @@ AUDIT_ENABLED ?= true
 # Папка для audit-артефактов (host path).
 AUDIT_RESULTS_DIR ?= docs/api-tests/results/audit
 
-# Единый JSONL файл аудита (host path).
-# Внутри контейнеров будет доступен как /audit/audit.jsonl.
-AUDIT_JSONL_PATH ?= $(AUDIT_RESULTS_DIR)/audit.jsonl
+# Имя audit-файла для текущего прогона.
+# По умолчанию каждый RUN_ID пишет в отдельный файл.
+AUDIT_FILE_NAME ?= $(RUN_ID).jsonl
+AUDIT_FILE_NAME := $(AUDIT_FILE_NAME)
+
+# JSONL путь на host-машине (артефакт прогона).
+AUDIT_JSONL_HOST_PATH ?= $(AUDIT_RESULTS_DIR)/$(AUDIT_FILE_NAME)
+AUDIT_JSONL_HOST_PATH := $(AUDIT_JSONL_HOST_PATH)
+
+# JSONL путь внутри контейнеров compose-сервисов.
+# Синхронизирован с volume mount `./docs/api-tests/results/audit:/audit`.
+AUDIT_JSONL_PATH ?= /audit/$(AUDIT_FILE_NAME)
+AUDIT_JSONL_PATH := $(AUDIT_JSONL_PATH)
 
 # Экспортируем run/audit контекст в sub-make и shell-команды.
 export RUN_ID
@@ -76,6 +90,7 @@ export RUN_SCENARIO
 export RUN_STARTED_AT
 export AUDIT_ENABLED
 export AUDIT_JSONL_PATH
+export AUDIT_JSONL_HOST_PATH
 
 # =============================================================================
 # Load Testing Configuration (Locust in Docker)
@@ -127,8 +142,15 @@ LOAD_TEST_AUTOQUIT_SECONDS ?= 10
 # Порт Web UI Locust на host.
 LOAD_TEST_WEB_PORT ?= 8089
 
-# Синхронизация RUN_SCENARIO с нагрузочным сценарием.
-RUN_SCENARIO := $(LOAD_TEST_SCENARIO)
+# Имя контейнера для headless-прогонов Locust.
+LOCUST_RUN_CONTAINER_NAME ?= free-ai-selector-locust-run-$(RUN_ID)
+
+# Имя контейнера для постоянного UI режима Locust.
+LOCUST_UI_CONTAINER_NAME ?= free-ai-selector-locust-ui
+
+# Сценарий трассировки для нагрузочного прогона.
+# Можно переопределить извне: RUN_SCENARIO=load-test:custom
+LOAD_TEST_RUN_SCENARIO ?= load-test:$(LOAD_TEST_SCENARIO)
 
 # =============================================================================
 # Help
@@ -148,7 +170,8 @@ help:
 	@echo "Service management:"
 	@echo "  make build                 - Build all Docker images"
 	@echo "  make down                  - Stop all services"
-	@echo "  make restart               - Restart all services"
+	@echo "  make restart               - Fast restart (без пересоздания и без смены RUN контекста)"
+	@echo "  make restart-recreate      - Recreate containers (обновляет RUN контекст)"
 	@echo "  make logs                  - Tail logs from all services"
 	@echo "  make logs-data             - Tail logs from Data API"
 	@echo "  make logs-business         - Tail logs from Business API"
@@ -179,8 +202,12 @@ help:
 	@echo "  make load-test-failover    - Provider failover scenario (6 users, 10m)"
 	@echo "  make load-test-recovery    - Recovery check (1 user, 5m)"
 	@echo "  make load-test-oversize    - Oversize payload scenario (422 checks)"
-	@echo "  make load-test-ui          - Run Locust web UI in Docker (manual start)"
+	@echo "  make load-test-ui          - Alias for load-test-ui-up"
+	@echo "  make load-test-ui-up       - Start persistent Locust Web UI"
+	@echo "  make load-test-ui-logs     - Tail persistent Locust UI logs"
+	@echo "  make load-test-ui-down     - Stop Locust UI and docker stack"
 	@echo "  make load-test-all         - Run all scenarios sequentially"
+	@echo "  make cleanup-load-test     - Remove stale Locust containers"
 	@echo ""
 	@echo "Run context / audit variables:"
 	@echo "  RUN_ID=$(RUN_ID)"
@@ -188,7 +215,8 @@ help:
 	@echo "  RUN_SCENARIO=$(RUN_SCENARIO)"
 	@echo "  RUN_STARTED_AT=$(RUN_STARTED_AT)"
 	@echo "  AUDIT_ENABLED=$(AUDIT_ENABLED)"
-	@echo "  AUDIT_JSONL_PATH=$(AUDIT_JSONL_PATH)"
+	@echo "  AUDIT_JSONL_PATH=$(AUDIT_JSONL_PATH)            (container path)"
+	@echo "  AUDIT_JSONL_HOST_PATH=$(AUDIT_JSONL_HOST_PATH)  (host path)"
 
 # =============================================================================
 # Mode Shortcuts
@@ -196,36 +224,73 @@ help:
 
 # Явный запуск локального режима.
 local:
-	@$(MAKE) up MODE=local
+	@$(MAKE) up MODE=local RUN_SOURCE=make:local RUN_SCENARIO=infra:local
 
 # Явный запуск VPS режима.
 vps:
-	@$(MAKE) up MODE=vps
+	@$(MAKE) up MODE=vps RUN_SOURCE=make:vps RUN_SCENARIO=infra:vps
 
 # =============================================================================
 # Service Lifecycle Commands
 # =============================================================================
 
 # Сборка образов всех сервисов.
+# RUN_ID намеренно не используется в build-args, чтобы не ломать Docker cache.
 build:
 	@echo "Building images (MODE=$(MODE))"
 	$(COMPOSE) build
 
-# Запуск всех сервисов, затем health-check.
+# Гарантирует, что сервисы запущены с текущим run/audit контекстом.
+# Используется как preflight перед test/lint/migrate/... командами.
+ensure-up-with-context:
+	@mkdir -p "$(AUDIT_RESULTS_DIR)"
+	@echo "Ensuring services are running with current run context (MODE=$(MODE))"
+	@echo "Run context: RUN_ID=$(RUN_ID), RUN_SOURCE=$(RUN_SOURCE), RUN_SCENARIO=$(RUN_SCENARIO), RUN_STARTED_AT=$(RUN_STARTED_AT)"
+	@echo "Audit paths: container=$(AUDIT_JSONL_PATH), host=$(AUDIT_JSONL_HOST_PATH)"
+	@RUN_ID="$(RUN_ID)" \
+	RUN_SOURCE="$(RUN_SOURCE)" \
+	RUN_SCENARIO="$(RUN_SCENARIO)" \
+	RUN_STARTED_AT="$(RUN_STARTED_AT)" \
+	AUDIT_ENABLED="$(AUDIT_ENABLED)" \
+	AUDIT_JSONL_PATH="$(AUDIT_JSONL_PATH)" \
+	$(COMPOSE) up -d
+	@$(MAKE) health-check MODE=$(MODE)
+
+# Запуск всех сервисов с пересборкой, затем health-check.
 up:
+	@mkdir -p "$(AUDIT_RESULTS_DIR)"
 	@echo "Starting services (MODE=$(MODE))"
+	@echo "Run context: RUN_ID=$(RUN_ID), RUN_SOURCE=$(RUN_SOURCE), RUN_SCENARIO=$(RUN_SCENARIO), RUN_STARTED_AT=$(RUN_STARTED_AT)"
+	@echo "Audit paths: container=$(AUDIT_JSONL_PATH), host=$(AUDIT_JSONL_HOST_PATH)"
+	@RUN_ID="$(RUN_ID)" \
+	RUN_SOURCE="$(RUN_SOURCE)" \
+	RUN_SCENARIO="$(RUN_SCENARIO)" \
+	RUN_STARTED_AT="$(RUN_STARTED_AT)" \
+	AUDIT_ENABLED="$(AUDIT_ENABLED)" \
+	AUDIT_JSONL_PATH="$(AUDIT_JSONL_PATH)" \
 	$(COMPOSE) up -d --build
 	@echo "Waiting for services to be healthy..."
 	@sleep 5
-	@$(MAKE) health MODE=$(MODE)
+	@$(MAKE) health-check MODE=$(MODE)
 
 # Остановка всех сервисов в текущем MODE.
+# Перед остановкой очищает зависшие Locust-контейнеры.
 down:
+	@$(MAKE) cleanup-load-test >/dev/null
 	$(COMPOSE) down
 
-# Рестарт всех сервисов в текущем MODE.
+# Быстрый рестарт контейнеров без пересоздания.
+# ВАЖНО: RUN контекст при этом не меняется.
 restart:
+	@echo "Restarting containers without recreation (run context is unchanged)"
 	$(COMPOSE) restart
+
+# Рестарт с полным пересозданием контейнеров.
+# Используйте эту команду, когда нужно применить новый RUN контекст.
+restart-recreate:
+	@echo "Recreating containers with current run context"
+	@$(MAKE) down MODE=$(MODE)
+	@$(MAKE) up MODE=$(MODE) RUN_SOURCE=make:restart-recreate RUN_SCENARIO=infra:restart-recreate
 
 # Логи всех сервисов (follow).
 logs:
@@ -257,6 +322,7 @@ clean:
 	@read -p "Are you sure? [y/N] " -n 1 -r; \
 	echo; \
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+	    $(MAKE) cleanup-load-test >/dev/null; \
 	    $(COMPOSE) down -v; \
 	    docker volume rm free-ai-selector-postgres-data 2>/dev/null || true; \
 	    echo "All containers and volumes removed."; \
@@ -269,19 +335,24 @@ clean:
 # =============================================================================
 
 # Запуск полного контейнерного тест-раннера.
+# Скрипт поднимет/остановит docker-стек и выведет агрегированный отчет.
 test:
+	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:test RUN_SCENARIO=qa:test >/dev/null
 	@COMPOSE_CMD='$(COMPOSE)' python3 scripts/run_container_tests.py
 
 # Запуск unit/integration тестов Data API.
 test-data:
+	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:test-data RUN_SCENARIO=qa:test-data >/dev/null
 	$(COMPOSE) exec free-ai-selector-data-postgres-api pytest tests/ -v --cov=app --cov-report=term-missing
 
 # Запуск unit/integration тестов Business API.
 test-business:
+	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:test-business RUN_SCENARIO=qa:test-business >/dev/null
 	$(COMPOSE) exec free-ai-selector-business-api pytest tests/ -v --cov=app --cov-report=term-missing
 
 # Запуск линтеров для Data API и Business API.
 lint:
+	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:lint RUN_SCENARIO=qa:lint >/dev/null
 	@echo "Running ruff..."
 	$(COMPOSE) exec free-ai-selector-data-postgres-api ruff check app/
 	$(COMPOSE) exec free-ai-selector-business-api ruff check app/
@@ -296,15 +367,18 @@ lint:
 
 # Форматирование кода ruff format.
 format:
+	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:format RUN_SCENARIO=qa:format >/dev/null
 	$(COMPOSE) exec free-ai-selector-data-postgres-api ruff format app/
 	$(COMPOSE) exec free-ai-selector-business-api ruff format app/
 
 # Применение миграций alembic.
 migrate:
+	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:migrate RUN_SCENARIO=db:migrate >/dev/null
 	$(COMPOSE) exec free-ai-selector-data-postgres-api alembic upgrade head
 
 # Наполнение БД стартовыми данными.
 seed:
+	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:seed RUN_SCENARIO=db:seed >/dev/null
 	$(COMPOSE) exec free-ai-selector-data-postgres-api python -m app.infrastructure.database.seed
 
 # =============================================================================
@@ -312,8 +386,13 @@ seed:
 # =============================================================================
 
 # Проверка health сервисов.
-# В MODE=local дополнительно проверяются host-порты 8000/8001.
+# Гарантирует запуск сервисов с актуальным RUN контекстом перед проверкой.
 health:
+	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:health RUN_SCENARIO=ops:health >/dev/null
+
+# Низкоуровневый health-check без preflight.
+# Используется внутри up/ensure-up-with-context, чтобы не создавать рекурсию.
+health-check:
 	@echo "Checking service health (MODE=$(MODE))..."
 	@echo ""
 	@echo "PostgreSQL:"
@@ -333,18 +412,29 @@ health:
 
 # Shell внутри контейнера Data API.
 shell-data:
+	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:shell-data RUN_SCENARIO=ops:shell-data >/dev/null
 	$(COMPOSE) exec free-ai-selector-data-postgres-api /bin/sh
 
 # Shell внутри контейнера Business API.
 shell-business:
+	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:shell-business RUN_SCENARIO=ops:shell-business >/dev/null
 	$(COMPOSE) exec free-ai-selector-business-api /bin/sh
 
 # PSQL shell внутри контейнера PostgreSQL.
 db-shell:
+	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:db-shell RUN_SCENARIO=ops:db-shell >/dev/null
 	$(COMPOSE) exec postgres psql -U free_ai_selector_user -d free_ai_selector_db
 
 # Фореграунд запуск compose (удобно для локальной отладки).
 dev:
+	@mkdir -p "$(AUDIT_RESULTS_DIR)"
+	@echo "Starting dev mode with run context: RUN_ID=$(RUN_ID), RUN_SOURCE=$(RUN_SOURCE), RUN_SCENARIO=$(RUN_SCENARIO)"
+	@RUN_ID="$(RUN_ID)" \
+	RUN_SOURCE="$(RUN_SOURCE)" \
+	RUN_SCENARIO="$(RUN_SCENARIO)" \
+	RUN_STARTED_AT="$(RUN_STARTED_AT)" \
+	AUDIT_ENABLED="$(AUDIT_ENABLED)" \
+	AUDIT_JSONL_PATH="$(AUDIT_JSONL_PATH)" \
 	$(COMPOSE) up --build
 
 # Краткий статус контейнеров.
@@ -364,24 +454,29 @@ status:
 load-test:
 	@mkdir -p "$(LOAD_TEST_RESULTS_DIR)"
 	@mkdir -p "$(AUDIT_RESULTS_DIR)"
+	@if [ ! -f "$(LOCUST_FILE)" ]; then \
+	    echo "ERROR: Locust file not found: $(LOCUST_FILE)"; \
+	    exit 2; \
+	fi
 	@echo "Starting load test: scenario=$(LOAD_TEST_SCENARIO), users=$(LOAD_TEST_USERS), run_time=$(LOAD_TEST_RUN_TIME), mode=$(MODE), ui=$(LOAD_TEST_WITH_UI)"
-	@echo "Run context: RUN_ID=$(RUN_ID), RUN_SOURCE=$(RUN_SOURCE), RUN_SCENARIO=$(RUN_SCENARIO), RUN_STARTED_AT=$(RUN_STARTED_AT)"
-	@echo "Audit: AUDIT_ENABLED=$(AUDIT_ENABLED), AUDIT_JSONL_PATH=$(AUDIT_JSONL_PATH)"
+	@echo "Run context: RUN_ID=$(RUN_ID), RUN_SOURCE=$(RUN_SOURCE), RUN_SCENARIO=$(LOAD_TEST_RUN_SCENARIO), RUN_STARTED_AT=$(RUN_STARTED_AT)"
+	@echo "Audit: AUDIT_ENABLED=$(AUDIT_ENABLED), container=$(AUDIT_JSONL_PATH), host=$(AUDIT_JSONL_HOST_PATH)"
 	@set -e; \
 	cleanup() { \
 	    echo "Stopping Docker services after load test..."; \
+	    $(MAKE) cleanup-load-test >/dev/null; \
 	    $(COMPOSE) down; \
 	}; \
 	trap cleanup EXIT INT TERM; \
-	echo "Starting Docker services for load test..."; \
-	RUN_ID="$(RUN_ID)" \
-	RUN_SOURCE="$(RUN_SOURCE)" \
-	RUN_SCENARIO="$(RUN_SCENARIO)" \
-	RUN_STARTED_AT="$(RUN_STARTED_AT)" \
-	AUDIT_ENABLED="$(AUDIT_ENABLED)" \
-	AUDIT_JSONL_PATH="/audit/audit.jsonl" \
-	$(COMPOSE) up -d --build; \
-	$(MAKE) health MODE=$(MODE); \
+	$(MAKE) ensure-up-with-context MODE=$(MODE) \
+	    RUN_ID="$(RUN_ID)" \
+	    RUN_SOURCE="$(RUN_SOURCE)" \
+	    RUN_SCENARIO="$(LOAD_TEST_RUN_SCENARIO)" \
+	    RUN_STARTED_AT="$(RUN_STARTED_AT)" \
+	    AUDIT_ENABLED="$(AUDIT_ENABLED)" \
+	    AUDIT_JSONL_PATH="$(AUDIT_JSONL_PATH)" \
+	    AUDIT_JSONL_HOST_PATH="$(AUDIT_JSONL_HOST_PATH)" \
+	    >/dev/null; \
 	DOCKER_PORT_ARG=""; \
 	LOCUST_CMD="locust -f $(LOCUST_FILE) --host $(LOCUST_HOST)"; \
 	if [ "$(LOAD_TEST_WITH_UI)" = "true" ]; then \
@@ -394,7 +489,8 @@ load-test:
 	else \
 	    LOCUST_CMD="$$LOCUST_CMD --headless --users $(LOAD_TEST_USERS) --spawn-rate $(LOAD_TEST_SPAWN_RATE) --run-time $(LOAD_TEST_RUN_TIME) --csv $(LOAD_TEST_RESULTS_DIR)/$(LOAD_TEST_PREFIX) --html $(LOAD_TEST_RESULTS_DIR)/$(LOAD_TEST_PREFIX).html"; \
 	fi; \
-	docker run --rm $$DOCKER_PORT_ARG \
+	docker rm -f "$(LOCUST_RUN_CONTAINER_NAME)" >/dev/null 2>&1 || true; \
+	docker run --name "$(LOCUST_RUN_CONTAINER_NAME)" --rm $$DOCKER_PORT_ARG \
 	    --entrypoint /bin/sh \
 	    --network free-ai-selector-network \
 	    -v "$(PWD):/work" \
@@ -405,27 +501,64 @@ load-test:
 	    -e INCLUDE_OVERSIZE_PROMPT="$(LOAD_TEST_OVERSIZE)" \
 	    -e RESULTS_JSONL_PATH="$(LOAD_TEST_RESULTS_DIR)/$(LOAD_TEST_PREFIX).jsonl" \
 	    -e AUDIT_ENABLED="$(AUDIT_ENABLED)" \
-	    -e AUDIT_JSONL_PATH="$(AUDIT_JSONL_PATH)" \
+	    -e AUDIT_JSONL_PATH="$(AUDIT_JSONL_HOST_PATH)" \
 	    -e PROMPT_PATH="/api/v1/prompts/process" \
 	    -e MODEL_STATS_PATH="/api/v1/models/stats" \
 	    -e HEALTH_PATH="/health" \
 	    -e RUN_ID="$(RUN_ID)" \
 	    -e RUN_SOURCE="$(RUN_SOURCE)" \
-	    -e RUN_SCENARIO="$(RUN_SCENARIO)" \
+	    -e RUN_SCENARIO="$(LOAD_TEST_RUN_SCENARIO)" \
 	    -e RUN_STARTED_AT="$(RUN_STARTED_AT)" \
 	    $(LOCUST_IMAGE) -c "$$LOCUST_CMD"; \
 	echo "Load test finished. Reports are in $(LOAD_TEST_RESULTS_DIR)"
 
-# UI-режим Locust без автозапуска нагрузки.
-# Удобен для ручного старта сценариев из браузера.
+# Алиас для совместимости: запускает постоянный Locust UI.
 load-test-ui:
-	@echo "Locust UI will be available at http://localhost:$(LOAD_TEST_WEB_PORT)"
-	@$(MAKE) load-test \
-	    LOAD_TEST_WITH_UI=true \
-	    LOAD_TEST_AUTOSTART=false \
-	    LOAD_TEST_SCENARIO=baseline \
-	    LOAD_TEST_PREFIX=ui-baseline \
-	    RUN_SOURCE=make:load-test-ui
+	@$(MAKE) load-test-ui-up RUN_SOURCE=make:load-test-ui RUN_SCENARIO=load-test:ui
+
+# Поднимает постоянный контейнер Locust UI и оставляет его работать.
+# Используется для ручного запуска/остановки нагрузки через браузер.
+load-test-ui-up:
+	@mkdir -p "$(LOAD_TEST_RESULTS_DIR)"
+	@mkdir -p "$(AUDIT_RESULTS_DIR)"
+	@if [ ! -f "$(LOCUST_FILE)" ]; then \
+	    echo "ERROR: Locust file not found: $(LOCUST_FILE)"; \
+	    exit 2; \
+	fi
+	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:load-test-ui-up RUN_SCENARIO=load-test:ui >/dev/null
+	@docker rm -f "$(LOCUST_UI_CONTAINER_NAME)" >/dev/null 2>&1 || true
+	@docker run -d --name "$(LOCUST_UI_CONTAINER_NAME)" \
+	    -p "$(LOAD_TEST_WEB_PORT):$(LOAD_TEST_WEB_PORT)" \
+	    --entrypoint /bin/sh \
+	    --network free-ai-selector-network \
+	    -v "$(PWD):/work" \
+	    -w /work \
+	    -e LOCUST_SCENARIO="$(LOAD_TEST_SCENARIO)" \
+	    -e ENABLE_MONITORING="$(LOAD_TEST_MONITORING)" \
+	    -e WRITE_RESULTS_JSONL=true \
+	    -e INCLUDE_OVERSIZE_PROMPT="$(LOAD_TEST_OVERSIZE)" \
+	    -e RESULTS_JSONL_PATH="$(LOAD_TEST_RESULTS_DIR)/ui-$(RUN_ID).jsonl" \
+	    -e AUDIT_ENABLED="$(AUDIT_ENABLED)" \
+	    -e AUDIT_JSONL_PATH="$(AUDIT_JSONL_HOST_PATH)" \
+	    -e PROMPT_PATH="/api/v1/prompts/process" \
+	    -e MODEL_STATS_PATH="/api/v1/models/stats" \
+	    -e HEALTH_PATH="/health" \
+	    -e RUN_ID="$(RUN_ID)" \
+	    -e RUN_SOURCE="make:load-test-ui-up" \
+	    -e RUN_SCENARIO="load-test:ui" \
+	    -e RUN_STARTED_AT="$(RUN_STARTED_AT)" \
+	    "$(LOCUST_IMAGE)" -c "locust -f $(LOCUST_FILE) --host $(LOCUST_HOST) --web-host 0.0.0.0 --web-port $(LOAD_TEST_WEB_PORT)"
+	@echo "Locust UI is running: http://localhost:$(LOAD_TEST_WEB_PORT)"
+	@echo "Use 'make load-test-ui-logs' to watch logs and 'make load-test-ui-down' to stop."
+
+# Показывает логи постоянного контейнера Locust UI.
+load-test-ui-logs:
+	@docker logs -f "$(LOCUST_UI_CONTAINER_NAME)"
+
+# Останавливает постоянный Locust UI и docker-стек проекта.
+load-test-ui-down:
+	@$(MAKE) cleanup-load-test >/dev/null
+	@$(COMPOSE) down
 
 # Базовый smoke/baseline прогон.
 load-test-baseline:
@@ -437,7 +570,8 @@ load-test-baseline:
 	    LOAD_TEST_PREFIX=baseline \
 	    LOAD_TEST_MONITORING=true \
 	    LOAD_TEST_OVERSIZE=false \
-	    RUN_SOURCE=make:load-test-baseline
+	    RUN_SOURCE=make:load-test-baseline \
+	    LOAD_TEST_RUN_SCENARIO=load-test:baseline
 
 # Лестница ramp-up по users: 2 -> 12.
 load-test-ramp-up:
@@ -452,6 +586,7 @@ load-test-ramp-up:
 	        LOAD_TEST_MONITORING=true \
 	        LOAD_TEST_OVERSIZE=false \
 	        RUN_SOURCE=make:load-test-ramp-up \
+	        LOAD_TEST_RUN_SCENARIO=load-test:ramp_up \
 	        || exit $$?; \
 	done
 
@@ -465,7 +600,8 @@ load-test-sustained:
 	    LOAD_TEST_PREFIX=sustained \
 	    LOAD_TEST_MONITORING=true \
 	    LOAD_TEST_OVERSIZE=false \
-	    RUN_SOURCE=make:load-test-sustained
+	    RUN_SOURCE=make:load-test-sustained \
+	    LOAD_TEST_RUN_SCENARIO=load-test:sustained
 
 # Сценарий проверки fallback/failover.
 load-test-failover:
@@ -477,7 +613,8 @@ load-test-failover:
 	    LOAD_TEST_PREFIX=failover \
 	    LOAD_TEST_MONITORING=true \
 	    LOAD_TEST_OVERSIZE=false \
-	    RUN_SOURCE=make:load-test-failover
+	    RUN_SOURCE=make:load-test-failover \
+	    LOAD_TEST_RUN_SCENARIO=load-test:failover
 
 # Короткий recovery прогон после нагрузочных сценариев.
 load-test-recovery:
@@ -489,7 +626,8 @@ load-test-recovery:
 	    LOAD_TEST_PREFIX=recovery \
 	    LOAD_TEST_MONITORING=true \
 	    LOAD_TEST_OVERSIZE=false \
-	    RUN_SOURCE=make:load-test-recovery
+	    RUN_SOURCE=make:load-test-recovery \
+	    LOAD_TEST_RUN_SCENARIO=load-test:recovery
 
 # Сценарий с oversize payload (проверка ограничений размера).
 load-test-oversize:
@@ -501,7 +639,8 @@ load-test-oversize:
 	    LOAD_TEST_PREFIX=ramp_up_oversize \
 	    LOAD_TEST_MONITORING=true \
 	    LOAD_TEST_OVERSIZE=true \
-	    RUN_SOURCE=make:load-test-oversize
+	    RUN_SOURCE=make:load-test-oversize \
+	    LOAD_TEST_RUN_SCENARIO=load-test:oversize
 
 # Полный последовательный прогон всех нагрузочных сценариев.
 load-test-all:
@@ -511,3 +650,9 @@ load-test-all:
 	@$(MAKE) load-test-failover RUN_SOURCE=make:load-test-all
 	@$(MAKE) load-test-recovery RUN_SOURCE=make:load-test-all
 	@$(MAKE) load-test-oversize RUN_SOURCE=make:load-test-all
+
+# Очищает зависшие locust-контейнеры, которые могут удерживать docker-сеть.
+cleanup-load-test:
+	@docker rm -f "$(LOCUST_UI_CONTAINER_NAME)" >/dev/null 2>&1 || true
+	@docker ps -a --format '{{.Names}}' | rg '^free-ai-selector-locust-run-' | xargs -r docker rm -f >/dev/null 2>&1 || true
+	@docker ps -a --filter "network=free-ai-selector-network" --filter "ancestor=$(LOCUST_IMAGE)" --format '{{.ID}}' | xargs -r docker rm -f >/dev/null 2>&1 || true
