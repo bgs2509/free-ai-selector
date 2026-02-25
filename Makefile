@@ -1,4 +1,5 @@
-.PHONY: help local vps build up down restart logs logs-data logs-business logs-bot logs-worker logs-db clean test test-data test-business lint format migrate seed health shell-data shell-business db-shell dev status
+.PHONY: help local vps build up down restart logs logs-data logs-business logs-bot logs-worker logs-db clean test test-data test-business lint format migrate seed health shell-data shell-business db-shell dev status \
+	load-test load-test-ui load-test-baseline load-test-ramp-up load-test-sustained load-test-failover load-test-recovery load-test-oversize load-test-all
 
 # =============================================================================
 # Free AI Selector - Команды запуска и сопровождения
@@ -23,6 +24,26 @@ COMPOSE := docker compose -f docker-compose.yml -f docker-compose.vps.yml
 else
 $(error Unsupported MODE='$(MODE)'. Use MODE=local or MODE=vps)
 endif
+
+# =============================================================================
+# Load testing configuration (Locust in Docker)
+# =============================================================================
+LOCUST_IMAGE ?= locustio/locust:2.43.3
+LOCUST_FILE ?= docs/api-tests/locustfile.py
+LOCUST_HOST ?= http://free-ai-selector-business-api:8000
+LOAD_TEST_RESULTS_DIR ?= docs/api-tests/results
+
+LOAD_TEST_SCENARIO ?= baseline
+LOAD_TEST_USERS ?= 1
+LOAD_TEST_SPAWN_RATE ?= 1
+LOAD_TEST_RUN_TIME ?= 10m
+LOAD_TEST_PREFIX ?= $(LOAD_TEST_SCENARIO)
+LOAD_TEST_MONITORING ?= true
+LOAD_TEST_OVERSIZE ?= false
+LOAD_TEST_WITH_UI ?= true
+LOAD_TEST_AUTOSTART ?= true
+LOAD_TEST_AUTOQUIT_SECONDS ?= 10
+LOAD_TEST_WEB_PORT ?= 8089
 
 help:
 	@echo "Free AI Selector - Available Commands:"
@@ -54,6 +75,17 @@ help:
 	@echo "  make shell-business        - Open shell in Business API container"
 	@echo "  make db-shell              - Open PostgreSQL shell"
 	@echo "  make status                - Show service status"
+	@echo ""
+	@echo "Load Testing (Locust in Docker):"
+	@echo "  make load-test-baseline    - Baseline (1 user, 10m)"
+	@echo "  make load-test-ramp-up     - Ramp-up steps: 2/4/6/8/10/12 users"
+	@echo "  make load-test-sustained   - Sustained load (8 users, 10m)"
+	@echo "  make load-test-failover    - Provider failover scenario (6 users, 10m)"
+	@echo "  make load-test-recovery    - Recovery check (1 user, 5m)"
+	@echo "  make load-test-oversize    - Oversize payload scenario (422 checks)"
+	@echo "  make load-test-ui          - Run Locust web UI in Docker (manual start)"
+	@echo "  make load-test-all         - Run all scenarios sequentially (UI + autostart)"
+	@echo "                              (UI доступен на http://localhost:8089)"
 	@echo ""
 
 # Явные команды запуска для двух режимов
@@ -176,3 +208,126 @@ dev:
 
 status:
 	$(COMPOSE) ps
+
+# =============================================================================
+# Load testing (Locust in Docker, full lifecycle)
+# =============================================================================
+
+load-test:
+	@mkdir -p "$(LOAD_TEST_RESULTS_DIR)"
+	@echo "Starting load test: scenario=$(LOAD_TEST_SCENARIO), users=$(LOAD_TEST_USERS), run_time=$(LOAD_TEST_RUN_TIME), mode=$(MODE), ui=$(LOAD_TEST_WITH_UI)"
+	@set -e; \
+	cleanup() { \
+		echo "Stopping Docker services after load test..."; \
+		$(COMPOSE) down; \
+	}; \
+	trap cleanup EXIT INT TERM; \
+	echo "Starting Docker services for load test..."; \
+	$(COMPOSE) up -d --build; \
+	$(MAKE) health MODE=$(MODE); \
+	DOCKER_PORT_ARG=""; \
+	LOCUST_CMD="locust -f $(LOCUST_FILE) --host $(LOCUST_HOST)"; \
+	if [ "$(LOAD_TEST_WITH_UI)" = "true" ]; then \
+		DOCKER_PORT_ARG="-p $(LOAD_TEST_WEB_PORT):$(LOAD_TEST_WEB_PORT)"; \
+		LOCUST_CMD="$$LOCUST_CMD --web-host 0.0.0.0 --web-port $(LOAD_TEST_WEB_PORT)"; \
+		if [ "$(LOAD_TEST_AUTOSTART)" = "true" ]; then \
+			LOCUST_CMD="$$LOCUST_CMD --autostart --autoquit $(LOAD_TEST_AUTOQUIT_SECONDS) --users $(LOAD_TEST_USERS) --spawn-rate $(LOAD_TEST_SPAWN_RATE) --run-time $(LOAD_TEST_RUN_TIME) --csv $(LOAD_TEST_RESULTS_DIR)/$(LOAD_TEST_PREFIX) --html $(LOAD_TEST_RESULTS_DIR)/$(LOAD_TEST_PREFIX).html"; \
+		fi; \
+		echo "Locust UI: http://localhost:$(LOAD_TEST_WEB_PORT)"; \
+	else \
+		LOCUST_CMD="$$LOCUST_CMD --headless --users $(LOAD_TEST_USERS) --spawn-rate $(LOAD_TEST_SPAWN_RATE) --run-time $(LOAD_TEST_RUN_TIME) --csv $(LOAD_TEST_RESULTS_DIR)/$(LOAD_TEST_PREFIX) --html $(LOAD_TEST_RESULTS_DIR)/$(LOAD_TEST_PREFIX).html"; \
+	fi; \
+	docker run --rm $$DOCKER_PORT_ARG \
+		--network free-ai-selector-network \
+		-v "$(PWD):/work" \
+		-w /work \
+		-e LOCUST_SCENARIO="$(LOAD_TEST_SCENARIO)" \
+		-e ENABLE_MONITORING="$(LOAD_TEST_MONITORING)" \
+		-e WRITE_RESULTS_JSONL=true \
+		-e INCLUDE_OVERSIZE_PROMPT="$(LOAD_TEST_OVERSIZE)" \
+		-e RESULTS_JSONL_PATH="$(LOAD_TEST_RESULTS_DIR)/$(LOAD_TEST_PREFIX).jsonl" \
+		-e PROMPT_PATH="/api/v1/prompts/process" \
+		-e MODEL_STATS_PATH="/api/v1/models/stats" \
+		-e HEALTH_PATH="/health" \
+		$(LOCUST_IMAGE) sh -c "$$LOCUST_CMD"; \
+	echo "Load test finished. Reports are in $(LOAD_TEST_RESULTS_DIR)"
+
+load-test-ui:
+	@echo "Locust UI will be available at http://localhost:$(LOAD_TEST_WEB_PORT)"
+	@$(MAKE) load-test \
+		LOAD_TEST_WITH_UI=true \
+		LOAD_TEST_AUTOSTART=false \
+		LOAD_TEST_SCENARIO=baseline \
+		LOAD_TEST_PREFIX=ui-baseline
+
+load-test-baseline:
+	@$(MAKE) load-test \
+		LOAD_TEST_SCENARIO=baseline \
+		LOAD_TEST_USERS=1 \
+		LOAD_TEST_SPAWN_RATE=1 \
+		LOAD_TEST_RUN_TIME=10m \
+		LOAD_TEST_PREFIX=baseline \
+		LOAD_TEST_MONITORING=true \
+		LOAD_TEST_OVERSIZE=false
+
+load-test-ramp-up:
+	@for users in 2 4 6 8 10 12; do \
+		echo "Ramp-up step: users=$$users"; \
+		$(MAKE) load-test \
+			LOAD_TEST_SCENARIO=ramp_up \
+			LOAD_TEST_USERS=$$users \
+			LOAD_TEST_SPAWN_RATE=2 \
+			LOAD_TEST_RUN_TIME=3m \
+			LOAD_TEST_PREFIX=ramp_up_u$$users \
+			LOAD_TEST_MONITORING=true \
+			LOAD_TEST_OVERSIZE=false \
+			|| exit $$?; \
+	done
+
+load-test-sustained:
+	@$(MAKE) load-test \
+		LOAD_TEST_SCENARIO=sustained \
+		LOAD_TEST_USERS=8 \
+		LOAD_TEST_SPAWN_RATE=2 \
+		LOAD_TEST_RUN_TIME=10m \
+		LOAD_TEST_PREFIX=sustained \
+		LOAD_TEST_MONITORING=true \
+		LOAD_TEST_OVERSIZE=false
+
+load-test-failover:
+	@$(MAKE) load-test \
+		LOAD_TEST_SCENARIO=failover \
+		LOAD_TEST_USERS=6 \
+		LOAD_TEST_SPAWN_RATE=2 \
+		LOAD_TEST_RUN_TIME=10m \
+		LOAD_TEST_PREFIX=failover \
+		LOAD_TEST_MONITORING=true \
+		LOAD_TEST_OVERSIZE=false
+
+load-test-recovery:
+	@$(MAKE) load-test \
+		LOAD_TEST_SCENARIO=baseline \
+		LOAD_TEST_USERS=1 \
+		LOAD_TEST_SPAWN_RATE=1 \
+		LOAD_TEST_RUN_TIME=5m \
+		LOAD_TEST_PREFIX=recovery \
+		LOAD_TEST_MONITORING=true \
+		LOAD_TEST_OVERSIZE=false
+
+load-test-oversize:
+	@$(MAKE) load-test \
+		LOAD_TEST_SCENARIO=ramp_up \
+		LOAD_TEST_USERS=4 \
+		LOAD_TEST_SPAWN_RATE=2 \
+		LOAD_TEST_RUN_TIME=5m \
+		LOAD_TEST_PREFIX=ramp_up_oversize \
+		LOAD_TEST_MONITORING=true \
+		LOAD_TEST_OVERSIZE=true
+
+load-test-all:
+	@$(MAKE) load-test-baseline
+	@$(MAKE) load-test-ramp-up
+	@$(MAKE) load-test-sustained
+	@$(MAKE) load-test-failover
+	@$(MAKE) load-test-recovery
+	@$(MAKE) load-test-oversize
