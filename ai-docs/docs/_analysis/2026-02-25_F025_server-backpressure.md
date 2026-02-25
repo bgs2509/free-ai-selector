@@ -11,7 +11,7 @@ mode: "FEATURE"
 
 related_features: [F022, F023, F024]
 services: [free-ai-selector-business-api]
-requirements_count: 10
+requirements_count: 11
 
 pipelines:
   business: true
@@ -109,7 +109,7 @@ Business API **не сообщает клиентам** о перегрузке 
 
 | ID | Название | Описание | Критерий приёмки |
 |----|----------|----------|------------------|
-| FR-010 | Дифференциация ошибок в response body | Вместо одинакового `{"detail": "Failed to process prompt..."}` возвращать структурированный JSON: `{"error": "<type>", "message": "<human-readable>", "retry_after": <seconds or null>}`. | Тест: HTTP 429 body содержит `"error": "rate_limited"`, `"retry_after": 60`. |
+| FR-010 | Структурированный error body | Вместо одинакового `{"detail": "Failed to process prompt..."}` возвращать структурированный JSON: `{"error": "<type>", "message": "<human-readable>", "retry_after": <seconds or null>, "attempts": <int>, "providers_tried": <int>, "providers_available": <int>}`. Числовые метрики без имён провайдеров (security). | Тест: HTTP 429 body содержит `"error": "all_rate_limited"`, `"retry_after": 60`, `"attempts": 5`, `"providers_tried": 5`. |
 | FR-011 | Логирование backpressure событий | При возврате HTTP 429/503 логировать: event, причину, retry_after, client_ip. | В логах: `backpressure_applied status=429 reason=all_rate_limited retry_after=60`. |
 
 ### 2.3 Nice to Have (Could Have)
@@ -117,6 +117,7 @@ Business API **не сообщает клиентам** о перегрузке 
 | ID | Название | Описание | Критерий приёмки |
 |----|----------|----------|------------------|
 | FR-020 | Provider availability в заголовке | Добавить заголовок `X-Providers-Available: 3/14` показывающий сколько провайдеров доступно. | Тест: 3 из 14 провайдеров доступны → `X-Providers-Available: 3/14`. |
+| FR-021 | Debug-режим с детальной информацией | При query-параметре `?debug=true` (только если env `ENABLE_DEBUG_RESPONSE=true`, default: false) добавлять в error body секцию `"debug"` с детальной информацией по каждому провайдеру: `{"debug": {"providers": [{"name": "Groq", "error": "RateLimitError", "retry_after": 60}, ...]}}`. На проде выключен. | Тест: `ENABLE_DEBUG_RESPONSE=true` + `?debug=true` + ошибка → body содержит `"debug"` с массивом провайдеров. Тест: `ENABLE_DEBUG_RESPONSE=false` + `?debug=true` → нет секции `"debug"`. |
 
 ---
 
@@ -272,7 +273,9 @@ POST /process
 | TRQ-004 | Unit | Нет API-ключей → HTTP 503 | Да |
 | TRQ-005 | Unit | Успешный запрос → HTTP 200 + X-RateLimit-* | Да |
 | TRQ-006 | Unit | 101-й запрос за минуту → HTTP 429 (slowapi) | Да |
-| TRQ-007 | Unit | Структурированный error body (FR-010) | Да |
+| TRQ-007 | Unit | Структурированный error body с attempts/providers_tried (FR-010) | Да |
+| TRQ-008 | Unit | Debug-режим: детали провайдеров при ENABLE_DEBUG_RESPONSE=true (FR-021) | Нет |
+| TRQ-009 | Unit | Debug-режим: секция debug отсутствует при ENABLE_DEBUG_RESPONSE=false (FR-021) | Нет |
 
 ---
 
