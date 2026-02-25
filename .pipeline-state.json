@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-02-25T08:31:00.000000",
+  "updated_at": "2026-02-25T07:37:25.518900",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -1228,7 +1228,7 @@
       "branch": "feature/F023-error-resilience-and-telemetry",
       "name": "error-resilience-and-telemetry",
       "title": "Cooldown для постоянных ошибок, exponential backoff и per-request telemetry",
-      "stage": "IDEA",
+      "stage": "RESEARCH",
       "created": "2026-02-25",
       "gates": {
         "PRD_READY": {
@@ -1237,8 +1237,8 @@
           "artifact": "_analysis/2026-02-25_F023_error-resilience-and-telemetry.md"
         },
         "RESEARCH_DONE": {
-          "passed": false,
-          "passed_at": null
+          "passed": true,
+          "passed_at": "2026-02-25T07:37:25.518900"
         },
         "PLAN_APPROVED": {
           "passed": false,
@@ -1270,7 +1270,8 @@
         }
       },
       "artifacts": {
-        "prd": "_analysis/2026-02-25_F023_error-resilience-and-telemetry.md"
+        "prd": "_analysis/2026-02-25_F023_error-resilience-and-telemetry.md",
+        "research": "_research/2026-02-25_F023_error-resilience-and-telemetry.md"
       }
     },
     "F024": {
