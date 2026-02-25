@@ -341,32 +341,85 @@ Level 2 maturity requires **≥75% code coverage** for all services.
 
 ## 📖 API Documentation
 
-Once services are running, visit:
+### Interactive Docs (Swagger / ReDoc)
 
-- **Local mode (`make local`)**:
-  - Business API Docs: http://localhost:8000/docs
-  - Data API Docs: http://localhost:8001/docs
-- **VPS mode (`make vps`)**:
-  - Docs are available via your reverse proxy prefix (for example `/free-ai-selector/docs`)
+При запущенных сервисах:
 
-### Key Endpoints
+| Сервис | Swagger UI | ReDoc |
+|--------|------------|-------|
+| Business API | http://localhost:8000/docs | http://localhost:8000/redoc |
+| Data API | http://localhost:8001/docs | http://localhost:8001/redoc |
 
-#### Business API (port 8000)
+### Business API (port 8000)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/prompts/process` | Process prompt with best AI model |
-| GET | `/api/v1/models/stats` | Get reliability statistics for all models |
-| GET | `/health` | Health check |
-
-#### Data API (port 8001)
+Бизнес-логика, маршрутизация промптов и интеграция с AI-провайдерами.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/v1/models` | List all AI models |
-| PUT | `/api/v1/models/{id}/stats` | Update model statistics |
-| POST | `/api/v1/history` | Record prompt history |
-| GET | `/health` | Health check |
+| `POST` | `/api/v1/prompts/process` | Обработать промпт лучшей AI-моделью |
+| `GET` | `/api/v1/models/stats` | Статистика надёжности всех моделей |
+| `POST` | `/api/v1/providers/test` | Тестировать все AI-провайдеры |
+| `GET` | `/health` | Health check (сервис + Data API) |
+| `GET` | `/api` | Информация о сервисе |
+
+**Основной endpoint** — `POST /api/v1/prompts/process`:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/prompts/process \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Write a poem about AI",
+    "system_prompt": "You are a creative writer",
+    "model_id": 3,
+    "response_format": {"type": "json_object"}
+  }'
+```
+
+Ответ включает telemetry: `attempts` (количество попыток) и `fallback_used` (был ли fallback).
+
+При перегрузке возвращает **429** / **503** с заголовком `Retry-After` и структурированным `ErrorResponse`.
+
+### Data API (port 8001)
+
+CRUD для AI-моделей и истории промптов. Внутренний сервис — не доступен извне.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/models` | Список AI-моделей (фильтры: `active_only`, `available_only`, `include_recent`) |
+| `GET` | `/api/v1/models/{id}` | Модель по ID |
+| `POST` | `/api/v1/models` | Создать модель |
+| `PUT` | `/api/v1/models/{id}/stats` | Обновить статистику |
+| `POST` | `/api/v1/models/{id}/increment-success` | +1 успех |
+| `POST` | `/api/v1/models/{id}/increment-failure` | +1 ошибка |
+| `PATCH` | `/api/v1/models/{id}/active` | Вкл/выкл модель |
+| `PATCH` | `/api/v1/models/{id}/availability` | Cooldown при rate limit |
+| `POST` | `/api/v1/history` | Создать запись истории |
+| `GET` | `/api/v1/history` | Последние записи |
+| `GET` | `/api/v1/history/user/{user_id}` | История пользователя |
+| `GET` | `/api/v1/history/model/{model_id}` | История модели |
+| `GET` | `/api/v1/history/{id}` | Запись по ID |
+| `GET` | `/api/v1/history/statistics/period` | Агрегированная статистика за период |
+| `GET` | `/health` | Health check (сервис + PostgreSQL) |
+
+### Подробная документация
+
+| Документ | Описание |
+|----------|----------|
+| [docs/api/business-api.md](docs/api/business-api.md) | Business API — полное описание endpoints, schemas, middleware, rate limiting |
+| [docs/api/data-api.md](docs/api/data-api.md) | Data API — полное описание endpoints, schemas, query parameters |
+| [docs/api/errors.md](docs/api/errors.md) | Коды ошибок, `ErrorResponse` (F025), error classification, troubleshooting |
+| [docs/api/examples.md](docs/api/examples.md) | 16+ примеров curl и Python client для всех endpoints |
+
+### Ключевые возможности API
+
+- **Автоматический выбор модели** по reliability score с fallback при ошибках
+- **Принудительный выбор модели** через `model_id` с fallback (F019)
+- **System prompt** и **JSON response format** (F011-B)
+- **Per-request telemetry**: `attempts`, `fallback_used` в ответе (F023)
+- **Backpressure**: HTTP 429/503 с `Retry-After` и структурированным `ErrorResponse` (F025)
+- **Circuit Breaker**: автоотключение нестабильных провайдеров (F024)
+- **Recent metrics**: выбор модели по данным скользящего окна (F010)
+- **Request tracing**: `X-Request-ID` / `X-Correlation-ID` headers
 
 ---
 
