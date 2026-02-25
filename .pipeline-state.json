@@ -1389,12 +1389,19 @@
         "DEPLOYED": {
           "passed": false,
           "passed_at": null
+        },
+        "DOCUMENTED": {
+          "passed": true,
+          "passed_at": "2026-02-25T12:30:00.000000",
+          "mode": "quick",
+          "artifact": "_validation/2026-02-25_F025_server-backpressure.md"
         }
       },
       "artifacts": {
         "prd": "_analysis/2026-02-25_F025_server-backpressure.md",
         "research": "_research/2026-02-25_F025_server-backpressure.md",
-        "plan": "_plans/features/2026-02-25_F025_server-backpressure.md"
+        "plan": "_plans/features/2026-02-25_F025_server-backpressure.md",
+        "completion": "_validation/2026-02-25_F025_server-backpressure.md"
       },
       "services": ["free-ai-selector-business-api"]
     }

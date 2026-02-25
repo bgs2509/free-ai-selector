@@ -108,6 +108,7 @@ async def process_prompt(
                 retry_after=retry_after,
                 attempts=e.attempts,
                 providers_tried=e.providers_tried,
+                providers_available=0,
             ).model_dump(),
         )
 
@@ -127,6 +128,9 @@ async def process_prompt(
                 error="service_unavailable",
                 message=str(e),
                 retry_after=retry_after,
+                attempts=0,
+                providers_tried=0,
+                providers_available=0,
             ).model_dump(),
         )
 
