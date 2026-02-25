@@ -626,7 +626,13 @@ class TestF014ErrorHandlingConsolidation:
         await use_case._handle_rate_limit(model, error)
 
         # Verify set_availability was called with correct arguments
-        mock_data_api_client.set_availability.assert_called_once_with(1, 120)
+        mock_data_api_client.set_availability.assert_called_once_with(
+            model_id=1,
+            retry_after_seconds=120,
+            reason="rate_limit",
+            error_type="RateLimitError",
+            source="process_prompt",
+        )
 
     async def test_handle_rate_limit_uses_default_cooldown(self, mock_data_api_client):
         """Test that _handle_rate_limit uses default cooldown when not specified (F014)."""
@@ -648,9 +654,12 @@ class TestF014ErrorHandlingConsolidation:
 
         # Verify set_availability was called with default cooldown (3600)
         mock_data_api_client.set_availability.assert_called_once()
-        call_args = mock_data_api_client.set_availability.call_args
-        assert call_args[0][0] == 2  # model_id
-        assert call_args[0][1] == 3600  # default cooldown
+        call_kwargs = mock_data_api_client.set_availability.call_args.kwargs
+        assert call_kwargs["model_id"] == 2
+        assert call_kwargs["retry_after_seconds"] == 3600
+        assert call_kwargs["reason"] == "rate_limit"
+        assert call_kwargs["error_type"] == "RateLimitError"
+        assert call_kwargs["source"] == "process_prompt"
 
     async def test_handle_rate_limit_handles_set_availability_error(
         self, mock_data_api_client, caplog
@@ -799,7 +808,13 @@ class TestF023Cooldown:
 
         await use_case._handle_transient_error(model, error, start_time)
 
-        mock_data_api_client.set_availability.assert_called_once_with(1, 86400)
+        mock_data_api_client.set_availability.assert_called_once_with(
+            model_id=1,
+            retry_after_seconds=86400,
+            reason="permanent_error",
+            error_type="AuthenticationError",
+            source="process_prompt",
+        )
         mock_data_api_client.increment_failure.assert_called_once()
 
     async def test_validation_error_triggers_cooldown(self, mock_data_api_client):
@@ -822,7 +837,13 @@ class TestF023Cooldown:
 
         await use_case._handle_transient_error(model, error, start_time)
 
-        mock_data_api_client.set_availability.assert_called_once_with(2, 86400)
+        mock_data_api_client.set_availability.assert_called_once_with(
+            model_id=2,
+            retry_after_seconds=86400,
+            reason="permanent_error",
+            error_type="ValidationError",
+            source="process_prompt",
+        )
         mock_data_api_client.increment_failure.assert_called_once()
 
     async def test_server_error_does_not_trigger_cooldown(self, mock_data_api_client):

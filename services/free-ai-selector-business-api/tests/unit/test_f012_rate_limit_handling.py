@@ -74,8 +74,14 @@ class TestF012RateLimitHandling:
 
         response = await use_case.execute(request)
 
-        # Verify: set_availability called for rate-limited model
-        mock_data_api_client.set_availability.assert_called_once_with(1, 3600)
+        # Verify: set_availability called for rate-limited model with audit metadata
+        mock_data_api_client.set_availability.assert_called_once_with(
+            model_id=1,
+            retry_after_seconds=3600,
+            reason="rate_limit",
+            error_type="RateLimitError",
+            source="process_prompt",
+        )
 
         # Verify: increment_failure NOT called for rate-limited model (graceful degradation)
         # Only check calls - should not include model_id=1 failure
