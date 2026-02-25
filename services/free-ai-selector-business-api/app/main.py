@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 import httpx
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, Response, status
 
 from app.utils.logger import setup_logging, get_logger
 from app.utils.request_id import (
@@ -323,18 +323,20 @@ async def root():
     Returns:
         RedirectResponse на static/index.html
     """
-    return RedirectResponse(url="static/index.html")
+    return RedirectResponse(url="/static/index.html")
 
 
 @app.get("/api", tags=["Root"], summary="API информация")
 @limiter.limit(f"{RATE_LIMIT_REQUESTS}/{RATE_LIMIT_PERIOD}second")
-async def api_info(request: Request):
+async def api_info(request: Request, response: Response):
     """
     Информация об API.
 
     Returns:
         Название сервиса, версия и ссылки на документацию
     """
+    # Параметр response нужен slowapi для корректной установки rate-limit заголовков.
+    _ = response
     return {
         "service": SERVICE_NAME,
         "version": SERVICE_VERSION,

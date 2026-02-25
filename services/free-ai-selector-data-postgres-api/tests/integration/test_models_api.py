@@ -4,6 +4,7 @@ Integration tests for AI Models API endpoints
 
 import pytest
 from httpx import AsyncClient
+from uuid import uuid4
 
 from app.main import app
 
@@ -11,6 +12,11 @@ from app.main import app
 @pytest.mark.integration
 class TestModelsAPI:
     """Test AI Models API endpoints."""
+
+    @staticmethod
+    def _unique_model_name(prefix: str) -> str:
+        """Генерирует уникальное имя модели для изоляции интеграционных тестов."""
+        return f"{prefix}-{uuid4().hex[:8]}"
 
     @pytest.fixture
     async def client(self):
@@ -43,9 +49,11 @@ class TestModelsAPI:
 
     async def test_create_and_get_model(self, client: AsyncClient):
         """Test creating and fetching a model."""
+        model_name = self._unique_model_name("Test-Integration-Model")
+
         # Create model
         create_payload = {
-            "name": "Test Integration Model",
+            "name": model_name,
             "provider": "TestProvider",
             "api_endpoint": "https://api.test.com",
             "is_active": True,
@@ -54,7 +62,7 @@ class TestModelsAPI:
         create_response = await client.post("/api/v1/models", json=create_payload)
         assert create_response.status_code == 201
         created_model = create_response.json()
-        assert created_model["name"] == "Test Integration Model"
+        assert created_model["name"] == model_name
         model_id = created_model["id"]
 
         # Get model by ID
@@ -62,12 +70,14 @@ class TestModelsAPI:
         assert get_response.status_code == 200
         fetched_model = get_response.json()
         assert fetched_model["id"] == model_id
-        assert fetched_model["name"] == "Test Integration Model"
+        assert fetched_model["name"] == model_name
 
     async def test_create_duplicate_model(self, client: AsyncClient):
         """Test creating model with duplicate name."""
+        model_name = self._unique_model_name("Duplicate-Test-Model")
+
         payload = {
-            "name": "Duplicate Test Model",
+            "name": model_name,
             "provider": "TestProvider",
             "api_endpoint": "https://api.test.com",
             "is_active": True,
@@ -88,9 +98,11 @@ class TestModelsAPI:
 
     async def test_increment_success_endpoint(self, client: AsyncClient):
         """Test incrementing success count."""
+        model_name = self._unique_model_name("Success-Test-Model")
+
         # Create model
         create_payload = {
-            "name": "Success Test Model",
+            "name": model_name,
             "provider": "TestProvider",
             "api_endpoint": "https://api.test.com",
             "is_active": True,

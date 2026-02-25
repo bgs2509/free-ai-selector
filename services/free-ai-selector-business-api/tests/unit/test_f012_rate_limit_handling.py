@@ -15,6 +15,7 @@ import pytest
 
 from app.application.use_cases.process_prompt import ProcessPromptUseCase
 from app.domain.exceptions import (
+    AllProvidersRateLimited,
     AuthenticationError,
     RateLimitError,
     ServerError,
@@ -205,8 +206,8 @@ class TestF012RateLimitHandling:
         use_case = ProcessPromptUseCase(mock_data_api_client)
         request = PromptRequest(user_id="test_user", prompt_text="Test prompt")
 
-        # All providers rate-limited should raise
-        with pytest.raises(Exception, match="All AI providers failed"):
+        # All providers rate-limited should raise domain-specific exception
+        with pytest.raises(AllProvidersRateLimited, match="rate limited"):
             await use_case.execute(request)
 
         # Verify: set_availability called

@@ -115,7 +115,9 @@ class AIModelRepository:
             total_response_time=model.total_response_time,
             request_count=model.request_count,
             last_checked=model.last_checked,
+            api_format=model.api_format,
             is_active=model.is_active,
+            available_at=model.available_at,
         )
 
         self.session.add(orm_model)

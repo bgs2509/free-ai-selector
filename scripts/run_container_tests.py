@@ -251,6 +251,8 @@ def run_tests_for_service(compose: list[str], service: ServiceConfig) -> Service
         "-T",
         service.name,
         "pytest",
+        "-o",
+        "addopts=--verbose --strict-markers",
         "--junitxml=/app/.test-report/junit.xml",
         *[file_path.as_posix() for file_path in test_files],
     ]
