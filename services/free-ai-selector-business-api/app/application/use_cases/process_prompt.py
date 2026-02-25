@@ -31,6 +31,7 @@ import time
 from decimal import Decimal
 from typing import Optional
 
+from app.application.services.circuit_breaker import CircuitBreakerManager
 from app.application.services.error_classifier import classify_error
 from app.application.services.retry_service import retry_with_exponential_backoff
 from app.domain.exceptions import (
@@ -203,6 +204,15 @@ class ProcessPromptUseCase:
         attempts = 0
 
         for model in candidate_models:
+            # F024: Circuit breaker — пропуск провайдера в OPEN
+            if not CircuitBreakerManager.is_available(model.provider):
+                logger.debug(
+                    "circuit_open_skip",
+                    model=model.name,
+                    provider=model.provider,
+                )
+                continue
+
             attempts += 1
             try:
                 provider = self._get_provider_for_model(model)
@@ -216,6 +226,8 @@ class ProcessPromptUseCase:
 
                 # Success!
                 successful_model = model
+                # F024: Circuit breaker — запись успеха
+                CircuitBreakerManager.record_success(model.provider)
                 logger.info(
                     "generation_success",
                     model=model.name,
@@ -235,6 +247,8 @@ class ProcessPromptUseCase:
                 ValidationError,
                 ProviderError,
             ) as e:
+                # F024: Circuit breaker — запись ошибки
+                CircuitBreakerManager.record_failure(model.provider)
                 # F014: Transient errors - record as failure
                 await self._handle_transient_error(model, e, start_time)
                 last_error_message = sanitize_error_message(e)
@@ -243,8 +257,11 @@ class ProcessPromptUseCase:
                 # F014: Unexpected error - classify and handle
                 classified = classify_error(e)
                 if isinstance(classified, RateLimitError):
+                    # F024: RateLimitError НЕ считается failure для CB
                     await self._handle_rate_limit(model, classified)
                 else:
+                    # F024: Circuit breaker — запись ошибки
+                    CircuitBreakerManager.record_failure(model.provider)
                     await self._handle_transient_error(model, classified, start_time)
                 last_error_message = sanitize_error_message(e)
 
@@ -253,10 +270,14 @@ class ProcessPromptUseCase:
         # Check if any model succeeded
         if successful_model is None or response_text is None:
             # All models failed
+            # F024: CB статусы для диагностики
+            cb_statuses = CircuitBreakerManager.get_all_statuses()
             logger.error(
                 "all_models_failed",
                 models_tried=len(candidate_models),
+                attempts=attempts,
                 last_error=last_error_message,
+                circuit_breaker_statuses=cb_statuses,
             )
 
             # Record history with failure

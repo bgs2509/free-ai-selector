@@ -5,6 +5,16 @@ Pytest configuration and fixtures for Business API tests
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def reset_circuit_breaker():
+    """F024: Сброс CB state между тестами для изоляции."""
+    from app.application.services.circuit_breaker import CircuitBreakerManager
+
+    CircuitBreakerManager.reset()
+    yield
+    CircuitBreakerManager.reset()
+
+
 @pytest.fixture
 def mock_data_api_client(monkeypatch):
     """

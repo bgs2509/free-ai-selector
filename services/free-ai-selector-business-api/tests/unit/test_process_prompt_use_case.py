@@ -11,6 +11,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from app.application.services.circuit_breaker import (
+    CB_FAILURE_THRESHOLD,
+    CircuitBreakerManager,
+)
 from app.application.use_cases.process_prompt import ProcessPromptUseCase
 from app.domain.models import AIModelInfo, PromptRequest
 
@@ -980,3 +984,91 @@ class TestF023Telemetry:
 
         assert response.attempts == 3
         assert response.fallback_used is True
+
+
+@pytest.mark.unit
+class TestF024CircuitBreaker:
+    """F024: Circuit breaker integration in failover loop."""
+
+    @patch.dict(os.environ, {"KEY1": "key1", "KEY2": "key2"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_open_circuit_skips_provider(
+        self, mock_registry, mock_data_api_client
+    ):
+        """F024: Provider with OPEN circuit is skipped in failover."""
+        # Открыть CB для Provider1
+        for _ in range(CB_FAILURE_THRESHOLD):
+            CircuitBreakerManager.record_failure("Provider1")
+
+        # Provider2 отвечает успешно
+        mock_provider2 = AsyncMock()
+        mock_provider2.generate.return_value = "response from provider2"
+        mock_registry.get_provider.return_value = mock_provider2
+        mock_registry.get_api_key_env.side_effect = lambda p: {
+            "Provider1": "KEY1", "Provider2": "KEY2"
+        }.get(p, "")
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Model1",
+                provider="Provider1",
+                api_endpoint="https://test1.com",
+                reliability_score=0.95,
+                is_active=True,
+                effective_reliability_score=0.95,
+            ),
+            AIModelInfo(
+                id=2,
+                name="Model2",
+                provider="Provider2",
+                api_endpoint="https://test2.com",
+                reliability_score=0.8,
+                is_active=True,
+                effective_reliability_score=0.8,
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(user_id="test", prompt_text="test")
+        response = await use_case.execute(request)
+
+        assert response.success is True
+        assert response.selected_model_name == "Model2"
+        # Provider1 пропущен по CB — только 1 попытка (Provider2)
+        assert response.attempts == 1
+
+    @patch.dict(os.environ, {"KEY1": "key1"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_failure_records_to_circuit_breaker(
+        self, mock_registry, mock_data_api_client
+    ):
+        """F024: Failed generation records failure in CB."""
+        from app.domain.exceptions import ServerError
+
+        mock_provider = AsyncMock()
+        mock_provider.generate.side_effect = ServerError("Server error")
+        mock_registry.get_provider.return_value = mock_provider
+        mock_registry.get_api_key_env.return_value = "KEY1"
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Model1",
+                provider="FailProvider",
+                api_endpoint="https://test.com",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(user_id="test", prompt_text="test")
+
+        with pytest.raises(Exception, match="All AI providers failed"):
+            await use_case.execute(request)
+
+        statuses = CircuitBreakerManager.get_all_statuses()
+        assert statuses["FailProvider"] == "closed"  # 1 failure < threshold
+        assert CircuitBreakerManager._circuits["FailProvider"].failure_count == 1
