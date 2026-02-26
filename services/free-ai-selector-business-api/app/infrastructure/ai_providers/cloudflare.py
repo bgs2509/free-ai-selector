@@ -6,7 +6,6 @@ Free tier: 10,000 Neurons/day, no credit card required.
 Supports multiple models for text, image, and speech tasks.
 """
 
-import logging
 import os
 from typing import Optional
 
@@ -14,8 +13,9 @@ import httpx
 from app.utils.security import sanitize_error_message
 
 from app.infrastructure.ai_providers.base import AIProviderBase
+from app.utils.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class CloudflareProvider(AIProviderBase):
@@ -133,11 +133,11 @@ class CloudflareProvider(AIProviderBase):
                             content = " ".join(str(item) for item in content)
                         return str(content).strip()
 
-                logger.error(f"Unexpected Cloudflare response format: {sanitize_error_message(str(result))}")
+                logger.error("unexpected_response", provider="Cloudflare", error=sanitize_error_message(str(result)))
                 raise ValueError("Invalid response format from Cloudflare Workers AI")
 
             except httpx.HTTPError as e:
-                logger.error(f"Cloudflare Workers AI API error: {sanitize_error_message(e)}")
+                logger.error("api_error", provider="Cloudflare", error=sanitize_error_message(e))
                 raise
 
     async def health_check(self) -> bool:
@@ -148,10 +148,10 @@ class CloudflareProvider(AIProviderBase):
             True if API is healthy, False otherwise
         """
         if not self.api_token:
-            logger.warning("Cloudflare API token not configured")
+            logger.warning("api_token_not_configured", provider="Cloudflare")
             return False
         if not self.account_id:
-            logger.warning("Cloudflare account ID not configured")
+            logger.warning("account_id_not_configured", provider="Cloudflare")
             return False
 
         headers = {"Authorization": f"Bearer {self.api_token}"}
@@ -165,7 +165,7 @@ class CloudflareProvider(AIProviderBase):
                 return response.status_code == 200
 
             except Exception as e:
-                logger.error(f"Cloudflare Workers AI health check failed: {sanitize_error_message(e)}")
+                logger.error("health_check_failed", provider="Cloudflare", error=sanitize_error_message(e))
                 return False
 
     def get_provider_name(self) -> str:

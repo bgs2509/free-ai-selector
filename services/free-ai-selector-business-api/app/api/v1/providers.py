@@ -4,15 +4,15 @@ Providers API routes for AI Manager Platform - Business API Service
 Endpoints for testing and managing AI providers.
 """
 
-import logging
 from app.utils.security import sanitize_error_message
 
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.application.use_cases.test_all_providers import TestAllProvidersUseCase
 from app.infrastructure.http_clients.data_api_client import DataAPIClient
+from app.utils.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/providers", tags=["Providers"])
 
@@ -74,7 +74,7 @@ async def test_all_providers(request: Request) -> dict:
     data_api_client = DataAPIClient(request_id=request_id)
 
     try:
-        logger.info("Received request to test all providers")
+        logger.info("test_all_providers_started")
 
         # Create and execute use case with Data API client
         use_case = TestAllProvidersUseCase(data_api_client)
@@ -91,12 +91,12 @@ async def test_all_providers(request: Request) -> dict:
             "results": results,
         }
 
-        logger.info(f"Provider testing completed: {successful}/{len(results)} successful")
+        logger.info("provider_testing_completed", successful=successful, total=len(results))
 
         return response
 
     except Exception as e:
-        logger.error(f"Failed to test providers: {sanitize_error_message(e)}")
+        logger.error("test_providers_failed", error=sanitize_error_message(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to test providers: {sanitize_error_message(e)}",

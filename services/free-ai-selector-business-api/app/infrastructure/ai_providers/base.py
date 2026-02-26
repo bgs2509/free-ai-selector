@@ -7,7 +7,6 @@ F013: OpenAICompatibleProvider — базовый класс для OpenAI-со�
 Устраняет ~1100 строк дублирования через унификацию generate/health_check.
 """
 
-import logging
 import os
 from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Optional
@@ -15,9 +14,10 @@ from typing import Any, ClassVar, Optional
 import httpx
 
 from app.domain.exceptions import ProviderError
+from app.utils.logger import get_logger
 from app.utils.security import sanitize_error_message
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class AIProviderBase(ABC):
@@ -150,10 +150,8 @@ class OpenAICompatibleProvider(AIProviderBase):
             else:
                 logger.warning(
                     "response_format_not_supported",
-                    extra={
-                        "provider": self.PROVIDER_NAME,
-                        "requested_format": response_format,
-                    },
+                    provider=self.PROVIDER_NAME,
+                    requested_format=response_format,
                 )
 
         return payload
@@ -168,7 +166,7 @@ class OpenAICompatibleProvider(AIProviderBase):
             return str(content).strip()
         else:
             err_msg = sanitize_error_message(str(result))
-            logger.error(f"Unexpected {self.PROVIDER_NAME} response: {err_msg}")
+            logger.error("unexpected_response", provider=self.PROVIDER_NAME, error=err_msg)
             raise ValueError(f"Invalid response format from {self.PROVIDER_NAME}")
 
     async def generate(self, prompt: str, **kwargs: Any) -> str:
@@ -200,12 +198,12 @@ class OpenAICompatibleProvider(AIProviderBase):
             except httpx.HTTPStatusError as e:
                 # F022: Пробрасываем с HTTP-кодом для classify_error()
                 err_msg = sanitize_error_message(e)
-                logger.error(f"{self.PROVIDER_NAME} API error: {err_msg}")
+                logger.error("api_error", provider=self.PROVIDER_NAME, error=err_msg)
                 raise
 
             except httpx.HTTPError as e:
                 err_msg = sanitize_error_message(e)
-                logger.error(f"{self.PROVIDER_NAME} API error: {err_msg}")
+                logger.error("api_error", provider=self.PROVIDER_NAME, error=err_msg)
                 raise ProviderError(f"{self.PROVIDER_NAME} error: {e}") from e
 
     def _is_health_check_success(self, response: httpx.Response) -> bool:
@@ -222,7 +220,7 @@ class OpenAICompatibleProvider(AIProviderBase):
                 return self._is_health_check_success(response)
             except Exception as e:
                 err_msg = sanitize_error_message(e)
-                logger.error(f"{self.PROVIDER_NAME} health check failed: {err_msg}")
+                logger.error("health_check_failed", provider=self.PROVIDER_NAME, error=err_msg)
                 return False
 
     def get_provider_name(self) -> str:

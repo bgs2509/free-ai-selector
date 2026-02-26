@@ -2,15 +2,15 @@
 Model Statistics API routes for AI Manager Platform - Business API Service
 """
 
-import logging
 from app.utils.security import sanitize_error_message
 
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.v1.schemas import AIModelStatsResponse, ModelsStatsResponse
 from app.infrastructure.http_clients.data_api_client import DataAPIClient
+from app.utils.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/models", tags=["Models"])
 
@@ -62,7 +62,7 @@ async def get_models_stats(request: Request) -> ModelsStatsResponse:
         return ModelsStatsResponse(models=model_stats, total_models=len(model_stats))
 
     except Exception as e:
-        logger.error(f"Failed to fetch models statistics: {sanitize_error_message(e)}")
+        logger.error("fetch_models_statistics_failed", error=sanitize_error_message(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch models statistics: {sanitize_error_message(e)}",

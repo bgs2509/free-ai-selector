@@ -137,7 +137,7 @@ async def process_prompt(
     except Exception as e:
         # F023 FR-012: Включить error_type в detail для диагностики
         error_type = type(e).__name__
-        logger.error(f"Failed to process prompt: {sanitize_error_message(e)}")
+        logger.error("process_prompt_failed", error_type=error_type, error=sanitize_error_message(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process prompt [{error_type}]: {sanitize_error_message(e)}",

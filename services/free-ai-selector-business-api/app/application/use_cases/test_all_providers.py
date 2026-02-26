@@ -85,11 +85,11 @@ class TestAllProvidersUseCase:
                 }
             ]
         """
-        logger.info("Starting provider testing...")
+        logger.info("provider_testing_started")
 
         # Берём только активные модели, чтобы не тестировать выключенные записи
         models = await self.data_api_client.get_all_models(active_only=True)
-        logger.info(f"Fetched {len(models)} active models from Data API")
+        logger.info("fetched_models", count=len(models))
 
         # Фильтрация: только провайдеры из registry и только одна модель на провайдера
         registry_providers = set(ProviderRegistry.get_all_provider_names())
@@ -138,7 +138,7 @@ class TestAllProvidersUseCase:
             if provider is None:
                 # Provider class not in registry - skip with warning
                 logger.warning(
-                    f"Provider '{model.provider}' not found in registry, skipping"
+                    "provider_not_in_registry", provider=model.provider
                 )
                 results.append({
                     "provider": model.provider,
@@ -157,7 +157,7 @@ class TestAllProvidersUseCase:
             key=lambda r: (r["status"] != "success", r.get("response_time") or float("inf"))
         )
 
-        logger.info(f"Provider testing completed: {len(results)} providers tested")
+        logger.info("provider_testing_completed", total=len(results))
         return results
 
     async def _test_provider(
@@ -173,7 +173,7 @@ class TestAllProvidersUseCase:
         Returns:
             Test result dictionary
         """
-        logger.info(f"Testing provider: {model.provider}")
+        logger.info("testing_provider", provider=model.provider)
         logger.info(
             "model_call_start",
             model_id=model.id,
@@ -213,7 +213,10 @@ class TestAllProvidersUseCase:
                 result["status"] = "success"
                 result["response_time"] = round(response_time, 2)
                 logger.info(
-                    f"✅ {model.provider} responded in {response_time:.2f}s (chars={len(response)})"
+                    "provider_success",
+                    provider=model.provider,
+                    duration_s=round(response_time, 2),
+                    response_chars=len(response),
                 )
                 logger.info(
                     "model_call_success",
@@ -238,7 +241,7 @@ class TestAllProvidersUseCase:
             else:
                 result["status"] = "error"
                 result["error"] = "Empty response received"
-                logger.warning(f"⚠️ {model.provider} returned empty response")
+                logger.warning("provider_empty_response", provider=model.provider)
                 logger.warning(
                     "model_call_error",
                     model_id=model.id,
@@ -268,7 +271,7 @@ class TestAllProvidersUseCase:
             result["status"] = "error"
             result["error"] = f"{error_type}: {error_message}"
 
-            logger.error(f"❌ {model.provider} failed: {error_type}: {error_message}")
+            logger.error("provider_failed", provider=model.provider, error_type=error_type, error=error_message)
             logger.warning(
                 "model_call_error",
                 model_id=model.id,
@@ -312,7 +315,10 @@ class TestAllProvidersUseCase:
                     model_id=model.id, response_time=response_time
                 )
                 logger.info(
-                    f"📊 Updated statistics for {model.provider}: increment_success (time: {response_time:.2f}s)"
+                    "statistics_updated",
+                    provider=model.provider,
+                    action="increment_success",
+                    response_time=round(response_time, 2),
                 )
             else:
                 # For failures, use 0.0 as response time or a default timeout value
@@ -320,10 +326,12 @@ class TestAllProvidersUseCase:
                 await self.data_api_client.increment_failure(
                     model_id=model.id, response_time=response_time
                 )
-                logger.info(f"📊 Updated statistics for {model.provider}: increment_failure")
+                logger.info("statistics_updated", provider=model.provider, action="increment_failure")
 
         except Exception as db_error:
             # Log error but don't fail the test - statistics update is not critical
             logger.error(
-                f"Failed to update statistics for {model.provider}: {sanitize_error_message(db_error)}"
+                "statistics_update_failed",
+                provider=model.provider,
+                error=sanitize_error_message(db_error),
             )

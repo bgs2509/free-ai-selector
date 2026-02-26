@@ -5,7 +5,6 @@ Implements HTTP-only data access pattern (framework requirement).
 Business services must never access database directly.
 """
 
-import logging
 import os
 from decimal import Decimal
 from typing import Any, List, Optional
@@ -15,8 +14,9 @@ from app.utils.security import sanitize_error_message
 from app.utils.request_id import REQUEST_ID_HEADER, create_tracing_headers
 
 from app.domain.models import AIModelInfo
+from app.utils.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 DATA_API_URL = os.getenv("DATA_API_URL", "http://localhost:8001")
 REQUEST_TIMEOUT = 10.0  # seconds
@@ -116,7 +116,7 @@ class DataAPIClient:
             ]
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to fetch models from Data API: {sanitize_error_message(e)}")
+            logger.error("data_api_fetch_models_failed", error=sanitize_error_message(e))
             raise
 
     async def get_model_by_id(self, model_id: int) -> Optional[AIModelInfo]:
@@ -154,7 +154,7 @@ class DataAPIClient:
             )
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to fetch model {model_id} from Data API: {sanitize_error_message(e)}")
+            logger.error("data_api_fetch_model_failed", model_id=model_id, error=sanitize_error_message(e))
             raise
 
     async def increment_success(self, model_id: int, response_time: float) -> None:
@@ -177,7 +177,7 @@ class DataAPIClient:
             response.raise_for_status()
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to increment success for model {model_id}: {sanitize_error_message(e)}")
+            logger.error("data_api_increment_success_failed", model_id=model_id, error=sanitize_error_message(e))
             raise
 
     async def increment_failure(self, model_id: int, response_time: float) -> None:
@@ -200,7 +200,7 @@ class DataAPIClient:
             response.raise_for_status()
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to increment failure for model {model_id}: {sanitize_error_message(e)}")
+            logger.error("data_api_increment_failure_failed", model_id=model_id, error=sanitize_error_message(e))
             raise
 
     async def set_availability(
@@ -243,16 +243,16 @@ class DataAPIClient:
             )
             response.raise_for_status()
             logger.info(
-                "availability_updated "
-                f"model_id={model_id} "
-                f"retry_after_seconds={retry_after_seconds} "
-                f"reason={reason} "
-                f"error_type={error_type} "
-                f"source={source}"
+                "availability_updated",
+                model_id=model_id,
+                retry_after_seconds=retry_after_seconds,
+                reason=reason,
+                error_type=error_type,
+                source=source,
             )
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to set availability for model {model_id}: {sanitize_error_message(e)}")
+            logger.error("data_api_set_availability_failed", model_id=model_id, error=sanitize_error_message(e))
             raise
 
     async def create_history(
@@ -303,5 +303,5 @@ class DataAPIClient:
             return history_data["id"]
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to create history record: {sanitize_error_message(e)}")
+            logger.error("data_api_create_history_failed", error=sanitize_error_message(e))
             raise

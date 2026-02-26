@@ -11,16 +11,15 @@ After removing obsolete models, the seed script will populate 6 new free-tier pr
 """
 
 import asyncio
-import logging
 
 from sqlalchemy import select
 
 from app.infrastructure.database.connection import AsyncSessionLocal
 from app.infrastructure.database.models import AIModelORM
+from app.utils.logger import setup_logging, get_logger
 from app.utils.security import sanitize_error_message
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # List of obsolete providers to remove
 OBSOLETE_PROVIDERS = [
@@ -47,7 +46,8 @@ async def migrate_to_new_providers() -> None:
 
     Safe to run multiple times (idempotent).
     """
-    logger.info("Starting migration to new providers...")
+    setup_logging("free-ai-selector-data-postgres-api")
+    logger.info("migration_started")
 
     async with AsyncSessionLocal() as session:
         try:
@@ -61,7 +61,9 @@ async def migrate_to_new_providers() -> None:
 
                 for model in models:
                     logger.info(
-                        f"Removing obsolete provider: {model.provider} - {model.name}"
+                        "removing_obsolete_provider",
+                        provider=model.provider,
+                        model=model.name,
                     )
                     await session.delete(model)
                     deleted_count += 1
@@ -73,22 +75,20 @@ async def migrate_to_new_providers() -> None:
                 model = result.scalar_one_or_none()
 
                 if model is not None:
-                    logger.info(f"Removing obsolete model: {model.name} ({model.provider})")
+                    logger.info("removing_obsolete_model", model=model.name, provider=model.provider)
                     await session.delete(model)
                     deleted_count += 1
 
             await session.commit()
 
             if deleted_count > 0:
-                logger.info(
-                    f"✅ Migration completed: removed {deleted_count} obsolete model(s)"
-                )
+                logger.info("migration_completed", deleted_count=deleted_count)
             else:
-                logger.info("✅ Migration completed: no obsolete models found")
+                logger.info("migration_completed", deleted_count=0)
 
         except Exception as e:
             await session.rollback()
-            logger.error(f"❌ Migration failed: {sanitize_error_message(e)}")
+            logger.error("migration_failed", error=sanitize_error_message(e))
             raise
 
 
@@ -118,7 +118,7 @@ async def check_migration_needed() -> bool:
             return False
 
         except Exception as e:
-            logger.error(f"Error checking migration status: {sanitize_error_message(e)}")
+            logger.error("migration_status_check_failed", error=sanitize_error_message(e))
             return False
 
 

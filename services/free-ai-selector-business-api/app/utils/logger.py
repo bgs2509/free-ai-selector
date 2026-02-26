@@ -1,6 +1,7 @@
 """Структурированное логирование по Log-Driven Design (AIDD Framework)."""
 import logging
 import os
+import sys
 from typing import Any
 
 import structlog
@@ -47,6 +48,33 @@ def setup_logging(service_name: str) -> None:
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
     )
+
+    # Перехват stdlib logging → structlog JSON
+    # Все логи от сторонних библиотек (httpx, asyncio, uvicorn.error)
+    # проходят через structlog processors и рендерятся в JSON.
+    stdlib_handler = logging.StreamHandler(sys.stdout)
+    stdlib_handler.setFormatter(
+        structlog.stdlib.ProcessorFormatter(
+            processors=[
+                structlog.stdlib.add_logger_name,
+                structlog.stdlib.add_log_level,
+                structlog.processors.TimeStamper(fmt="iso"),
+                sanitize_sensitive_data,
+                structlog.processors.format_exc_info,
+                structlog.processors.JSONRenderer() if json_logs
+                else structlog.dev.ConsoleRenderer(colors=True),
+            ],
+        )
+    )
+
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+    root_logger.addHandler(stdlib_handler)
+    root_logger.setLevel(logging.getLevelName(LOG_LEVEL))
+
+    # Подавить шумные логи сторонних библиотек
+    for noisy in ("httpx", "httpcore", "asyncio", "urllib3"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
 
     structlog.contextvars.bind_contextvars(service=service_name)
 

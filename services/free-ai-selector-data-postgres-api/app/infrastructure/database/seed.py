@@ -10,7 +10,6 @@ Seeds the database with initial AI models for verified free-tier providers (no c
 """
 
 import asyncio
-import logging
 from datetime import datetime
 from decimal import Decimal
 
@@ -18,10 +17,10 @@ from sqlalchemy import select
 
 from app.infrastructure.database.connection import AsyncSessionLocal
 from app.infrastructure.database.models import AIModelORM
+from app.utils.logger import setup_logging, get_logger
 from app.utils.security import sanitize_error_message
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Initial AI models configuration - 12 verified free-tier providers (no credit card required)
 # F008 SSOT: This is the SINGLE SOURCE OF TRUTH for provider configuration
@@ -130,7 +129,8 @@ async def seed_database() -> None:
     F018: Upsert logic — обновляет поля существующих моделей вместо пропуска.
     Удаляет orphan-модели, которых нет в SEED_MODELS.
     """
-    logger.info("Starting database seeding...")
+    setup_logging("free-ai-selector-data-postgres-api")
+    logger.info("seed_started")
 
     async with AsyncSessionLocal() as session:
         try:
@@ -152,9 +152,9 @@ async def seed_database() -> None:
                             updated = True
                     if updated:
                         existing_model.updated_at = datetime.utcnow()
-                        logger.info(f"Updated model: {model_data['name']}")
+                        logger.info("model_updated", model=model_data["name"])
                     else:
-                        logger.info(f"Model '{model_data['name']}' up to date, skipping...")
+                        logger.info("model_up_to_date", model=model_data["name"])
                     continue
 
                 # Create new model
@@ -174,21 +174,21 @@ async def seed_database() -> None:
                 )
 
                 session.add(new_model)
-                logger.info(f"Seeded model: {model_data['name']}")
+                logger.info("model_seeded", model=model_data["name"])
 
             # F018: Cleanup orphan models (удалены из seed, но остались в БД)
             all_models_result = await session.execute(select(AIModelORM))
             for model in all_models_result.scalars():
                 if model.name not in seed_names:
-                    logger.warning(f"Removing orphan model: {model.name}")
+                    logger.warning("removing_orphan_model", model=model.name)
                     await session.delete(model)
 
             await session.commit()
-            logger.info("Database seeding completed successfully!")
+            logger.info("seed_completed")
 
         except Exception as e:
             await session.rollback()
-            logger.error(f"Error seeding database: {sanitize_error_message(e)}")
+            logger.error("seed_failed", error=sanitize_error_message(e))
             raise
 
 
@@ -199,7 +199,7 @@ async def clear_seed_data() -> None:
     WARNING: This will delete all AI models from the seed list!
     Use with caution.
     """
-    logger.warning("Clearing seed data from database...")
+    logger.warning("clearing_seed_data")
 
     async with AsyncSessionLocal() as session:
         try:
@@ -210,14 +210,14 @@ async def clear_seed_data() -> None:
 
                 if model is not None:
                     await session.delete(model)
-                    logger.info(f"Deleted model: {model_data['name']}")
+                    logger.info("model_deleted", model=model_data["name"])
 
             await session.commit()
-            logger.info("Seed data cleared successfully!")
+            logger.info("seed_data_cleared")
 
         except Exception as e:
             await session.rollback()
-            logger.error(f"Error clearing seed data: {sanitize_error_message(e)}")
+            logger.error("clear_seed_data_failed", error=sanitize_error_message(e))
             raise
 
 
