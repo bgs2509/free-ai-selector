@@ -69,7 +69,6 @@ db_migration_required: false
 | `fireworks.py` | 143 | Упростить до ~15 строк |
 | `novita.py` | 143 | Упростить до ~15 строк |
 | `kluster.py` | 143 | Упростить до ~15 строк |
-| `nebius.py` | 143 | Упростить до ~15 строк |
 | `scaleway.py` | 143 | Упростить до ~15 строк |
 
 **Итого**: 1820 строк → ~250 строк (~86% сокращение)
@@ -409,22 +408,14 @@ class KlusterProvider(OpenAICompatibleProvider):
     SUPPORTS_RESPONSE_FORMAT = False
 ```
 
-#### nebius.py
 
 ```python
-"""Nebius AI Provider."""
 
 from app.infrastructure.ai_providers.base import OpenAICompatibleProvider
 
 
-class NebiusProvider(OpenAICompatibleProvider):
-    """Nebius API provider (OpenAI-compatible)."""
 
-    PROVIDER_NAME = "Nebius"
-    BASE_URL = "https://api.studio.nebius.ai/v1/chat/completions"
-    MODELS_URL = "https://api.studio.nebius.ai/v1/models"
     DEFAULT_MODEL = "meta-llama/Meta-Llama-3.1-70B-Instruct"
-    API_KEY_ENV = "NEBIUS_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = False
 ```
 
@@ -653,7 +644,6 @@ class ProviderError(Exception):
 - [ ] Конвертировать hyperbolic.py
 - [ ] Конвертировать novita.py
 - [ ] Конвертировать kluster.py
-- [ ] Конвертировать nebius.py
 - [ ] Конвертировать scaleway.py
 - [ ] Конвертировать sambanova.py (response_format)
 - [ ] Конвертировать github_models.py (response_format + health check)

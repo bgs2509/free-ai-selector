@@ -19,7 +19,6 @@ status: "RESEARCH_DONE"
 | Оригинальные (6) | GoogleGemini, Groq, Cerebras, SambaNova, HuggingFace, Cloudflare | Поддержаны везде |
 | F003 Фаза 1 (4) | DeepSeek, Cohere, OpenRouter, GitHubModels | Только в process_prompt |
 | F003 Фаза 2 (4) | Fireworks, Hyperbolic, Novita, Scaleway | Только в process_prompt |
-| F003 Фаза 3 (2) | Kluster, Nebius | Только в process_prompt |
 
 ### 1.2 Места с хардкодом
 
@@ -71,7 +70,6 @@ async def health_check(self) -> bool:
 
 | Формат | Провайдеры |
 |--------|------------|
-| OpenAI-совместимый | Groq, Cerebras, SambaNova, DeepSeek, OpenRouter, GitHubModels, Fireworks, Hyperbolic, Novita, Scaleway, Kluster, Nebius |
 | Google-специфичный | GoogleGemini |
 | HuggingFace-специфичный | HuggingFace |
 | Cohere-специфичный | Cohere |

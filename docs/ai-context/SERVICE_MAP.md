@@ -136,7 +136,6 @@ sequenceDiagram
 | Novita | `NovitaProvider` | Llama 3.3 70B | Free tier |
 | Scaleway | `ScalewayProvider` | Llama 3.3 70B | Free tier |
 | Kluster | `KlusterProvider` | Llama 3.3 70B | Free tier |
-| Nebius | `NebiusProvider` | Llama 3.3 70B | Free tier |
 
 ---
 
@@ -201,7 +200,6 @@ HYPERBOLIC_API_KEY=xxx
 NOVITA_API_KEY=xxx
 SCALEWAY_API_KEY=xxx
 KLUSTER_API_KEY=xxx
-NEBIUS_API_KEY=xxx
 ```
 
 ### Data API

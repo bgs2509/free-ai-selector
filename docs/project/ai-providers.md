@@ -133,12 +133,8 @@ Free AI Selector интегрирован с 14 бесплатными AI-про
 - **API Key:** `KLUSTER_API_KEY`
 - **URL:** [Kluster AI](https://kluster.ai/)
 
-#### 14. Nebius
-- **Класс:** `NebiusProvider`
 - **Модель:** Llama 3.3 70B
 - **Free Tier:** Available
-- **API Key:** `NEBIUS_API_KEY`
-- **URL:** [Nebius](https://nebius.ai/)
 
 ---
 

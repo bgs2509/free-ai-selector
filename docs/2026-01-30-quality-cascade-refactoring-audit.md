@@ -74,7 +74,6 @@ services/free-ai-selector-business-api/app/infrastructure/ai_providers/
 ├── fireworks.py     (143 строки)  │
 ├── novita.py        (145 строк)   │
 ├── kluster.py       (143 строки)  │
-├── nebius.py        (143 строки)  │
 └── scaleway.py      (144 строки) ─┘
 ```
 

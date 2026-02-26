@@ -84,7 +84,6 @@ app/infrastructure/ai_providers/
 | 7 | **Novita AI** | $10 + 5 free | ✅ | 200+ |
 | 8 | **Scaleway** | 1M токенов | ✅ | 15 |
 | 9 | **Kluster AI** | $5 | ✅ | 5+ |
-| 10 | **Nebius** | $1 | ✅ | 10+ |
 
 ### 3.3 ИСКЛЮЧЁННЫЕ (требуют барьеры)
 
@@ -142,8 +141,6 @@ app/infrastructure/ai_providers/
 - Интеграция с Kluster API
 - OpenAI-совместимый формат
 
-### FR-011: Nebius провайдер
-- Интеграция с Nebius Studio API
 - OpenAI-совместимый формат
 
 ### FR-012: Seed данные
@@ -206,7 +203,6 @@ app/infrastructure/ai_providers/
 |------|------------|------|
 | 1 | DeepSeek, Cohere, OpenRouter, GitHub | +4 стабильных |
 | 2 | Fireworks, Hyperbolic, Novita, Scaleway | +4 с кредитами |
-| 3 | Kluster, Nebius + улучшение existing | +2 + стабилизация |
 
 ---
 

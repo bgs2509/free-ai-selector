@@ -131,7 +131,6 @@ PROVIDER_CLASSES = {
     "Novita": NovitaProvider,
     "Scaleway": ScalewayProvider,
     "Kluster": KlusterProvider,
-    "Nebius": NebiusProvider,
 }
 ```
 
@@ -148,7 +147,6 @@ def test_all_providers_inherit_from_base():
         NovitaProvider,
         ScalewayProvider,
         KlusterProvider,
-        NebiusProvider,
     ]  # Total: 14 providers (9 new + 5 original)
 ```
 
@@ -174,7 +172,6 @@ def test_all_providers_inherit_from_base():
 # Providers:
 # - Cloudflare, Groq, Cerebras, SambaNova, HuggingFace (5 original)
 # - DeepSeek, OpenRouter, GitHubModels, Fireworks, Hyperbolic,
-#   Novita, Scaleway, Kluster, Nebius (9 new)
 ```
 
 **Verification Method**: Code inspection + grep search
@@ -215,7 +212,6 @@ environment:
   NOVITA_API_KEY: ${NOVITA_API_KEY:-}
   SCALEWAY_API_KEY: ${SCALEWAY_API_KEY:-}
   KLUSTER_API_KEY: ${KLUSTER_API_KEY:-}
-  NEBIUS_API_KEY: ${NEBIUS_API_KEY:-}
   # NO GoogleGemini or Cohere keys present
 ```
 
@@ -239,7 +235,6 @@ environment:
 
 14 бесплатных провайдеров в `services/free-ai-selector-business-api/app/infrastructure/ai_providers/`:
 - Оригинальные (5): `groq.py`, `cerebras.py`, `sambanova.py`, `huggingface.py`, `cloudflare.py`
-- Новые F003 (9): `deepseek.py`, `openrouter.py`, `github_models.py`, `fireworks.py`, `hyperbolic.py`, `novita.py`, `scaleway.py`, `kluster.py`, `nebius.py`
 ```
 
 **Verification Method**: Code inspection

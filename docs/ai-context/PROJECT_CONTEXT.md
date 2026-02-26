@@ -131,7 +131,6 @@ class ProcessPromptUseCase:
         # Providers loaded from registry (F008 SSOT)
         # 14 total: Groq, Cerebras, SambaNova, HuggingFace, Cloudflare
         # + DeepSeek, OpenRouter, GitHubModels, Fireworks, Hyperbolic,
-        # Novita, Scaleway, Kluster, Nebius
 
     async def execute(self, request: PromptRequest) -> PromptResponse:
         """Execute prompt processing.
@@ -184,7 +183,6 @@ class ProcessPromptUseCase:
 | `NOVITA_API_KEY` | Business API | Novita API key (F003) |
 | `SCALEWAY_API_KEY` | Business API | Scaleway API key (F003) |
 | `KLUSTER_API_KEY` | Business API | Kluster API key (F003) |
-| `NEBIUS_API_KEY` | Business API | Nebius API key (F003) |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot | Bot token from @BotFather |
 
 ---

@@ -108,7 +108,6 @@ class ProcessPromptUseCase:
         # Providers loaded from registry (see registry.py)
         # Existing: Groq, Cerebras, SambaNova, HuggingFace, Cloudflare
         # New F003: DeepSeek, OpenRouter, GitHubModels, Fireworks,
-        #           Hyperbolic, Novita, Scaleway, Kluster, Nebius
         self.providers: dict[str, AIProviderBase] = ProviderRegistry.get_all_providers()
 
     async def execute(self, request: PromptRequest) -> PromptResponse:

@@ -303,7 +303,6 @@ PROVIDER_CHECK_FUNCTIONS = {
     "Novita": check_novita,
     "Scaleway": check_scaleway,
     "Kluster": check_kluster,
-    "Nebius": check_nebius,
 }
 ```
 
@@ -398,7 +397,6 @@ for model in models:
 
 | api_format | Провайдеры | Количество |
 |------------|------------|------------|
-| `openai` | Groq, Cerebras, SambaNova, DeepSeek, OpenRouter, GitHubModels, Fireworks, Hyperbolic, Novita, Scaleway, Kluster, Nebius | 12 |
 | `gemini` | GoogleGemini | 1 |
 | `cohere` | Cohere | 1 |
 | `huggingface` | HuggingFace | 1 |

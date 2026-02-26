@@ -239,7 +239,6 @@ class ProcessPromptUseCase:
         # F008 SSOT: Providers loaded from registry
         # 14 total providers: Groq, Cerebras, SambaNova, HuggingFace, Cloudflare,
         # DeepSeek, OpenRouter, GitHubModels, Fireworks, Hyperbolic,
-        # Novita, Scaleway, Kluster, Nebius
         self.providers: dict[str, AIProviderBase] = ProviderRegistry.get_all_providers()
 
         # To add a new provider:

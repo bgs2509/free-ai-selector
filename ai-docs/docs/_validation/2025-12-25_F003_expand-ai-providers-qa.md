@@ -36,7 +36,6 @@
 | NovitaProvider | 3 | ✅ PASS |
 | ScalewayProvider | 3 | ✅ PASS |
 | KlusterProvider | 3 | ✅ PASS |
-| NebiusProvider | 3 | ✅ PASS |
 | Inheritance tests | 2 | ✅ PASS |
 
 **Всего тестов F003**: 35/35 ✅
@@ -82,7 +81,6 @@ Action: Требуется добавить aiosqlite в dev dependencies (backl
 | app/infrastructure/ai_providers/novita.py | 46 | 27 | 41% |
 | app/infrastructure/ai_providers/scaleway.py | 46 | 27 | 41% |
 | app/infrastructure/ai_providers/kluster.py | 46 | 27 | 41% |
-| app/infrastructure/ai_providers/nebius.py | 46 | 27 | 41% |
 | app/application/use_cases/process_prompt.py | 88 | 22 | **75%** |
 
 ### 3.2 Обоснование покрытия < 75%
@@ -123,7 +121,6 @@ Action: Требуется добавить aiosqlite в dev dependencies (backl
 | FR-008 | Novita AI провайдер | ✅ | TestNovitaProvider (3 tests) |
 | FR-009 | Scaleway провайдер | ✅ | TestScalewayProvider (3 tests) |
 | FR-010 | Kluster AI провайдер | ✅ | TestKlusterProvider (3 tests) |
-| FR-011 | Nebius провайдер | ✅ | TestNebiusProvider (3 tests) |
 | FR-012 | Seed данные | ✅ | 16 моделей в SEED_MODELS |
 | FR-013 | Регистрация провайдеров | ✅ | 16 провайдеров в ProcessPromptUseCase |
 | FR-014 | Environment переменные | ✅ | 10 новых env vars в docker-compose.yml |

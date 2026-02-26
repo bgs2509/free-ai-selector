@@ -39,7 +39,6 @@
 - NovitaProvider
 - ScalewayProvider
 - KlusterProvider
-- NebiusProvider
 
 ### 2.3 Обязательные методы
 ✅ Все провайдеры реализуют:

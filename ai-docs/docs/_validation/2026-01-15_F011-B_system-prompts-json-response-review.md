@@ -172,7 +172,6 @@ def _supports_response_format(self) -> bool:
 - ✅ `novita.py` — паттерн корректен
 - ✅ `scaleway.py` — паттерн корректен
 - ✅ `kluster.py` — паттерн корректен
-- ✅ `nebius.py` — паттерн корректен
 
 **Оценка**: ✅ **PASS** — Единообразная реализация для всех провайдеров
 - Graceful degradation реализован корректно

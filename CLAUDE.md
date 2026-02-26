@@ -81,9 +81,9 @@ docker compose exec free-ai-selector-data-postgres-api pytest tests/unit/test_do
 
 ## AI-провайдеры
 
-13 бесплатных провайдеров в `services/free-ai-selector-business-api/app/infrastructure/ai_providers/`:
+12 бесплатных провайдеров в `services/free-ai-selector-business-api/app/infrastructure/ai_providers/`:
 - Существующие (5): `groq.py`, `cerebras.py`, `sambanova.py`, `huggingface.py`, `cloudflare.py`
-- Новые F003 (8): `deepseek.py`, `openrouter.py`, `github_models.py`, `fireworks.py`, `hyperbolic.py`, `novita.py`, `scaleway.py`, `nebius.py`
+- Новые F003 (7): `deepseek.py`, `openrouter.py`, `github_models.py`, `fireworks.py`, `hyperbolic.py`, `novita.py`, `scaleway.py`
 
 Все наследуют от `base.py:AIProviderBase` (должны реализовать `generate()`, `health_check()`, `get_provider_name()`).
 

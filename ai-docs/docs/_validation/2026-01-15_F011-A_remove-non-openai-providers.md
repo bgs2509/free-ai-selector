@@ -136,7 +136,6 @@ F011-A удаляет GoogleGemini и Cohere AI провайдеры из код
 - Novita (Llama 3.1 70B)
 - Scaleway (Llama 3.1 70B)
 - Kluster (Llama 3.3 70B Turbo)
-- Nebius (Llama 3.1 70B)
 
 **Итого**: 14 провайдеров, все с `api_format="openai"`
 

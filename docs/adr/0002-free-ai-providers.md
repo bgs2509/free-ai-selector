@@ -185,7 +185,6 @@ ai_providers/
 ├── novita.py            # NovitaProvider (F003)
 ├── scaleway.py          # ScalewayProvider (F003)
 ├── kluster.py           # KlusterProvider (F003)
-└── nebius.py            # NebiusProvider (F003)
 ```
 
 ### Добавление нового провайдера

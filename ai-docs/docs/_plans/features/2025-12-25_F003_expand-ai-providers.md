@@ -75,7 +75,6 @@ services/free-ai-selector-data-postgres-api/
 | 7 | `novita.py` | `ai_providers/` | Novita AI ($10 + 5 бесплатных моделей) |
 | 8 | `scaleway.py` | `ai_providers/` | Scaleway (1M токенов, EU) |
 | 9 | `kluster.py` | `ai_providers/` | Kluster AI ($5 кредитов) |
-| 10 | `nebius.py` | `ai_providers/` | Nebius ($1 кредитов) |
 
 ### 3.2 Модификации существующего кода
 
@@ -161,7 +160,6 @@ class OpenRouterProvider(AIProviderBase):
 | 7 | `test_novita_provider.py` | Unit тесты Novita |
 | 8 | `test_scaleway_provider.py` | Unit тесты Scaleway |
 | 9 | `test_kluster_provider.py` | Unit тесты Kluster |
-| 10 | `test_nebius_provider.py` | Unit тесты Nebius |
 
 ---
 
@@ -196,7 +194,6 @@ class OpenRouterProvider(AIProviderBase):
 | # | Шаг | Зависимости | Файлы |
 |---|-----|-------------|-------|
 | 3.1 | Создать `kluster.py` | base.py | ai_providers/kluster.py |
-| 3.2 | Создать `nebius.py` | base.py | ai_providers/nebius.py |
 | 3.3 | Unit тесты для Фазы 3 | 3.1-3.2 | tests/unit/test_*_provider.py |
 | 3.4 | Финальная регистрация + Seed | 3.1-3.2 | process_prompt.py, seed.py |
 | 3.5 | Обновить документацию | Все | CLAUDE.md |
@@ -242,7 +239,6 @@ SCALEWAY_API_KEY=...
 
 # Фаза 3: Резервные
 KLUSTER_API_KEY=...
-NEBIUS_API_KEY=...
 ```
 
 ---

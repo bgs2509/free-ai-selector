@@ -157,7 +157,6 @@ from app.infrastructure.ai_providers.fireworks import FireworksProvider
 from app.infrastructure.ai_providers.github_models import GitHubModelsProvider
 from app.infrastructure.ai_providers.hyperbolic import HyperbolicProvider
 from app.infrastructure.ai_providers.kluster import KlusterProvider
-from app.infrastructure.ai_providers.nebius import NebiusProvider
 from app.infrastructure.ai_providers.novita import NovitaProvider
 from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
 from app.infrastructure.ai_providers.scaleway import ScalewayProvider
@@ -185,7 +184,6 @@ self.providers = {
     "Scaleway": ScalewayProvider(),
     # F003 Фаза 3 (2)
     "Kluster": KlusterProvider(),
-    "Nebius": NebiusProvider(),
 }
 ```
 
@@ -207,7 +205,6 @@ model_names = {
     "Novita": "Llama 3.3 70B",
     "Scaleway": "Llama 3.3 70B",
     "Kluster": "Llama-3.3-70B",
-    "Nebius": "Llama-3.3-70B-Instruct",
 }
 ```
 
@@ -232,7 +229,6 @@ HYPERBOLIC_API_KEY = os.getenv("HYPERBOLIC_API_KEY", "")
 NOVITA_API_KEY = os.getenv("NOVITA_API_KEY", "")
 SCALEWAY_API_KEY = os.getenv("SCALEWAY_API_KEY", "")
 KLUSTER_API_KEY = os.getenv("KLUSTER_API_KEY", "")
-NEBIUS_API_KEY = os.getenv("NEBIUS_API_KEY", "")
 ```
 
 **Dispatch-словарь (заменяет if/elif):**
@@ -253,7 +249,6 @@ PROVIDER_CHECK_FUNCTIONS = {
     "Novita": check_novita,
     "Scaleway": check_scaleway,
     "Kluster": check_kluster,
-    "Nebius": check_nebius,
 }
 
 # В run_health_checks():

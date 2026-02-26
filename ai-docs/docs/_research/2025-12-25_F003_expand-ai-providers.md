@@ -274,10 +274,7 @@ async def generate(self, prompt: str, **kwargs) -> str:
 
 ---
 
-### 3.10 Nebius
 
-**URL:** https://studio.nebius.com
-**Документация:** https://docs.nebius.com
 
 | Параметр | Значение |
 |----------|----------|
@@ -317,7 +314,6 @@ async def generate(self, prompt: str, **kwargs) -> str:
 | 7 | Novita AI | $10 + free | ✅ | ⭐⭐⭐ | 🥈 |
 | 8 | Scaleway | 1M токенов | ✅ | ⭐⭐⭐⭐ | 🥈 |
 | 9 | Kluster AI | $5 | ✅ | ⭐⭐⭐ | 🥉 |
-| 10 | Nebius | $1 | ✅ | ⭐⭐⭐ | 🥉 |
 
 ---
 
@@ -343,7 +339,6 @@ app/infrastructure/ai_providers/
 ├── novita.py               # НОВЫЙ
 ├── scaleway.py             # НОВЫЙ
 ├── kluster.py              # НОВЫЙ
-└── nebius.py               # НОВЫЙ
 ```
 
 ### 6.2 Паттерн реализации
@@ -391,7 +386,6 @@ HYPERBOLIC_API_KEY=
 NOVITA_API_KEY=
 SCALEWAY_API_KEY=
 KLUSTER_API_KEY=
-NEBIUS_API_KEY=
 ```
 
 ---
@@ -432,7 +426,6 @@ NEW_SEED_MODELS = [
 
 1. **Фаза 1 (приоритет):** DeepSeek, Cohere, OpenRouter, GitHub Models
 2. **Фаза 2:** Fireworks, Hyperbolic, Novita, Scaleway
-3. **Фаза 3:** Kluster, Nebius + стабилизация существующих
 
 ### 9.2 Ожидаемый результат
 

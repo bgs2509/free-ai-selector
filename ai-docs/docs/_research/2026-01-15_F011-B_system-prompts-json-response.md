@@ -214,7 +214,6 @@ response_text = await provider.generate(
 | 11 | Novita | `novita.py` | OpenAI | ✅* | ❓ | OpenAI-compatible |
 | 12 | Scaleway | `scaleway.py` | OpenAI | ✅* | ❓ | OpenAI-compatible |
 | 13 | Kluster | `kluster.py` | OpenAI | ✅* | ❓ | OpenAI-compatible |
-| 14 | Nebius | `nebius.py` | OpenAI | ✅* | ❓ | OpenAI-compatible |
 
 **Легенда:**
 - ✅ — Подтверждено документацией

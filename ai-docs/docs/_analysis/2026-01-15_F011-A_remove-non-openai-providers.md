@@ -62,7 +62,6 @@ blocking: F011-B
 **Остаются (14 OpenAI-compatible):**
 - Cloudflare, Groq, Cerebras, SambaNova, HuggingFace
 - DeepSeek, OpenRouter, GitHub Models
-- Fireworks, Hyperbolic, Novita, Scaleway, Kluster, Nebius
 
 ---
 

@@ -119,7 +119,6 @@ Response: "Вот результаты распарсивания заголов
 ### 1.4 Ценностное предложение
 
 **Для разработчиков:**
-- Один API для 14 OpenAI-compatible провайдеров (Cloudflare, Groq, Cerebras, SambaNova, HuggingFace, DeepSeek, OpenRouter, GitHubModels, Fireworks, Hyperbolic, Novita, Scaleway, Kluster, Nebius)
 - Гарантированный JSON output через `response_format`
 - Чистое разделение инструкций (system) и данных (user)
 
@@ -506,7 +505,6 @@ response_format   response_format response_fmt {"role":"user"}]
 | Groq API | REST API | Поддержка system prompts, возможно без response_format |
 | Cerebras / SambaNova / HuggingFace | REST API | Varying support levels, требуется тестирование |
 | DeepSeek / OpenRouter / GitHubModels | REST API | Приоритетные новые провайдеры F003 |
-| Fireworks / Hyperbolic / Novita / Scaleway / Kluster / Nebius | REST API | Дополнительные провайдеры F003, требуется исследование |
 
 ### 7.3 Ограничения
 
@@ -766,7 +764,6 @@ response_format   response_format response_fmt {"role":"user"}]
 | **Novita** | Llama 3.1 70B (Novita) | ✅* | ❓ | ❓ | ❓ | *OpenAI-compatible, требует исследования |
 | **Scaleway** | Llama 3.1 70B (Scaleway) | ✅* | ❓ | ❓ | ❓ | *OpenAI-compatible, требует исследования |
 | **Kluster** | Llama 3.3 70B Turbo (Kluster) | ✅* | ❓ | ❓ | ❓ | *OpenAI-compatible, требует исследования |
-| **Nebius** | Llama 3.1 70B (Nebius) | ✅* | ❓ | ❓ | ❓ | *OpenAI-compatible, требует исследования |
 
 **Легенда:**
 - ✅ Полная поддержка (подтверждено документацией)
@@ -783,7 +780,6 @@ response_format   response_format response_fmt {"role":"user"}]
 
 **Выводы:**
 - ✅ Все 5 исследованных провайдеров (из 14) ПОДДЕРЖИВАЮТ system prompts через messages array
-- ❓ Остальные 9 провайдеров (Groq, Cerebras, Fireworks, Hyperbolic, Novita, Scaleway, Kluster, Nebius, DeepSeek) требуют исследования
 - ✅ HuggingFace уже использует OpenAI-compatible endpoint (router.huggingface.co)
 - ✅ Изменения минимальны: добавить system message в начало messages array
 

@@ -38,7 +38,6 @@ pipelines:
 
 1. **Потеря HTTP-кода в провайдерах**: `OpenAICompatibleProvider.generate()` оборачивает `httpx.HTTPStatusError` в generic `ProviderError`, теряя HTTP status code. После этого `classify_error()` не может правильно классифицировать ошибку — она всегда остаётся generic `ProviderError`.
 
-2. **Отсутствие классификации HTTP 402/404**: `classify_error()` не обрабатывает коды 402 (Payment Required) и 404 (Not Found). 8 из 13 провайдеров возвращают именно эти коды (DeepSeek 402, HuggingFace 402, Hyperbolic 402, Fireworks 404, Novita 404, OpenRouter 404, Cerebras 404, Nebius 401). Все они попадают в generic `ProviderError`.
 
 3. **Слишком длинный payload**: Промпты ≥ 7000 символов вызывают 100% ошибок HTTP 422 от провайдеров. Pydantic-схема разрешает до 10 000 символов, но провайдеры не принимают такие длины.
 

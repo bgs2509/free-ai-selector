@@ -48,7 +48,6 @@
 ### 2.1. Текущая архитектура
 
 **Компоненты:**
-- **14 AI провайдеров**: Groq, Cerebras, Cloudflare, DeepSeek, OpenRouter, GitHub Models, Fireworks, Hyperbolic, Novita, Scaleway, Kluster, Nebius, SambaNova, HuggingFace
 - **Базовый класс**: `AIProviderBase` с методами `generate()`, `health_check()`, `get_provider_name()`
 - **Выбор модели**: `reliability_score = (success_rate × 0.6) + (speed_score × 0.4)`
 - **Fallback механизм**: Primary model → Second best model при ошибке

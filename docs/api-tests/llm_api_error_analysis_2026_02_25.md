@@ -51,7 +51,6 @@
 | Kluster | 403 Forbidden | Невалидный/отозванный API-ключ | 14 513 | Нет |
 | Novita | 404 Not Found | Модель/эндпоинт не существует | 14 481 | Нет |
 | Fireworks | 404 Not Found | Модель/эндпоинт не существует | 14 353 | Нет |
-| Nebius | 401 Unauthorized | Невалидный API-ключ | 14 340 | Нет |
 | DeepSeek | 402 Payment Required | Исчерпан бесплатный лимит | 14 321 | Нет |
 | Hyperbolic | 402 Payment Required | Исчерпан бесплатный лимит | 14 078 | Нет |
 | Groq | 429 Too Many Requests | Rate limit | 13 176 | Нет* |
@@ -68,7 +67,6 @@
 
 | Категория | Провайдеры | Действие |
 |---|---|---|
-| **Ключ невалиден/отозван** (401, 403) | Scaleway, Kluster, Nebius | Обновить или отключить |
 | **Лимит исчерпан** (402) | DeepSeek, Hyperbolic, HuggingFace | Пополнить баланс или отключить |
 | **Модель/URL не найден** (404) | Novita, Fireworks, OpenRouter, Cerebras | Обновить model_id / endpoint URL |
 | **Rate limit** (429) | Groq, SambaNova, GitHubModels | Снизить concurrency, добавить backoff |
@@ -85,7 +83,6 @@
 | Cerebras | 12 628 |
 | Scaleway | 12 610 |
 | Novita | 12 610 |
-| Nebius | 12 610 |
 | Kluster | 12 610 |
 | Hyperbolic | 12 610 |
 | Fireworks | 12 610 |
@@ -254,7 +251,6 @@ retry_with_fixed_delay(func, max_retries=10, delay=10s)
 
 **Примеры**:
 - Scaleway: 14 526 раз `403 Forbidden`
-- Nebius: 14 340 раз `401 Unauthorized`
 - DeepSeek: 14 321 раз `402 Payment Required`
 
 #### P0-2: Каскадный отказ при массовом прогоне
@@ -710,7 +706,6 @@ async def process_prompt(...):
 | Hyperbolic | Платный лимит | 402 | Пополнить баланс или отключить |
 | Scaleway | Ключ невалиден | 403 | Обновить API-ключ |
 | Kluster | Ключ невалиден | 403 | Обновить API-ключ |
-| Nebius | Ключ невалиден | 401 | Обновить API-ключ |
 | Fireworks | URL/модель не найден | 404 | Обновить endpoint/model_id |
 | Novita | URL/модель не найден | 404 | Обновить endpoint/model_id |
 | OpenRouter | URL/модель не найден | 404 | Обновить endpoint/model_id |

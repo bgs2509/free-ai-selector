@@ -25,7 +25,6 @@
 - Novita: https://novita.ai/
 - Scaleway: https://www.scaleway.com/
 - Kluster: https://kluster.ai/
-- Nebius: https://nebius.ai/
 
 ---
 

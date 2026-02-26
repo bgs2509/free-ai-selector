@@ -108,7 +108,6 @@
 | `novita.py` | ✅ | ~119 |
 | `scaleway.py` | ✅ | ~119 |
 | `kluster.py` | ✅ | ~119 |
-| `nebius.py` | ✅ | ~119 |
 
 ### 4.2 Модифицированные файлы
 
@@ -174,7 +173,6 @@
    - NOVITA_API_KEY
    - SCALEWAY_API_KEY
    - KLUSTER_API_KEY
-   - NEBIUS_API_KEY
 
 2. **Миграция БД** — выполнить `make seed` для добавления новых моделей
 

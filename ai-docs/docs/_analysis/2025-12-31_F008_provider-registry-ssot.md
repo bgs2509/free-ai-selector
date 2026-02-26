@@ -277,7 +277,6 @@ SEED_MODELS = [
 
 | api_format | Провайдеры | Особенности |
 |------------|------------|-------------|
-| `openai` | Groq, Cerebras, SambaNova, DeepSeek, OpenRouter, GitHubModels, Fireworks, Hyperbolic, Novita, Scaleway, Kluster, Nebius | OpenAI-compatible API |
 | `gemini` | GoogleGemini | Google Gemini API format |
 | `cohere` | Cohere | Cohere API format |
 | `huggingface` | HuggingFace | HuggingFace Inference API |

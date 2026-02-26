@@ -189,7 +189,6 @@
             "services/free-ai-selector-business-api/app/infrastructure/ai_providers/novita.py",
             "services/free-ai-selector-business-api/app/infrastructure/ai_providers/scaleway.py",
             "services/free-ai-selector-business-api/app/infrastructure/ai_providers/kluster.py",
-            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/nebius.py",
             "services/free-ai-selector-business-api/tests/unit/test_process_prompt_use_case.py",
             "services/free-ai-selector-business-api/tests/unit/test_f011b_schemas.py"
           ],
@@ -372,7 +371,6 @@
             "services/free-ai-selector-business-api/app/infrastructure/ai_providers/novita.py",
             "services/free-ai-selector-business-api/app/infrastructure/ai_providers/scaleway.py",
             "services/free-ai-selector-business-api/app/infrastructure/ai_providers/kluster.py",
-            "services/free-ai-selector-business-api/app/infrastructure/ai_providers/nebius.py",
             "services/free-ai-selector-business-api/tests/unit/test_new_providers.py"
           ],
           "tests": {

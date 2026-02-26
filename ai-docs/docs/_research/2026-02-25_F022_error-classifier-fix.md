@@ -101,7 +101,6 @@ Catch-блоки в порядке:
 | Novita | `OpenAICompatibleProvider` | Нет | base.py | — |
 | Scaleway | `OpenAICompatibleProvider` | Нет | base.py | — |
 | Kluster | `OpenAICompatibleProvider` | Нет | base.py | — |
-| Nebius | `OpenAICompatibleProvider` | Нет | base.py | — |
 | **Cloudflare** | **`AIProviderBase`** | **Да** (строки 51–141) | **Собственный** | Все 3 метода |
 
 **Вывод**: 12 из 14 провайдеров используют единственный `generate()` из `base.py:174–203`. Исправление в одном месте автоматически фиксит все 12 провайдеров.

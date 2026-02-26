@@ -104,7 +104,6 @@ shared_processors = [
 | — | `NOVITA_API_KEY` | ❌ Нужно добавить |
 | — | `SCALEWAY_API_KEY` | ❌ Нужно добавить |
 | — | `KLUSTER_API_KEY` | ❌ Нужно добавить |
-| — | `NEBIUS_API_KEY` | ❌ Нужно добавить |
 
 **Вывод**: Нужно расширить `SENSITIVE_FIELD_NAMES` на 16 специфичных API key полей проекта.
 
@@ -257,7 +256,6 @@ except Exception as e:
        "cloudflare_account_id", "deepseek_api_key", "cohere_api_key",
        "openrouter_api_key", "github_token", "fireworks_api_key",
        "hyperbolic_api_key", "novita_api_key", "scaleway_api_key",
-       "kluster_api_key", "nebius_api_key", "postgres_password",
    })
    ```
 4. **Обновить** `logger.py` — добавить processor в chain

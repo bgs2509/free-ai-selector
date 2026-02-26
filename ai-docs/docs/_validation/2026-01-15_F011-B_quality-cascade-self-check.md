@@ -245,7 +245,6 @@ logger.error(f"Error: {sanitize_error_message(e)}")
 
 **Infrastructure (15 файлов)**:
 4. `app/infrastructure/ai_providers/base.py` — AIProviderBase
-5-18. 14 провайдеров (groq.py → nebius.py)
 
 **Tests (2 файла)**:
 19. `tests/unit/test_process_prompt_use_case.py`

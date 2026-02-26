@@ -50,7 +50,6 @@ services/free-ai-selector-business-api/app/infrastructure/ai_providers/
 ├── fireworks.py     (143 строки)  │
 ├── novita.py        (145 строк)   │
 ├── kluster.py       (143 строки)  │
-├── nebius.py        (143 строки)  │
 └── scaleway.py      (144 строки) ─┘
 ```
 
@@ -108,7 +107,6 @@ class GroqProvider(OpenAICompatibleProvider):
 |----|----------|----------|------------------|
 | FR-001 | OpenAICompatibleProvider класс | Создать базовый класс с полной реализацией generate() и health_check() | Класс существует в base.py, содержит методы |
 | FR-002 | Конфигурация провайдеров | Вынести различия в class attributes (PROVIDER_NAME, BASE_URL, DEFAULT_MODEL, API_KEY_ENV) | Каждый провайдер содержит только атрибуты |
-| FR-003 | Миграция 11 провайдеров | Конвертировать groq, cerebras, sambanova, deepseek, openrouter, hyperbolic, huggingface, github_models, fireworks, novita, kluster, nebius, scaleway | Все провайдеры работают через базовый класс |
 | FR-004 | API key валидация | Перенести валидацию API key из generate() в __init__ | ProviderError при отсутствии ключа при инициализации |
 | FR-005 | HTTP error wrapping | Обернуть httpx.HTTPError в ProviderError | Все HTTP ошибки конвертируются в ProviderError |
 | FR-006 | Сохранить Cloudflare | Cloudflare НЕ трогать (не OpenAI-compatible) | cloudflare.py без изменений |
@@ -278,7 +276,6 @@ class GroqProvider(OpenAICompatibleProvider):
 | `fireworks.py` | Modify | Конвертировать в конфигурацию |
 | `novita.py` | Modify | Конвертировать в конфигурацию |
 | `kluster.py` | Modify | Конвертировать в конфигурацию |
-| `nebius.py` | Modify | Конвертировать в конфигурацию |
 | `scaleway.py` | Modify | Конвертировать в конфигурацию |
 | `cloudflare.py` | **NO CHANGE** | Не OpenAI-compatible |
 

@@ -33,7 +33,6 @@ F013 успешно завершён. Создан `OpenAICompatibleProvider` б
 | `ai_providers/novita.py` | ~140 lines | 28 lines | -112 |
 | `ai_providers/scaleway.py` | ~140 lines | 28 lines | -112 |
 | `ai_providers/kluster.py` | ~140 lines | 28 lines | -112 |
-| `ai_providers/nebius.py` | ~140 lines | 28 lines | -112 |
 | `tests/unit/test_new_providers.py` | — | updated | Test fixes |
 
 **Total reduction**: ~1100 lines (1820 → ~700)
@@ -91,7 +90,6 @@ tests/unit/test_new_providers.py::TestHyperbolicProvider — 3 PASSED
 tests/unit/test_new_providers.py::TestNovitaProvider — 3 PASSED
 tests/unit/test_new_providers.py::TestScalewayProvider — 3 PASSED
 tests/unit/test_new_providers.py::TestKlusterProvider — 3 PASSED
-tests/unit/test_new_providers.py::TestNebiusProvider — 4 PASSED
 
 Total: 31 passed
 ```

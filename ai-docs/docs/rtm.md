@@ -163,7 +163,6 @@ features: ["F001", "F002", "F003", "F004", "F005", "F006", "F008", "F009", "F010
 | FR-008 | Novita AI провайдер | `novita.py` | `TestNovitaProvider` (3 tests) | ✅ |
 | FR-009 | Scaleway провайдер | `scaleway.py` | `TestScalewayProvider` (3 tests) | ✅ |
 | FR-010 | Kluster AI провайдер | `kluster.py` | `TestKlusterProvider` (3 tests) | ✅ |
-| FR-011 | Nebius провайдер | `nebius.py` | `TestNebiusProvider` (3 tests) | ✅ |
 | FR-012 | Seed данные | 16 моделей в `SEED_MODELS` | Code review | ✅ |
 | FR-013 | Регистрация провайдеров | 16 провайдеров в `ProcessPromptUseCase.providers` | Code review | ✅ |
 | FR-014 | Environment переменные | 10 новых env vars в `docker-compose.yml` | Code review | ✅ |
@@ -223,7 +222,6 @@ features: ["F001", "F002", "F003", "F004", "F005", "F006", "F008", "F009", "F010
 | `ai_providers/novita.py` | NEW | 119 | Novita AI провайдер |
 | `ai_providers/scaleway.py` | NEW | 119 | Scaleway провайдер (EU) |
 | `ai_providers/kluster.py` | NEW | 119 | Kluster AI провайдер |
-| `ai_providers/nebius.py` | NEW | 119 | Nebius провайдер |
 | `process_prompt.py` | MOD | +30 | 10 новых импортов + регистрация |
 | `seed.py` | MOD | +50 | 10 новых моделей |
 | `test_new_providers.py` | NEW | 434 | 35 unit-тестов |
@@ -245,7 +243,6 @@ features: ["F001", "F002", "F003", "F004", "F005", "F006", "F008", "F009", "F010
 | TestNovitaProvider | 3 | init, name, generate | ✅ PASSED |
 | TestScalewayProvider | 3 | init, name, generate | ✅ PASSED |
 | TestKlusterProvider | 3 | init, name, generate | ✅ PASSED |
-| TestNebiusProvider | 3 | init, name, generate | ✅ PASSED |
 | TestProvidersInheritance | 2 | inheritance, methods | ✅ PASSED |
 
 **Всего**: 35/35 тестов PASSED
@@ -758,7 +755,6 @@ SENSITIVE_FIELD_NAMES: set[str] = {
     "deepseek_api_key", "cohere_api_key", "openrouter_api_key",
     "github_token", "fireworks_api_key", "hyperbolic_api_key",
     "novita_api_key", "scaleway_api_key", "kluster_api_key",
-    "nebius_api_key", "chutes_api_key",
     # TG/DB (3)
     "telegram_bot_token", "bot_token", "postgres_password",
 }

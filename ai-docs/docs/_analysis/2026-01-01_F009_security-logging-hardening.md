@@ -177,7 +177,6 @@ SENSITIVE_FIELD_NAMES: set[str] = {
     "openrouter_api_key", "together_api_key", "deepseek_api_key",
     "hyperbolic_api_key", "novita_api_key", "chutes_api_key",
     "glhf_api_key", "openai_api_key", "github_models_api_key",
-    "nebiusai_api_key",
 }
 
 SENSITIVE_VALUE_PATTERNS: list[re.Pattern[str]] = [

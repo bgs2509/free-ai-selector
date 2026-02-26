@@ -103,7 +103,6 @@ free-ai-selector/
 │   │   │           ├── novita.py
 │   │   │           ├── scaleway.py
 │   │   │           ├── kluster.py
-│   │   │           └── nebius.py
 │   │   └── tests/                        ← Тесты
 │   ├── free-ai-selector-data-postgres-api/  ← Без изменений
 │   ├── free-ai-selector-telegram-bot/       ← Без изменений (v1)
@@ -323,7 +322,6 @@ class ProcessPromptUseCase:
 | 4.4.12 | Модифицировать Novita provider | `app/infrastructure/ai_providers/novita.py` | FR-002, FR-004 |
 | 4.4.13 | Модифицировать Scaleway provider | `app/infrastructure/ai_providers/scaleway.py` | FR-002, FR-004 |
 | 4.4.14 | Модифицировать Kluster provider | `app/infrastructure/ai_providers/kluster.py` | FR-002, FR-004 |
-| 4.4.15 | Модифицировать Nebius provider | `app/infrastructure/ai_providers/nebius.py` | FR-002, FR-004 |
 
 **Паттерн изменений (единый для всех провайдеров)**:
 
@@ -575,7 +573,6 @@ services/free-ai-selector-business-api/
 │       ├── novita.py                          ← Messages array + response_format
 │       ├── scaleway.py                        ← Messages array + response_format
 │       ├── kluster.py                         ← Messages array + response_format
-│       └── nebius.py                          ← Messages array + response_format
 ```
 
 **Тесты (изменения)**:

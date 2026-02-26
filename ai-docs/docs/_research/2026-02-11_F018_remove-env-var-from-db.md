@@ -63,7 +63,6 @@
 | 11 | Novita | NovitaProvider | `NOVITA_API_KEY` | OpenAICompatibleProvider |
 | 12 | Scaleway | ScalewayProvider | `SCALEWAY_API_KEY` | OpenAICompatibleProvider |
 | 13 | Kluster | KlusterProvider | `KLUSTER_API_KEY` | OpenAICompatibleProvider |
-| 14 | Nebius | NebiusProvider | `NEBIUS_API_KEY` | OpenAICompatibleProvider |
 
 **Вывод**: 13 из 14 провайдеров имеют `API_KEY_ENV`. Cloudflare — единственное исключение.
 
@@ -271,7 +270,6 @@ PROVIDER_ENV_VARS: dict[str, str] = {
     "Novita": "NOVITA_API_KEY",
     "Scaleway": "SCALEWAY_API_KEY",
     "Kluster": "KLUSTER_API_KEY",
-    "Nebius": "NEBIUS_API_KEY",
 }
 ```
 

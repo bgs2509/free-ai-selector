@@ -57,7 +57,6 @@ reduction: ~80%
 | Fireworks | `fireworks.py` | 143 | `api.fireworks.ai/inference/v1/chat/completions` | `accounts/fireworks/models/llama-v3p3-70b-instruct` | `FIREWORKS_API_KEY` | ❌ | ❌ |
 | Novita | `novita.py` | 143 | `api.novita.ai/v3/openai/chat/completions` | `meta-llama/llama-3.1-70b-instruct` | `NOVITA_API_KEY` | ❌ | ❌ |
 | Kluster | `kluster.py` | 143 | `api.kluster.ai/v1/chat/completions` | `klusterai/Meta-Llama-3.3-70B-Instruct-Turbo` | `KLUSTER_API_KEY` | ❌ | ❌ |
-| Nebius | `nebius.py` | 143 | `api.studio.nebius.ai/v1/chat/completions` | `meta-llama/Meta-Llama-3.1-70B-Instruct` | `NEBIUS_API_KEY` | ❌ | ❌ |
 | Scaleway | `scaleway.py` | 143 | `api.scaleway.ai/v1/chat/completions` | `llama-3.3-70b-instruct` | `SCALEWAY_API_KEY` | ❌ | ❌ |
 
 ### 2.2 Исключения (не подлежат рефакторингу)
@@ -402,7 +401,6 @@ class GitHubModelsProvider(OpenAICompatibleProvider):
 
 ### Этап 2: Миграция провайдеров (по одному)
 1. `groq.py` — template для остальных
-2. `cerebras.py`, `deepseek.py`, `fireworks.py`, `novita.py`, `kluster.py`, `nebius.py`, `scaleway.py` — простые
 3. `sambanova.py` — с `SUPPORTS_RESPONSE_FORMAT = True`
 4. `openrouter.py` — с `EXTRA_HEADERS`
 5. `huggingface.py` — с `_build_url()` override

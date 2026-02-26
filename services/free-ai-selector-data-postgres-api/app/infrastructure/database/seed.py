@@ -23,7 +23,7 @@ from app.utils.security import sanitize_error_message
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initial AI models configuration - 13 verified free-tier providers (no credit card required)
+# Initial AI models configuration - 12 verified free-tier providers (no credit card required)
 # F008 SSOT: This is the SINGLE SOURCE OF TRUTH for provider configuration
 SEED_MODELS = [
     # ═══════════════════════════════════════════════════════════════════════════
@@ -120,15 +120,6 @@ SEED_MODELS = [
         "api_format": "openai",
     },
     # ═══════════════════════════════════════════════════════════════════════════
-    # Новые провайдеры F003 — Фаза 3: Резервные (1 шт.)
-    # ═══════════════════════════════════════════════════════════════════════════
-    {
-        "name": "Llama 3.1 70B (Nebius)",
-        "provider": "Nebius",
-        "api_endpoint": "https://api.studio.nebius.ai/v1/chat/completions",
-        "is_active": True,
-        "api_format": "openai",
-    },
 ]
 
 

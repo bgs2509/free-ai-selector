@@ -220,7 +220,6 @@ SEED_MODELS = [
 | Novita | openai | NOVITA_API_KEY |
 | Scaleway | openai | SCALEWAY_API_KEY |
 | Kluster | openai | KLUSTER_API_KEY |
-| Nebius | openai | NEBIUS_API_KEY |
 
 **Критерии завершения Stage 1:**
 - [ ] Миграция создана и применена
@@ -268,7 +267,6 @@ from app.infrastructure.ai_providers.hyperbolic import HyperbolicProvider
 from app.infrastructure.ai_providers.novita import NovitaProvider
 from app.infrastructure.ai_providers.scaleway import ScalewayProvider
 from app.infrastructure.ai_providers.kluster import KlusterProvider
-from app.infrastructure.ai_providers.nebius import NebiusProvider
 
 
 # Единственное место с маппингом name → class
@@ -288,7 +286,6 @@ PROVIDER_CLASSES: dict[str, type[AIProviderBase]] = {
     "Novita": NovitaProvider,
     "Scaleway": ScalewayProvider,
     "Kluster": KlusterProvider,
-    "Nebius": NebiusProvider,
 }
 
 

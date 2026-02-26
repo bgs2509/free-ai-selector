@@ -184,7 +184,6 @@ PROVIDER_ENV_VARS: dict[str, str] = {
     "Novita": "NOVITA_API_KEY",
     "Scaleway": "SCALEWAY_API_KEY",
     "Kluster": "KLUSTER_API_KEY",
-    "Nebius": "NEBIUS_API_KEY",
 }
 ```
 
