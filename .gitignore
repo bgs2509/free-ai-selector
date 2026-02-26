@@ -235,6 +235,10 @@ logs/
 *.tmp
 *.temp
 
+# Merge backup artifacts (AIDD pipeline)
+.merge_backups/
+*.__premerge_backup_*/
+
 # Compiled source
 *.com
 *.class
