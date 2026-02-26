@@ -87,13 +87,52 @@ class TestAllProvidersUseCase:
         """
         logger.info("Starting provider testing...")
 
-        # F008 SSOT: Fetch models from Data API (instead of hardcoded list)
-        models = await self.data_api_client.get_all_models(active_only=False)
-        logger.info(f"Fetched {len(models)} models from Data API")
+        # Берём только активные модели, чтобы не тестировать выключенные записи
+        models = await self.data_api_client.get_all_models(active_only=True)
+        logger.info(f"Fetched {len(models)} active models from Data API")
+
+        # Фильтрация: только провайдеры из registry и только одна модель на провайдера
+        registry_providers = set(ProviderRegistry.get_all_provider_names())
+        filtered_models: list[AIModelInfo] = []
+        seen_providers: set[str] = set()
+        skipped_unregistered = 0
+        skipped_duplicates = 0
+
+        for model in models:
+            if model.provider not in registry_providers:
+                skipped_unregistered += 1
+                logger.info(
+                    "Skipping model with unregistered provider",
+                    provider=model.provider,
+                    model_id=model.id,
+                    model=model.name,
+                )
+                continue
+
+            if model.provider in seen_providers:
+                skipped_duplicates += 1
+                logger.info(
+                    "Skipping duplicate provider model",
+                    provider=model.provider,
+                    model_id=model.id,
+                    model=model.name,
+                )
+                continue
+
+            seen_providers.add(model.provider)
+            filtered_models.append(model)
+
+        logger.info(
+            "Prepared provider test set",
+            total_models=len(models),
+            filtered_models=len(filtered_models),
+            skipped_unregistered=skipped_unregistered,
+            skipped_duplicates=skipped_duplicates,
+        )
 
         results = []
 
-        for model in models:
+        for model in filtered_models:
             # Get provider instance from registry
             provider = ProviderRegistry.get_provider(model.provider)
             if provider is None:
