@@ -1409,7 +1409,7 @@
       "branch": "master",
       "name": "unified-json-logging",
       "title": "Унификация логов в единый JSON-формат",
-      "stage": "RESEARCH",
+      "stage": "PLAN",
       "created": "2026-02-26",
       "gates": {
         "PRD_READY": {
@@ -1455,7 +1455,8 @@
       },
       "artifacts": {
         "prd": "_analysis/2026-02-26_F026_unified-json-logging.md",
-        "research": "_research/2026-02-26_F026_unified-json-logging.md"
+        "research": "_research/2026-02-26_F026_unified-json-logging.md",
+        "plan": "_plans/features/2026-02-26_F026_unified-json-logging.md"
       },
       "services": [
         "free-ai-selector-business-api",
