@@ -1,6 +1,6 @@
 # Реестр фич проекта
 
-> Последнее обновление: 2026-02-25
+> Последнее обновление: 2026-02-26
 > Автоматически обновляется при создании/завершении фич.
 
 ---
@@ -9,9 +9,9 @@
 
 | Метрика | Значение |
 |---------|----------|
-| Всего фич | 8 |
+| Всего фич | 9 |
 | Deployed | 1 |
-| In Progress | 6 |
+| In Progress | 7 |
 | Archived | 0 |
 
 ---
@@ -27,6 +27,7 @@
 | F023 | Cooldown для постоянных ошибок, exponential backoff и per-request telemetry | IN_PROGRESS | 2026-02-25 | free-ai-selector-business-api | [PRD](_analysis/2026-02-25_F023_error-resilience-and-telemetry.md) |
 | F024 | Circuit Breaker для AI-провайдеров | IN_PROGRESS | 2026-02-25 | free-ai-selector-business-api | [PRD](_analysis/2026-02-25_F024_circuit-breaker.md) |
 | F025 | Адаптивный Concurrency для массового прогона | IN_PROGRESS | 2026-02-25 | free-ai-selector-business-api | [PRD](_analysis/2026-02-25_F025_adaptive-concurrency.md) |
+| F026 | Унификация логов в единый JSON-формат | IN_PROGRESS | 2026-02-26 | business-api, data-api, health-worker, telegram-bot | [PRD](_analysis/2026-02-26_F026_unified-json-logging.md) |
 
 ---
 

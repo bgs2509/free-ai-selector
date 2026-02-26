@@ -16,7 +16,7 @@
   },
   "parallel_mode": false,
   "created_at": "2025-12-23T10:30:00Z",
-  "updated_at": "2026-02-25T10:36:00.000000",
+  "updated_at": "2026-02-26T10:40:00.000000",
   "global_gates": {
     "BOOTSTRAP_READY": {
       "passed": true,
@@ -1404,6 +1404,63 @@
         "completion": "_validation/2026-02-25_F025_server-backpressure.md"
       },
       "services": ["free-ai-selector-business-api"]
+    },
+    "F026": {
+      "branch": "master",
+      "name": "unified-json-logging",
+      "title": "Унификация логов в единый JSON-формат",
+      "stage": "IDEA",
+      "created": "2026-02-26",
+      "gates": {
+        "PRD_READY": {
+          "passed": true,
+          "passed_at": "2026-02-26T10:40:00.000000",
+          "artifact": "_analysis/2026-02-26_F026_unified-json-logging.md"
+        },
+        "RESEARCH_DONE": {
+          "passed": false,
+          "passed_at": null
+        },
+        "PLAN_APPROVED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null,
+          "approved_by": null
+        },
+        "IMPLEMENT_OK": {
+          "passed": false,
+          "passed_at": null
+        },
+        "REVIEW_OK": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "QA_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null,
+          "coverage": null
+        },
+        "ALL_GATES_PASSED": {
+          "passed": false,
+          "passed_at": null,
+          "artifact": null
+        },
+        "DEPLOYED": {
+          "passed": false,
+          "passed_at": null
+        }
+      },
+      "artifacts": {
+        "prd": "_analysis/2026-02-26_F026_unified-json-logging.md"
+      },
+      "services": [
+        "free-ai-selector-business-api",
+        "free-ai-selector-data-postgres-api",
+        "free-ai-selector-health-worker",
+        "free-ai-selector-telegram-bot"
+      ]
     }
   },
   "features_registry": {
@@ -1791,9 +1848,21 @@
       "services": [
         "free-ai-selector-business-api"
       ]
+    },
+    "F026": {
+      "name": "unified-json-logging",
+      "title": "Унификация логов в единый JSON-формат",
+      "created": "2026-02-26",
+      "status": "IN_PROGRESS",
+      "services": [
+        "free-ai-selector-business-api",
+        "free-ai-selector-data-postgres-api",
+        "free-ai-selector-health-worker",
+        "free-ai-selector-telegram-bot"
+      ]
     }
   },
-  "next_feature_id": 26,
+  "next_feature_id": 27,
   "services": [],
   "gate_aliases": {
     "PRD_READY": "ANALYSIS_READY",
