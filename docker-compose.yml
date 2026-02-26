@@ -145,8 +145,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - free-ai-selector-network
     restart: unless-stopped
     volumes:
       - ./services/free-ai-selector-business-api:/app

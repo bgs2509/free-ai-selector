@@ -8,7 +8,7 @@
 #   или: make vps
 #
 # Что добавляет к базовому docker-compose.yml:
-# - Подключение Business API к внешней proxy-network для nginx
+# - Подключение Business API к внутренней и внешней сети для nginx
 # - Определение proxy-network как external
 #
 # Порты API НЕ публикуются: доступ только через nginx reverse proxy.
@@ -16,12 +16,15 @@
 # =============================================================================
 
 services:
-  # Подключаем Business API к external proxy-network для маршрутизации
-  # через внешний nginx reverse proxy.
-  # Docker Compose merge добавляет proxy-network к уже определённой
-  # free-ai-selector-network из базового файла.
+  # Подключаем Business API к Docker-сетям:
+  # - free-ai-selector-network: связь с Data API и другими сервисами
+  # - proxy-network: маршрутизация через внешний nginx reverse proxy
+  #
+  # В базовом docker-compose.yml networks не указаны для business-api,
+  # т.к. в local-режиме используется network_mode: host (для VPN).
   free-ai-selector-business-api:
     networks:
+      - free-ai-selector-network
       - proxy-network
 
 # External сеть, создаётся и управляется внешним nginx-proxy контейнером.
