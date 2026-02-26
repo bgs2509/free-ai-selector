@@ -20,11 +20,11 @@ async def client():
 
 @pytest.mark.asyncio
 async def test_root_redirects_to_static(client: AsyncClient):
-    """Тест: корневой endpoint перенаправляет на /static/index.html."""
+    """Тест: корневой endpoint перенаправляет на static/index.html (относительный путь)."""
     response = await client.get("/", follow_redirects=False)
 
     assert response.status_code == 307
-    assert response.headers.get("location") == "/static/index.html"
+    assert response.headers.get("location") == "static/index.html"
 
 
 @pytest.mark.asyncio

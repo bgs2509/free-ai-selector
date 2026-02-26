@@ -345,7 +345,7 @@ async def root():
     Returns:
         RedirectResponse на static/index.html
     """
-    return RedirectResponse(url="/static/index.html")
+    return RedirectResponse(url="static/index.html")
 
 
 @app.get("/api", tags=["Root"], summary="API информация")
