@@ -15,12 +15,12 @@ SENSITIVE_FIELD_NAMES: set[str] = {
     "token", "access_token", "refresh_token", "bearer", "authorization",
     "database_url", "connection_string",
 
-    # Специфичные для проекта (14 провайдеров)
+    # Специфичные для проекта (13 провайдеров)
     "groq_api_key", "cerebras_api_key", "sambanova_api_key",
     "huggingface_api_key", "cloudflare_api_token", "cloudflare_account_id",
     "deepseek_api_key", "openrouter_api_key", "github_token",
     "fireworks_api_key", "hyperbolic_api_key", "novita_api_key",
-    "scaleway_api_key", "kluster_api_key", "nebius_api_key",
+    "scaleway_api_key", "nebius_api_key",
 
     # Telegram & DB
     "telegram_bot_token", "bot_token", "postgres_password",

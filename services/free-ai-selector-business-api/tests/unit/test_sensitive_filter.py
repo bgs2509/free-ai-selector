@@ -227,7 +227,6 @@ class TestProjectSpecificFields:
             "hyperbolic_api_key",
             "novita_api_key",
             "scaleway_api_key",
-            "kluster_api_key",
             "nebius_api_key",
         ]
 

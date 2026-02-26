@@ -1,10 +1,10 @@
 """
 Unit-тесты для новых AI провайдеров (F003)
 
-Тестирование 9 новых провайдеров:
+Тестирование 8 новых провайдеров:
 - Фаза 1: DeepSeek, OpenRouter, GitHub Models
 - Фаза 2: Fireworks, Hyperbolic, Novita, Scaleway
-- Фаза 3: Kluster, Nebius
+- Фаза 3: Nebius
 
 F013: Обновлены тесты для OpenAICompatibleProvider.
 Валидация API key теперь в __init__, не в generate().
@@ -273,36 +273,6 @@ class TestScalewayProvider:
 
 
 @pytest.mark.unit
-class TestKlusterProvider:
-    """Тесты для Kluster провайдера."""
-
-    def test_init_defaults(self):
-        """Тест инициализации с параметрами по умолчанию."""
-        from app.infrastructure.ai_providers.kluster import KlusterProvider
-
-        # F013: API key обязателен в __init__
-        provider = KlusterProvider(api_key="test-key")
-        assert "llama" in provider.model.lower()
-        assert provider.api_url == "https://api.kluster.ai/v1/chat/completions"
-
-    def test_get_provider_name(self):
-        """Тест получения имени провайдера."""
-        from app.infrastructure.ai_providers.kluster import KlusterProvider
-
-        provider = KlusterProvider(api_key="test-key")
-        assert provider.get_provider_name() == "Kluster"
-
-    def test_init_without_api_key_raises(self, monkeypatch):
-        """Тест: создание провайдера без API ключа вызывает ValueError."""
-        from app.infrastructure.ai_providers.kluster import KlusterProvider
-
-        # F013: Валидация в __init__, нужно очистить env
-        monkeypatch.delenv("KLUSTER_API_KEY", raising=False)
-        with pytest.raises(ValueError, match="KLUSTER_API_KEY is required"):
-            KlusterProvider()
-
-
-@pytest.mark.unit
 class TestNebiusProvider:
     """Тесты для Nebius провайдера."""
 
@@ -351,7 +321,6 @@ class TestProvidersInheritance:
         from app.infrastructure.ai_providers.hyperbolic import HyperbolicProvider
         from app.infrastructure.ai_providers.novita import NovitaProvider
         from app.infrastructure.ai_providers.scaleway import ScalewayProvider
-        from app.infrastructure.ai_providers.kluster import KlusterProvider
         from app.infrastructure.ai_providers.nebius import NebiusProvider
 
         providers = [
@@ -362,7 +331,6 @@ class TestProvidersInheritance:
             HyperbolicProvider,
             NovitaProvider,
             ScalewayProvider,
-            KlusterProvider,
             NebiusProvider,
         ]
 
@@ -380,7 +348,6 @@ class TestProvidersInheritance:
         from app.infrastructure.ai_providers.hyperbolic import HyperbolicProvider
         from app.infrastructure.ai_providers.novita import NovitaProvider
         from app.infrastructure.ai_providers.scaleway import ScalewayProvider
-        from app.infrastructure.ai_providers.kluster import KlusterProvider
         from app.infrastructure.ai_providers.nebius import NebiusProvider
 
         # F013: Теперь все провайдеры требуют API key в __init__
@@ -392,7 +359,6 @@ class TestProvidersInheritance:
             HyperbolicProvider(api_key="test-key"),
             NovitaProvider(api_key="test-key"),
             ScalewayProvider(api_key="test-key"),
-            KlusterProvider(api_key="test-key"),
             NebiusProvider(api_key="test-key"),
         ]
 

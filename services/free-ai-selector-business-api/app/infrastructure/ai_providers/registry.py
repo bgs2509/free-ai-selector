@@ -27,7 +27,6 @@ from app.infrastructure.ai_providers.github_models import GitHubModelsProvider
 from app.infrastructure.ai_providers.groq import GroqProvider
 from app.infrastructure.ai_providers.huggingface import HuggingFaceProvider
 from app.infrastructure.ai_providers.hyperbolic import HyperbolicProvider
-from app.infrastructure.ai_providers.kluster import KlusterProvider
 from app.infrastructure.ai_providers.nebius import NebiusProvider
 from app.infrastructure.ai_providers.novita import NovitaProvider
 from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
@@ -52,8 +51,7 @@ PROVIDER_CLASSES: dict[str, type[AIProviderBase]] = {
     "Hyperbolic": HyperbolicProvider,
     "Novita": NovitaProvider,
     "Scaleway": ScalewayProvider,
-    # Новые провайдеры F003 — Фаза 3: Резервные (2 шт.)
-    "Kluster": KlusterProvider,
+    # Новые провайдеры F003 — Фаза 3: Резервные (1 шт.)
     "Nebius": NebiusProvider,
 }
 

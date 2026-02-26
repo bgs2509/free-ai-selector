@@ -11,7 +11,7 @@ F008 SSOT Architecture:
     F018: API key env var names resolved via PROVIDER_ENV_VARS dict (SSOT).
     Universal health checker uses api_format to select check function.
 
-Supports all providers configured in seed.py (currently 14).
+Supports all providers configured in seed.py (currently 13).
 """
 
 import asyncio
@@ -59,7 +59,6 @@ PROVIDER_ENV_VARS: dict[str, str] = {
     "Hyperbolic": "HYPERBOLIC_API_KEY",
     "Novita": "NOVITA_API_KEY",
     "Scaleway": "SCALEWAY_API_KEY",
-    "Kluster": "KLUSTER_API_KEY",
     "Nebius": "NEBIUS_API_KEY",
 }
 
@@ -109,7 +108,7 @@ async def check_openai_format(
     Universal health check for OpenAI-compatible APIs (F008 SSOT).
 
     Used by: Groq, Cerebras, SambaNova, DeepSeek, OpenRouter, GitHubModels,
-             Fireworks, Hyperbolic, Novita, Scaleway, Kluster, Nebius
+             Fireworks, Hyperbolic, Novita, Scaleway, Nebius
 
     Args:
         endpoint: API endpoint URL
