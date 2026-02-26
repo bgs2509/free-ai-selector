@@ -22,6 +22,6 @@ class CerebrasProvider(OpenAICompatibleProvider):
     PROVIDER_NAME = "Cerebras"
     BASE_URL = "https://api.cerebras.ai/v1/chat/completions"
     MODELS_URL = "https://api.cerebras.ai/v1/models"
-    DEFAULT_MODEL = "llama-3.3-70b"
+    DEFAULT_MODEL = "llama3.1-8b"
     API_KEY_ENV = "CEREBRAS_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = False

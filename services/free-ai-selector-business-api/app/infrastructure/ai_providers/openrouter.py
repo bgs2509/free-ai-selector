@@ -22,7 +22,7 @@ class OpenRouterProvider(OpenAICompatibleProvider):
     PROVIDER_NAME = "OpenRouter"
     BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
     MODELS_URL = "https://openrouter.ai/api/v1/models"
-    DEFAULT_MODEL = "deepseek/deepseek-r1-0528:free"
+    DEFAULT_MODEL = "deepseek/deepseek-r1-0528"
     API_KEY_ENV = "OPENROUTER_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = False
     EXTRA_HEADERS = {

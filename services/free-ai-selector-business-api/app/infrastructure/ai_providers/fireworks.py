@@ -22,6 +22,6 @@ class FireworksProvider(OpenAICompatibleProvider):
     PROVIDER_NAME = "Fireworks"
     BASE_URL = "https://api.fireworks.ai/inference/v1/chat/completions"
     MODELS_URL = "https://api.fireworks.ai/inference/v1/models"
-    DEFAULT_MODEL = "accounts/fireworks/models/llama-v3p1-70b-instruct"
+    DEFAULT_MODEL = "accounts/fireworks/models/gpt-oss-20b"
     API_KEY_ENV = "FIREWORKS_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = False

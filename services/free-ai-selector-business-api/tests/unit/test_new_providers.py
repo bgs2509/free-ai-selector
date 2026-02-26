@@ -92,7 +92,7 @@ class TestOpenRouterProvider:
         # F013: API key обязателен в __init__
         provider = OpenRouterProvider(api_key="test-key")
         # F013: Обновлён DEFAULT_MODEL
-        assert provider.model == "deepseek/deepseek-r1-0528:free"
+        assert provider.model == "deepseek/deepseek-r1-0528"
         assert provider.api_url == "https://openrouter.ai/api/v1/chat/completions"
 
     def test_get_provider_name(self):
@@ -157,7 +157,7 @@ class TestFireworksProvider:
 
         # F013: API key обязателен в __init__
         provider = FireworksProvider(api_key="test-key")
-        assert "llama" in provider.model.lower()
+        assert provider.model == "accounts/fireworks/models/gpt-oss-20b"
         assert provider.api_url == "https://api.fireworks.ai/inference/v1/chat/completions"
 
     def test_get_provider_name(self):
