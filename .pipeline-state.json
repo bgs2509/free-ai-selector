@@ -1423,10 +1423,10 @@
           "artifact": "_research/2026-02-26_F026_unified-json-logging.md"
         },
         "PLAN_APPROVED": {
-          "passed": false,
-          "passed_at": null,
-          "artifact": null,
-          "approved_by": null
+          "passed": true,
+          "passed_at": "2026-02-26T11:20:00.000000",
+          "artifact": "_plans/features/2026-02-26_F026_unified-json-logging.md",
+          "approved_by": "user"
         },
         "IMPLEMENT_OK": {
           "passed": false,
