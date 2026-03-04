@@ -57,7 +57,7 @@ class ServiceResult:
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-SERVICES: tuple[ServiceConfig, ...] = (
+SERVICES_ALWAYS: tuple[ServiceConfig, ...] = (
     ServiceConfig(
         name="free-ai-selector-data-postgres-api",
         path=REPO_ROOT / "services" / "free-ai-selector-data-postgres-api",
@@ -67,22 +67,29 @@ SERVICES: tuple[ServiceConfig, ...] = (
         path=REPO_ROOT / "services" / "free-ai-selector-business-api",
     ),
     ServiceConfig(
-        name="free-ai-selector-telegram-bot",
-        path=REPO_ROOT / "services" / "free-ai-selector-telegram-bot",
-    ),
-    ServiceConfig(
         name="free-ai-selector-health-worker",
         path=REPO_ROOT / "services" / "free-ai-selector-health-worker",
     ),
 )
 
+# Сервисы, запускаемые только с profile bot (WITH_BOT=1).
+SERVICES_BOT: tuple[ServiceConfig, ...] = (
+    ServiceConfig(
+        name="free-ai-selector-telegram-bot",
+        path=REPO_ROOT / "services" / "free-ai-selector-telegram-bot",
+    ),
+)
+
 # Ждем, пока контейнеры перейдут в ожидаемое состояние перед запуском тестов.
-WAIT_TARGETS: dict[str, str] = {
+WAIT_TARGETS_ALWAYS: dict[str, str] = {
     "free-ai-selector-postgres": "healthy",
     "free-ai-selector-data-postgres-api": "healthy",
     "free-ai-selector-business-api": "healthy",
-    "free-ai-selector-telegram-bot": "running",
     "free-ai-selector-health-worker": "running",
+}
+
+WAIT_TARGETS_BOT: dict[str, str] = {
+    "free-ai-selector-telegram-bot": "running",
 }
 
 
@@ -139,6 +146,29 @@ def initial_stats() -> dict[str, TypeStats]:
     return {test_type: TypeStats() for test_type in ALL_TEST_TYPES}
 
 
+def is_container_present(container_name: str) -> bool:
+    """Проверяет, существует ли контейнер (запущен или остановлен)."""
+    result = run_command(
+        ["docker", "inspect", "--format", "{{.State.Status}}", container_name],
+        capture_output=True,
+    )
+    return result.returncode == 0
+
+
+def get_active_services() -> tuple[tuple[ServiceConfig, ...], dict[str, str]]:
+    """Возвращает список сервисов и wait targets с учётом наличия бота."""
+    services = list(SERVICES_ALWAYS)
+    wait_targets = dict(WAIT_TARGETS_ALWAYS)
+
+    for bot_service in SERVICES_BOT:
+        if is_container_present(bot_service.name):
+            services.append(bot_service)
+            if bot_service.name in WAIT_TARGETS_BOT:
+                wait_targets[bot_service.name] = WAIT_TARGETS_BOT[bot_service.name]
+
+    return tuple(services), wait_targets
+
+
 def inspect_container_status(container_name: str) -> str:
     result = run_command(
         [
@@ -161,9 +191,12 @@ def is_status_ready(current_status: str, expected_status: str) -> bool:
     return current_status in {"running", "healthy"}
 
 
-def wait_for_containers(timeout_seconds: int = 240) -> bool:
+def wait_for_containers(
+    wait_targets: dict[str, str] | None = None,
+    timeout_seconds: int = 240,
+) -> bool:
     deadline = time.time() + timeout_seconds
-    remaining = dict(WAIT_TARGETS)
+    remaining = dict(wait_targets or WAIT_TARGETS_ALWAYS)
 
     while time.time() < deadline:
         ready_now: list[str] = []
@@ -433,20 +466,25 @@ def main() -> int:
     if up_result.returncode != 0:
         overall_exit_code = up_result.returncode or 1
 
+    # Определяем активные сервисы после запуска контейнеров.
+    services, wait_targets = get_active_services()
+    bot_active = any(s.name == "free-ai-selector-telegram-bot" for s in services)
+    print(f"[setup] Telegram Bot: {'включён' if bot_active else 'отключён (profile bot)'}")
+
     if overall_exit_code == 0:
         print("[setup] Ожидаю готовность контейнеров...")
-        if not wait_for_containers():
+        if not wait_for_containers(wait_targets):
             print("[warning] Не дождались healthy/running статусов до таймаута.", file=sys.stderr)
             overall_exit_code = 1
 
     if overall_exit_code == 0:
-        for service in SERVICES:
+        for service in services:
             service_result = run_tests_for_service(compose, service)
             results.append(service_result)
             if service_result.exit_code != 0:
                 overall_exit_code = 1
     else:
-        for service in SERVICES:
+        for service in services:
             results.append(
                 ServiceResult(
                     service=service,

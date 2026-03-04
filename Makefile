@@ -14,7 +14,7 @@
 #   во все сервисы и в Locust.
 # =============================================================================
 
-.PHONY: help local vps build up down restart restart-recreate logs logs-data logs-business logs-bot logs-worker logs-db clean test test-data test-business lint format migrate seed health health-check ensure-up-with-context shell-data shell-business db-shell dev status \
+.PHONY: help local local-bot vps vps-bot build up down restart restart-recreate logs logs-data logs-business logs-bot logs-worker logs-db clean test test-data test-business lint format migrate seed health health-check ensure-up-with-context shell-data shell-business db-shell dev status \
 	load-test load-test-ui load-test-ui-up load-test-ui-down load-test-ui-logs load-test-baseline load-test-ramp-up load-test-sustained load-test-failover load-test-recovery load-test-oversize load-test-all cleanup-load-test
 
 # =============================================================================
@@ -26,14 +26,22 @@
 # - vps:   docker-compose.yml + docker-compose.vps.yml
 MODE ?= local
 
+# Profile support: WITH_BOT=1 включает Telegram Bot.
+# По умолчанию бот НЕ запускается (profiles: ["bot"] в docker-compose.yml).
+ifdef WITH_BOT
+COMPOSE_PROFILES := --profile bot
+else
+COMPOSE_PROFILES :=
+endif
+
 ifeq ($(MODE),local)
 # Команда Docker Compose для локального режима.
 # Override-файл подхватывается автоматически.
-COMPOSE := docker compose
+COMPOSE := docker compose $(COMPOSE_PROFILES)
 else ifeq ($(MODE),vps)
 # Команда Docker Compose для VPS режима.
 # Override-файл local НЕ подключается.
-COMPOSE := docker compose -f docker-compose.yml -f docker-compose.vps.yml
+COMPOSE := docker compose -f docker-compose.yml -f docker-compose.vps.yml $(COMPOSE_PROFILES)
 else
 $(error Unsupported MODE='$(MODE)'. Use MODE=local or MODE=vps)
 endif
@@ -161,9 +169,12 @@ help:
 	@echo "Free AI Selector - Available Commands:"
 	@echo ""
 	@echo "Runtime mode:"
-	@echo "  make local                 - Запуск локального режима (порты 8000/8001)"
-	@echo "  make vps                   - Запуск VPS режима (за nginx reverse proxy)"
+	@echo "  make local                 - Запуск без бота (порты 8000/8001)"
+	@echo "  make local-bot             - Запуск с Telegram Bot"
+	@echo "  make vps                   - VPS режим без бота (за nginx reverse proxy)"
+	@echo "  make vps-bot               - VPS режим с Telegram Bot"
 	@echo "  make up                    - Запуск в текущем MODE (по умолчанию local)"
+	@echo "  make up WITH_BOT=1         - Запуск с Telegram Bot"
 	@echo "  make <target> MODE=local   - Выполнить target в локальном режиме"
 	@echo "  make <target> MODE=vps     - Выполнить target в VPS режиме"
 	@echo ""
@@ -222,13 +233,21 @@ help:
 # Mode Shortcuts
 # =============================================================================
 
-# Явный запуск локального режима.
+# Запуск локального режима без Telegram Bot (по умолчанию).
 local:
 	@$(MAKE) up MODE=local RUN_SOURCE=make:local RUN_SCENARIO=infra:local
 
-# Явный запуск VPS режима.
+# Запуск локального режима с Telegram Bot.
+local-bot:
+	@$(MAKE) up MODE=local WITH_BOT=1 RUN_SOURCE=make:local-bot RUN_SCENARIO=infra:local
+
+# Запуск VPS режима без Telegram Bot (по умолчанию).
 vps:
 	@$(MAKE) up MODE=vps RUN_SOURCE=make:vps RUN_SCENARIO=infra:vps
+
+# Запуск VPS режима с Telegram Bot.
+vps-bot:
+	@$(MAKE) up MODE=vps WITH_BOT=1 RUN_SOURCE=make:vps-bot RUN_SCENARIO=infra:vps
 
 # =============================================================================
 # Service Lifecycle Commands
