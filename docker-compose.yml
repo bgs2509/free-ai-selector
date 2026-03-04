@@ -159,8 +159,6 @@ services:
       context: ./services/free-ai-selector-telegram-bot
       dockerfile: Dockerfile
     container_name: free-ai-selector-telegram-bot
-    profiles:
-      - bot
     environment:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_BOT_LOG_LEVEL: ${TELEGRAM_BOT_LOG_LEVEL}

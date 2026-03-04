@@ -1,54 +1,63 @@
 """
-Pytest configuration and fixtures for Data API tests
+Pytest configuration and fixtures for Data API tests.
+Использует реальный PostgreSQL с транзакционной изоляцией.
 """
 
 import asyncio
+import os
 from typing import AsyncGenerator
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    create_async_engine,
+    async_sessionmaker,
+)
 
 from app.infrastructure.database.models import Base
 
-# Test database URL (in-memory SQLite for speed)
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+# Реальный PostgreSQL из Docker-контейнера
+TEST_DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+asyncpg://free_ai_selector_user:free_ai_selector_pass@postgres:5432/free_ai_selector_db",
+)
 
 
 @pytest.fixture(scope="session")
 def event_loop():
-    """Create event loop for async tests."""
+    """Event loop для всей тестовой сессии."""
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
 
 
-@pytest.fixture(scope="function")
-async def test_db() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Create a test database session.
-
-    Uses in-memory SQLite for fast tests.
-    Each test gets a fresh database.
-    """
-    # Create async engine
+@pytest.fixture(scope="session")
+async def test_engine():
+    """Engine создаётся один раз за сессию."""
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-
-    # Create all tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    yield engine
+    await engine.dispose()
 
-    # Create session factory
-    async_session_factory = sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
+
+@pytest.fixture(scope="function")
+async def test_db(test_engine) -> AsyncGenerator[AsyncSession, None]:
+    """
+    Тестовая сессия с транзакционной изоляцией.
+    Каждый тест — отдельная транзакция, откатывается после завершения.
+    """
+    connection = await test_engine.connect()
+    transaction = await connection.begin()
+
+    session_factory = async_sessionmaker(
+        bind=connection,
+        class_=AsyncSession,
+        expire_on_commit=False,
     )
 
-    # Create session
-    async with async_session_factory() as session:
+    async with session_factory() as session:
         yield session
 
-    # Drop all tables after test
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-
-    await engine.dispose()
+    await transaction.rollback()
+    await connection.close()

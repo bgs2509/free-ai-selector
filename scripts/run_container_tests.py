@@ -70,10 +70,6 @@ SERVICES_ALWAYS: tuple[ServiceConfig, ...] = (
         name="free-ai-selector-health-worker",
         path=REPO_ROOT / "services" / "free-ai-selector-health-worker",
     ),
-)
-
-# Сервисы, запускаемые только с profile bot (WITH_BOT=1).
-SERVICES_BOT: tuple[ServiceConfig, ...] = (
     ServiceConfig(
         name="free-ai-selector-telegram-bot",
         path=REPO_ROOT / "services" / "free-ai-selector-telegram-bot",
@@ -86,9 +82,6 @@ WAIT_TARGETS_ALWAYS: dict[str, str] = {
     "free-ai-selector-data-postgres-api": "healthy",
     "free-ai-selector-business-api": "healthy",
     "free-ai-selector-health-worker": "running",
-}
-
-WAIT_TARGETS_BOT: dict[str, str] = {
     "free-ai-selector-telegram-bot": "running",
 }
 
@@ -156,17 +149,8 @@ def is_container_present(container_name: str) -> bool:
 
 
 def get_active_services() -> tuple[tuple[ServiceConfig, ...], dict[str, str]]:
-    """Возвращает список сервисов и wait targets с учётом наличия бота."""
-    services = list(SERVICES_ALWAYS)
-    wait_targets = dict(WAIT_TARGETS_ALWAYS)
-
-    for bot_service in SERVICES_BOT:
-        if is_container_present(bot_service.name):
-            services.append(bot_service)
-            if bot_service.name in WAIT_TARGETS_BOT:
-                wait_targets[bot_service.name] = WAIT_TARGETS_BOT[bot_service.name]
-
-    return tuple(services), wait_targets
+    """Возвращает список сервисов и wait targets."""
+    return SERVICES_ALWAYS, WAIT_TARGETS_ALWAYS
 
 
 def inspect_container_status(container_name: str) -> str:
@@ -468,8 +452,7 @@ def main() -> int:
 
     # Определяем активные сервисы после запуска контейнеров.
     services, wait_targets = get_active_services()
-    bot_active = any(s.name == "free-ai-selector-telegram-bot" for s in services)
-    print(f"[setup] Telegram Bot: {'включён' if bot_active else 'отключён (profile bot)'}")
+    print(f"[setup] Сервисов для тестирования: {len(services)}")
 
     if overall_exit_code == 0:
         print("[setup] Ожидаю готовность контейнеров...")
