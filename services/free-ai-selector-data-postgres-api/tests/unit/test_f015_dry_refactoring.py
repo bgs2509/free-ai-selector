@@ -58,13 +58,13 @@ class TestUnifiedModelToResponse:
         assert response.decision_reason is None
 
     def test_model_to_response_with_recent_stats(self):
-        """Test _model_to_response with recent_stats populates recent fields."""
+        """Test _model_to_response with decay-weighted recent_stats populates recent fields."""
         model = self._create_test_model()
         recent_stats: Dict[int, Dict[str, Any]] = {
             1: {
                 "request_count": 10,
-                "success_count": 8,
-                "avg_response_time": 1.5,
+                "weighted_success_rate": 0.8,
+                "weighted_avg_response_time": 1.5,
             }
         }
 
@@ -74,26 +74,25 @@ class TestUnifiedModelToResponse:
         assert response.id == 1
         assert response.name == "Test Model"
 
-        # Recent fields should be calculated from recent_stats
+        # Recent fields should be calculated from decay-weighted stats
         assert response.recent_success_rate == 0.8
         assert response.recent_request_count == 10
         assert response.recent_reliability_score is not None
         assert response.effective_reliability_score is not None
-        assert response.decision_reason == "recent_score"
+        assert response.decision_reason == "decay_weighted_score"
 
     def test_model_to_response_with_empty_recent_stats(self):
-        """Test _model_to_response with empty recent_stats falls back."""
+        """Test _model_to_response with empty recent_stats uses explore default."""
         model = self._create_test_model()
         recent_stats: Dict[int, Dict[str, Any]] = {}  # No stats for model id=1
 
         response = _model_to_response(model, recent_stats)
 
-        # Should fallback to long-term score
+        # Нет данных — explore: score=1.0
         assert response.recent_success_rate is None
         assert response.recent_request_count == 0
-        assert response.decision_reason == "fallback"
-        # effective_reliability_score should be the long-term reliability_score
-        assert response.effective_reliability_score is not None
+        assert response.decision_reason == "no_data_explore"
+        assert response.effective_reliability_score == 1.0
 
 
 class TestCalculateRecentMetrics:
@@ -116,44 +115,37 @@ class TestCalculateRecentMetrics:
             updated_at=datetime.utcnow(),
         )
 
-    def test_calculate_recent_metrics_with_sufficient_requests(self):
-        """Test recent metrics calculation when request_count >= MIN_REQUESTS_FOR_RECENT."""
+    def test_calculate_recent_metrics_with_data(self):
+        """Test decay-weighted metrics calculation with data."""
         model = self._create_test_model()
         recent_stats = {
             1: {
-                "request_count": 5,  # >= MIN_REQUESTS_FOR_RECENT (3)
-                "success_count": 4,
-                "avg_response_time": 2.0,
+                "request_count": 5,
+                "weighted_success_rate": 0.8,
+                "weighted_avg_response_time": 2.0,
             }
         }
 
         metrics = _calculate_recent_metrics(model, recent_stats)
 
-        assert metrics["recent_success_rate"] == 0.8  # 4/5
+        assert metrics["recent_success_rate"] == 0.8
         assert metrics["recent_request_count"] == 5
         assert metrics["recent_reliability_score"] is not None
         assert metrics["effective_reliability_score"] is not None
-        assert metrics["decision_reason"] == "recent_score"
+        assert metrics["decision_reason"] == "decay_weighted_score"
 
-    def test_calculate_recent_metrics_with_insufficient_requests(self):
-        """Test recent metrics fallback when request_count < MIN_REQUESTS_FOR_RECENT."""
+    def test_calculate_recent_metrics_no_data_explore(self):
+        """Test no data returns explore default (score=1.0)."""
         model = self._create_test_model()
-        recent_stats = {
-            1: {
-                "request_count": 2,  # < MIN_REQUESTS_FOR_RECENT (3)
-                "success_count": 2,
-                "avg_response_time": 1.0,
-            }
-        }
+        recent_stats: Dict[int, Dict[str, Any]] = {}  # Нет данных для model.id=1
 
         metrics = _calculate_recent_metrics(model, recent_stats)
 
         assert metrics["recent_success_rate"] is None
-        assert metrics["recent_request_count"] == 2
+        assert metrics["recent_request_count"] == 0
         assert metrics["recent_reliability_score"] is None
-        # Should fallback to long-term reliability_score
-        assert metrics["effective_reliability_score"] == round(model.reliability_score, 4)
-        assert metrics["decision_reason"] == "fallback"
+        assert metrics["effective_reliability_score"] == 1.0
+        assert metrics["decision_reason"] == "no_data_explore"
 
     def test_calculate_recent_metrics_zero_success_rate(self):
         """Test F011: Zero success rate results in zero reliability."""
@@ -161,8 +153,8 @@ class TestCalculateRecentMetrics:
         recent_stats = {
             1: {
                 "request_count": 5,
-                "success_count": 0,  # Zero success
-                "avg_response_time": 2.0,
+                "weighted_success_rate": 0.0,
+                "weighted_avg_response_time": 2.0,
             }
         }
 
@@ -171,7 +163,7 @@ class TestCalculateRecentMetrics:
         assert metrics["recent_success_rate"] == 0.0
         assert metrics["recent_reliability_score"] == 0.0
         assert metrics["effective_reliability_score"] == 0.0
-        assert metrics["decision_reason"] == "recent_score"
+        assert metrics["decision_reason"] == "decay_weighted_score"
 
 
 class TestGetModelOr404:
