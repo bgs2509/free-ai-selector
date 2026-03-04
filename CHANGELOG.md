@@ -20,6 +20,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.9.0] - 2026-03-04
+
+### ✨ Added — JSON response_format Support
+
+Маршрутизация, валидация и retry для JSON-ответов от AI-провайдеров.
+
+- Включён `SUPPORTS_RESPONSE_FORMAT=True` для 7 провайдеров: Groq, Cerebras, DeepSeek, OpenRouter, Fireworks, Novita, Scaleway (cb6d5d8)
+- `ProviderRegistry.supports_response_format()` — проверка capability без инстанцирования провайдера (cb6d5d8)
+- Pydantic `field_validator` ограничивает `response_format` значением `{"type": "json_object"}` (cb6d5d8)
+- `_filter_json_capable_models()` в `ProcessPromptUseCase` — маршрутизация JSON-запросов только на capable провайдеров с fallback на system_prompt (cb6d5d8)
+- `json_validator.py` — утилита для извлечения валидного JSON из ответов провайдеров (обработка markdown-обёрток, embedded JSON) (cb6d5d8)
+- Интеграция JSON-валидации в fallback loop с retry при невалидном JSON (cb6d5d8)
+
+### ✨ Added — Decay-Weighted Scoring Algorithm
+
+Замена бинарного переключения recent/long-term на плавный decay-weighted алгоритм.
+
+- `get_recent_weighted_stats_for_all_models()` с SQL decay-формулой: `weight = POW(0.98, hours_ago)` — свежие данные доминируют (7ad97eb)
+- Удалён long-term fallback: модели без данных получают `score=1.0` (explore new models first) (7ad97eb)
+- Упрощён `_calculate_recent_metrics`: без `MIN_REQUESTS` порога, без blending (7ad97eb)
+- Без миграций БД
+
+### ✨ Added — F026: Unified JSON Logging
+
+Единый формат JSON-логов во всех 4 сервисах.
+
+- Stdlib logging interception через `ProcessorFormatter` во всех `logger.py` (828a772)
+- Замена `logging.getLogger` на structlog `get_logger` в business-api (5 файлов) и data-api (2 файла) (828a772)
+- Конвертация f-string сообщений в structured events (snake_case + kwargs) (828a772)
+- `--no-access-log` в uvicorn CMD для business-api и data-api Dockerfiles (828a772)
+- Маппинг `LOG_LEVEL` env var в `docker-compose.yml` (828a772)
+- Подавление noisy stdlib логгеров (httpx, httpcore, asyncio, urllib3) (828a772)
+- PRD, research, plan, completion report (68b3fa9, 330bef0, a60ccee, ef5c8b1)
+
+### 🐛 Fixed — Scoring & Reliability (5 исправлений)
+
+Комплексное исправление системы скоринга и надёжности.
+
+- **Fix A1**: `or` → `is not None` для `effective_reliability_score` — предотвращение маскировки легитимных `0.0` значений (4376f79)
+- **Fix A2**: Multi-key sort (effective_score DESC, avg_response_time ASC) — при равных scores побеждает более быстрая модель (4376f79)
+- **Fix A3**: Реальные метрики из Data API в stats endpoint вместо сломанной инверсной формулы `reliability_score / 0.6`, показывавшей >100% (4376f79)
+- **Fix B**: Health Worker записывает результаты в `prompt_history` — recent_score отражает synthetic monitoring. Лимит cleanup увеличен 1000→5000 (4376f79)
+- **Fix E**: Quality gate `MINIMUM_RELIABILITY_THRESHOLD=0.3` — отклонение моделей ниже 30% reliability, HTTP 503 когда все ниже порога (4376f79)
+
+### 🐛 Fixed
+
+- Root redirect за nginx reverse proxy: относительный путь `static/index.html` вместо абсолютного `/static/index.html` (5bb31e7)
+- Stale default `model_id` для провайдеров с 404 (Cerebras, Fireworks, Novita, OpenRouter) (67c5c19)
+- Фильтрация provider tests по зарегистрированным активным провайдерам (2cdb062)
+- Тест `test_fallback_preserves_system_prompt_and_response_format` для JSON-валидации (0a34c24)
+
+### 🔥 Removed — Provider Cleanup
+
+- **Kluster** — провайдер удалён из runtime, seed, тестов, конфигурации (0a4aa71)
+- **Nebius** — провайдер удалён из runtime, seed, тестов, конфигурации, всех AIDD-артефактов (7e6f843)
+- Количество провайдеров: 12 → 10
+
+### 🔄 Changed
+
+- Business API переведён на `network_mode: host` для VPN routing в локальной разработке (1716000)
+- Merge backup patterns (`.merge_backups/`) добавлены в `.gitignore` (cd1ac89)
+
+### 📄 Documentation
+
+- Диагностика nginx 404 при относительном redirect за reverse proxy (5b21bb2)
+- Audit-логи load test runs от 2026-02-26 и 2026-03-04 (6159dbf, cc59035)
+
+---
+
 ## [2.8.0] - 2026-02-25
 
 ### ✨ Added — Error Resilience Pipeline (F022–F025)
