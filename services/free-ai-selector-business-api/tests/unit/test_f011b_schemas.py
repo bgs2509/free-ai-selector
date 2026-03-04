@@ -84,8 +84,8 @@ class TestProcessPromptRequestSchema:
             for error in errors
         )
 
-    def test_response_format_with_json_schema(self):
-        """Test response_format with json_schema type (F011-B)."""
+    def test_response_format_rejects_json_schema(self):
+        """Test response_format rejects json_schema type (only json_object allowed)."""
         schema = {
             "type": "json_schema",
             "json_schema": {
@@ -94,10 +94,19 @@ class TestProcessPromptRequestSchema:
             },
         }
 
-        request = ProcessPromptRequest(prompt="Test prompt", response_format=schema)
+        with pytest.raises(ValidationError) as exc_info:
+            ProcessPromptRequest(prompt="Test prompt", response_format=schema)
 
-        assert request.response_format == schema
-        assert request.response_format["type"] == "json_schema"
+        errors = exc_info.value.errors()
+        assert any("response_format" in str(error["loc"]) for error in errors)
+
+    def test_response_format_rejects_invalid_type(self):
+        """Test response_format rejects unknown type values."""
+        with pytest.raises(ValidationError):
+            ProcessPromptRequest(prompt="Test prompt", response_format={"type": "invalid"})
+
+        with pytest.raises(ValidationError):
+            ProcessPromptRequest(prompt="Test prompt", response_format={"foo": "bar"})
 
 
 @pytest.mark.unit

@@ -107,6 +107,14 @@ class ProviderRegistry:
         return ""
 
     @classmethod
+    def supports_response_format(cls, name: str) -> bool:
+        """Проверить поддержку response_format без создания экземпляра."""
+        provider_class = PROVIDER_CLASSES.get(name)
+        if provider_class and hasattr(provider_class, "SUPPORTS_RESPONSE_FORMAT"):
+            return provider_class.SUPPORTS_RESPONSE_FORMAT
+        return False
+
+    @classmethod
     def reset(cls) -> None:
         """Сбросить кэш instances (для тестов)."""
         cls._instances.clear()

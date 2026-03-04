@@ -24,4 +24,4 @@ class GroqProvider(OpenAICompatibleProvider):
     MODELS_URL = "https://api.groq.com/openai/v1/models"
     DEFAULT_MODEL = "llama-3.3-70b-versatile"
     API_KEY_ENV = "GROQ_API_KEY"
-    SUPPORTS_RESPONSE_FORMAT = False
+    SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}

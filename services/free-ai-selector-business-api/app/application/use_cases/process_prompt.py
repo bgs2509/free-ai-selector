@@ -155,9 +155,32 @@ class ProcessPromptUseCase:
                 reason="no_api_keys",
             )
 
+        # Step 2.5: Filter by JSON capability if response_format requested
+        json_filtered_models = self._filter_json_capable_models(
+            configured_models, request.response_format
+        )
+        # Если fallback (нет JSON-capable) — убрать response_format, добавить system_prompt
+        if (
+            request.response_format
+            and len(json_filtered_models) == len(configured_models)
+            and not any(
+                ProviderRegistry.supports_response_format(m.provider)
+                for m in json_filtered_models
+            )
+        ):
+            json_fallback_prompt = "You must respond with valid JSON only. No markdown, no explanation."
+            original_system = request.system_prompt or ""
+            request = PromptRequest(
+                user_id=request.user_id,
+                prompt_text=request.prompt_text,
+                model_id=request.model_id,
+                system_prompt=f"{original_system}\n{json_fallback_prompt}".strip(),
+                response_format=None,
+            )
+
         # Step 3: Sort by effective reliability score (F010)
         sorted_models = sorted(
-            configured_models,
+            json_filtered_models,
             key=lambda m: m.effective_reliability_score,
             reverse=True,
         )
@@ -265,6 +288,25 @@ class ProcessPromptUseCase:
                     request=request,
                     model=model,
                 )
+
+                # Валидация JSON-ответа если запрошен response_format
+                if request.response_format and request.response_format.get("type") == "json_object":
+                    from app.utils.json_validator import validate_json_response
+                    try:
+                        response_text = validate_json_response(response_text)
+                    except ValueError as json_err:
+                        logger.warning(
+                            "json_validation_failed",
+                            model=model.name,
+                            provider=model.provider,
+                            error=str(json_err),
+                            response_preview=response_text[:200],
+                        )
+                        await self._handle_transient_error(model, json_err, start_time)
+                        last_error_message = f"Invalid JSON from {model.provider}"
+                        error_types.append(ValidationError)
+                        providers_tried += 1
+                        continue
 
                 # Success!
                 successful_model = model
@@ -530,6 +572,36 @@ class ProcessPromptUseCase:
 
         remaining_models = [model for model in sorted_models if model.id != requested_model.id]
         return [requested_model, *remaining_models], True
+
+    def _filter_json_capable_models(
+        self,
+        models: list[AIModelInfo],
+        response_format: Optional[dict],
+    ) -> list[AIModelInfo]:
+        """Фильтровать модели по поддержке response_format."""
+        if not response_format:
+            return models
+
+        capable = [
+            m for m in models
+            if ProviderRegistry.supports_response_format(m.provider)
+        ]
+
+        if capable:
+            logger.info(
+                "json_capable_filter",
+                total=len(models),
+                capable=len(capable),
+            )
+            return capable
+
+        # Fallback: все модели (response_format будет убран в execute)
+        logger.warning(
+            "no_json_capable_models",
+            total=len(models),
+            fallback="system_prompt",
+        )
+        return models
 
     def _filter_configured_models(self, models: list[AIModelInfo]) -> list[AIModelInfo]:
         """

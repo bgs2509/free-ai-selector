@@ -24,4 +24,4 @@ class DeepSeekProvider(OpenAICompatibleProvider):
     MODELS_URL = "https://api.deepseek.com/v1/models"
     DEFAULT_MODEL = "deepseek-chat"
     API_KEY_ENV = "DEEPSEEK_API_KEY"
-    SUPPORTS_RESPONSE_FORMAT = False
+    SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}

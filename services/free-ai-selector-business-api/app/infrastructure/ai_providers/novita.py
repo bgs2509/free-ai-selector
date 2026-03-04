@@ -24,4 +24,4 @@ class NovitaProvider(OpenAICompatibleProvider):
     MODELS_URL = "https://api.novita.ai/v3/openai/models"
     DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct"
     API_KEY_ENV = "NOVITA_API_KEY"
-    SUPPORTS_RESPONSE_FORMAT = False
+    SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}

@@ -24,7 +24,7 @@ class OpenRouterProvider(OpenAICompatibleProvider):
     MODELS_URL = "https://openrouter.ai/api/v1/models"
     DEFAULT_MODEL = "deepseek/deepseek-r1-0528"
     API_KEY_ENV = "OPENROUTER_API_KEY"
-    SUPPORTS_RESPONSE_FORMAT = False
+    SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
     EXTRA_HEADERS = {
         "HTTP-Referer": "https://github.com/free-ai-selector",
         "X-Title": "Free AI Selector",

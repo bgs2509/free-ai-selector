@@ -27,6 +27,7 @@ class CloudflareProvider(AIProviderBase):
     """
 
     API_KEY_ENV = "CLOUDFLARE_API_TOKEN"
+    SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
 
     def __init__(
         self,

@@ -24,4 +24,4 @@ class ScalewayProvider(OpenAICompatibleProvider):
     MODELS_URL = "https://api.scaleway.ai/v1/models"
     DEFAULT_MODEL = "llama-3.1-70b-instruct"
     API_KEY_ENV = "SCALEWAY_API_KEY"
-    SUPPORTS_RESPONSE_FORMAT = False
+    SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}

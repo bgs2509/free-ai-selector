@@ -24,4 +24,4 @@ class FireworksProvider(OpenAICompatibleProvider):
     MODELS_URL = "https://api.fireworks.ai/inference/v1/models"
     DEFAULT_MODEL = "accounts/fireworks/models/gpt-oss-20b"
     API_KEY_ENV = "FIREWORKS_API_KEY"
-    SUPPORTS_RESPONSE_FORMAT = False
+    SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}

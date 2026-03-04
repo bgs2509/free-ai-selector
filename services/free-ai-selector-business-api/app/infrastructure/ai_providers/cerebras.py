@@ -24,4 +24,4 @@ class CerebrasProvider(OpenAICompatibleProvider):
     MODELS_URL = "https://api.cerebras.ai/v1/models"
     DEFAULT_MODEL = "llama3.1-8b"
     API_KEY_ENV = "CEREBRAS_API_KEY"
-    SUPPORTS_RESPONSE_FORMAT = False
+    SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}

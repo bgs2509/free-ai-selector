@@ -5,7 +5,7 @@ Pydantic schemas for AI Manager Platform - Business API Service
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # =============================================================================
@@ -35,6 +35,20 @@ class ProcessPromptRequest(BaseModel):
         None,
         description="Optional response format specification. Example: {'type': 'json_object'}"
     )
+
+    @field_validator("response_format")
+    @classmethod
+    def validate_response_format(cls, v: Optional[dict]) -> Optional[dict]:
+        """Валидация response_format: допускается только {"type": "json_object"}."""
+        if v is None:
+            return v
+        allowed_types = {"json_object"}
+        rf_type = v.get("type")
+        if rf_type not in allowed_types:
+            raise ValueError(
+                f"response_format.type must be one of: {allowed_types}, got: {rf_type!r}"
+            )
+        return v
 
 
 class ProcessPromptResponse(BaseModel):
