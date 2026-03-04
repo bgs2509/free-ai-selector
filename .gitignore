@@ -344,6 +344,9 @@ datasets/
 # Docker
 .dockerignore
 
+# Audit logs (автогенерируемые при каждом запуске сервисов)
+docs/api-tests/results/audit/*.jsonl
+
 # Misc
 .DS_Store?
 *.orig
