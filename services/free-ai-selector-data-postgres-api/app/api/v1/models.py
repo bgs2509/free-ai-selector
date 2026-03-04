@@ -21,8 +21,8 @@ from app.utils.audit import audit_event
 
 router = APIRouter(prefix="/models", tags=["AI Models"])
 
-# F010: Minimum requests required to use recent score
-MIN_REQUESTS_FOR_RECENT = 3
+# Default score для моделей без данных в prompt_history (explore новые первыми)
+DEFAULT_SCORE_NO_DATA = 1.0
 
 
 @router.get("", response_model=List[AIModelResponse], summary="Get all AI models")
@@ -58,9 +58,9 @@ async def get_all_models(
     if not include_recent:
         return [_model_to_response(model) for model in models]
 
-    # F010: Get recent stats for all models
+    # Fix C+D2: Decay-взвешенная статистика вместо плоского подсчёта
     history_repository = PromptHistoryRepository(db)
-    recent_stats = await history_repository.get_recent_stats_for_all_models(window_days)
+    recent_stats = await history_repository.get_recent_weighted_stats_for_all_models(window_days)
 
     return [
         _model_to_response(model, recent_stats)
@@ -418,46 +418,47 @@ def _calculate_recent_metrics(
     model: AIModel, recent_stats: Dict[int, Dict[str, Any]]
 ) -> Dict[str, Any]:
     """
-    Calculate recent metrics for a model (F010).
+    Расчёт effective_reliability_score на основе decay-взвешенных метрик.
 
-    If model has >= MIN_REQUESTS_FOR_RECENT requests in window,
-    uses recent_reliability_score. Otherwise falls back to long-term score.
+    Простой алгоритм:
+    - Есть данные → score из decay-взвешенных success_rate и avg_time
+    - Нет данных → DEFAULT_SCORE_NO_DATA (1.0, explore новые модели первыми)
 
     Args:
         model: AIModel domain entity
-        recent_stats: Dict from get_recent_stats_for_all_models()
+        recent_stats: Dict из get_recent_weighted_stats_for_all_models()
 
     Returns:
         Dict with recent_*, effective_*, and decision_reason fields
     """
     stats = recent_stats.get(model.id, {})
     request_count = stats.get("request_count", 0)
-    success_count = stats.get("success_count", 0)
-    avg_response_time = stats.get("avg_response_time", 0.0)
 
-    if request_count >= MIN_REQUESTS_FOR_RECENT:
-        recent_success_rate = success_count / request_count
-
-        # F016: Использование ReliabilityService (Single Source of Truth)
-        from app.domain.services.reliability_service import ReliabilityService
-
-        recent_reliability = ReliabilityService.calculate(
-            success_rate=recent_success_rate, avg_response_time=avg_response_time
-        )
-
-        return {
-            "recent_success_rate": round(recent_success_rate, 4),
-            "recent_request_count": request_count,
-            "recent_reliability_score": round(recent_reliability, 4),
-            "effective_reliability_score": round(recent_reliability, 4),
-            "decision_reason": "recent_score",
-        }
-    else:
+    if request_count == 0:
+        # Нет данных — дать модели максимальный приоритет (explore)
         return {
             "recent_success_rate": None,
-            "recent_request_count": request_count,
+            "recent_request_count": 0,
             "recent_reliability_score": None,
-            "effective_reliability_score": round(model.reliability_score, 4),
-            "decision_reason": "fallback",
+            "effective_reliability_score": DEFAULT_SCORE_NO_DATA,
+            "decision_reason": "no_data_explore",
         }
+
+    # Decay-взвешенные метрики
+    weighted_success_rate = stats.get("weighted_success_rate", 0.0)
+    weighted_avg_time = stats.get("weighted_avg_response_time", 0.0)
+
+    from app.domain.services.reliability_service import ReliabilityService
+
+    recent_reliability = ReliabilityService.calculate(
+        success_rate=weighted_success_rate, avg_response_time=weighted_avg_time
+    )
+
+    return {
+        "recent_success_rate": round(weighted_success_rate, 4),
+        "recent_request_count": request_count,
+        "recent_reliability_score": round(recent_reliability, 4),
+        "effective_reliability_score": round(recent_reliability, 4),
+        "decision_reason": "decay_weighted_score",
+    }
 

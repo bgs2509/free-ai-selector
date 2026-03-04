@@ -8,7 +8,7 @@ Uses SQLAlchemy 2.0 async patterns.
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import case, desc, func, select
+from sqlalchemy import case, desc, func, literal, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.models import PromptHistory
@@ -201,6 +201,69 @@ class PromptHistoryRepository:
             }
             for row in rows
         }
+
+    async def get_recent_weighted_stats_for_all_models(
+        self, window_days: int = 7, decay_per_hour: float = 0.98
+    ) -> Dict[int, Dict[str, Any]]:
+        """
+        Decay-взвешенная агрегация статистики моделей за окно.
+
+        Свежие записи весят больше: weight = decay_per_hour ^ hours_ago.
+        При decay=0.98: 1ч=98%, 1д=61%, 3д=23%, 7д=3%.
+
+        Args:
+            window_days: Размер окна в днях (default: 7)
+            decay_per_hour: Коэффициент затухания за 1 час (default: 0.98)
+
+        Returns:
+            Dict {model_id: {weighted_success_rate, weighted_avg_response_time, request_count}}
+        """
+        cutoff_date = datetime.utcnow() - timedelta(days=window_days)
+
+        # hours_ago = EXTRACT(EPOCH FROM (NOW() - created_at)) / 3600
+        hours_ago = func.extract(
+            "epoch", func.now() - PromptHistoryORM.created_at
+        ) / literal(3600.0)
+
+        # weight = POW(decay_per_hour, hours_ago)
+        weight = func.pow(literal(decay_per_hour), hours_ago)
+
+        query = (
+            select(
+                PromptHistoryORM.selected_model_id,
+                func.count().label("request_count"),
+                # weighted success rate
+                func.sum(
+                    case((PromptHistoryORM.success == True, weight), else_=literal(0.0))  # noqa: E712
+                ).label("weighted_successes"),
+                func.sum(weight).label("total_weight"),
+                # weighted average response time
+                func.sum(PromptHistoryORM.response_time * weight).label("weighted_time_sum"),
+            )
+            .where(PromptHistoryORM.created_at > cutoff_date)
+            .group_by(PromptHistoryORM.selected_model_id)
+        )
+
+        result = await self.session.execute(query)
+        rows = result.all()
+
+        stats: Dict[int, Dict[str, Any]] = {}
+        for row in rows:
+            total_w = float(row.total_weight or 0.0)
+            if total_w > 0:
+                w_success_rate = float(row.weighted_successes or 0.0) / total_w
+                w_avg_time = float(row.weighted_time_sum or 0.0) / total_w
+            else:
+                w_success_rate = 0.0
+                w_avg_time = 0.0
+
+            stats[row.selected_model_id] = {
+                "request_count": row.request_count,
+                "weighted_success_rate": round(w_success_rate, 4),
+                "weighted_avg_response_time": round(w_avg_time, 4),
+            }
+
+        return stats
 
     async def get_statistics_for_period(
         self, start_date: datetime, end_date: datetime, model_id: Optional[int] = None
