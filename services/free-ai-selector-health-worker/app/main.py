@@ -37,6 +37,7 @@ LOG_LEVEL = os.getenv("WORKER_LOG_LEVEL", "INFO")
 HEALTH_CHECK_INTERVAL = int(os.getenv("HEALTH_CHECK_INTERVAL", "3600"))  # seconds
 DATA_API_URL = os.getenv("DATA_API_URL", "http://localhost:8001")
 SYNTHETIC_TEST_PROMPT = os.getenv("SYNTHETIC_TEST_PROMPT", "Generate a simple greeting message")
+HEALTH_WORKER_USER_ID = "__health_worker__"
 RUN_ID = os.getenv("RUN_ID", "").strip()
 RUN_SOURCE = os.getenv("RUN_SOURCE", "").strip()
 RUN_SCENARIO = os.getenv("RUN_SCENARIO", "").strip()
@@ -454,6 +455,26 @@ async def run_health_checks():
                             params={"response_time": response_time},
                             headers=_build_trace_headers(),
                         )
+                        # Fix B: Записать в prompt_history для recent_score
+                        try:
+                            await client.post(
+                                f"{DATA_API_URL}/api/v1/history",
+                                json={
+                                    "user_id": HEALTH_WORKER_USER_ID,
+                                    "prompt_text": f"[health_check] {provider}/{model_name}",
+                                    "selected_model_id": model_id,
+                                    "response_text": None,
+                                    "response_time": str(round(response_time, 3)),
+                                    "success": True,
+                                    "error_message": None,
+                                },
+                                headers=_build_trace_headers(),
+                            )
+                        except Exception as hist_err:
+                            logger.warning(
+                                "health_history_write_failed",
+                                error=format_exception_message(hist_err),
+                            )
                     else:
                         unhealthy_count += 1
                         logger.warning(
@@ -480,6 +501,26 @@ async def run_health_checks():
                             params={"response_time": response_time},
                             headers=_build_trace_headers(),
                         )
+                        # Fix B: Записать в prompt_history для recent_score
+                        try:
+                            await client.post(
+                                f"{DATA_API_URL}/api/v1/history",
+                                json={
+                                    "user_id": HEALTH_WORKER_USER_ID,
+                                    "prompt_text": f"[health_check] {provider}/{model_name}",
+                                    "selected_model_id": model_id,
+                                    "response_text": None,
+                                    "response_time": str(round(response_time, 3)),
+                                    "success": False,
+                                    "error_message": "Health check failed",
+                                },
+                                headers=_build_trace_headers(),
+                            )
+                        except Exception as hist_err:
+                            logger.warning(
+                                "health_history_write_failed",
+                                error=format_exception_message(hist_err),
+                            )
             except Exception as update_error:
                 logger.error(
                     "stats_update_failed",

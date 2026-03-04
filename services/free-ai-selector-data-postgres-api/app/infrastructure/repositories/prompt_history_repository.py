@@ -51,8 +51,9 @@ class PromptHistoryRepository:
         await self.session.flush()
         await self.session.refresh(orm_history)
 
-        # Автоматически удаляем старые записи, оставляем только 1000 последних
-        await self._cleanup_old_records(keep_count=1000)
+        # Автоматически удаляем старые записи, оставляем только 5000 последних
+        # (увеличено с 1000 для учёта записей health worker)
+        await self._cleanup_old_records(keep_count=5000)
 
         return self._to_domain(orm_history)
 

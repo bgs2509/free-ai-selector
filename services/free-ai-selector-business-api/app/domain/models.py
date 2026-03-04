@@ -30,6 +30,10 @@ class AIModelInfo:
     effective_reliability_score: float = 0.0  # Score used for model selection
     recent_request_count: int = 0  # Requests in recent window
     decision_reason: str = "fallback"  # "recent_score" or "fallback"
+    # Метрики для tiebreaker и stats
+    success_rate: float = 0.0
+    average_response_time: float = 0.0
+    request_count: int = 0
     # F012: Rate Limit Handling
     available_at: Optional[datetime] = None  # Timestamp when provider becomes available
 

@@ -69,6 +69,9 @@ VALIDATION_ERROR_COOLDOWN_SECONDS = int(os.getenv("VALIDATION_ERROR_COOLDOWN_SEC
 ALL_RATE_LIMITED_RETRY_AFTER = int(os.getenv("ALL_RATE_LIMITED_RETRY_AFTER", "60"))
 SERVICE_UNAVAILABLE_RETRY_AFTER = int(os.getenv("SERVICE_UNAVAILABLE_RETRY_AFTER", "30"))
 
+# Fix E: Minimum quality gate — не маршрутизировать на ненадёжные модели
+MINIMUM_RELIABILITY_THRESHOLD = float(os.getenv("MINIMUM_RELIABILITY_THRESHOLD", "0.3"))
+
 
 class ProcessPromptUseCase:
     """
@@ -178,12 +181,34 @@ class ProcessPromptUseCase:
                 response_format=None,
             )
 
-        # Step 3: Sort by effective reliability score (F010)
+        # Step 3: Sort by effective reliability score (F010) + tiebreaker by speed
         sorted_models = sorted(
             json_filtered_models,
-            key=lambda m: m.effective_reliability_score,
+            key=lambda m: (m.effective_reliability_score, -m.average_response_time),
             reverse=True,
         )
+
+        # Step 3.5: Minimum quality gate (Fix E)
+        if MINIMUM_RELIABILITY_THRESHOLD > 0:
+            quality_models = [
+                m for m in sorted_models
+                if m.effective_reliability_score >= MINIMUM_RELIABILITY_THRESHOLD
+            ]
+            if not quality_models:
+                best = sorted_models[0] if sorted_models else None
+                logger.warning(
+                    "all_models_below_quality_threshold",
+                    threshold=MINIMUM_RELIABILITY_THRESHOLD,
+                    total_models=len(sorted_models),
+                    best_score=best.effective_reliability_score if best else 0.0,
+                    best_model=best.name if best else "none",
+                )
+                raise ServiceUnavailable(
+                    message=f"All models below minimum reliability threshold ({MINIMUM_RELIABILITY_THRESHOLD})",
+                    retry_after_seconds=SERVICE_UNAVAILABLE_RETRY_AFTER,
+                    reason="all_models_below_quality_threshold",
+                )
+            sorted_models = quality_models
 
         candidate_models, requested_model_found = self._build_candidate_models(
             sorted_models=sorted_models,

@@ -104,11 +104,18 @@ class DataAPIClient:
                     is_active=model["is_active"],
                     api_format=model.get("api_format", "openai"),
                     # F010: Use effective_score for selection, fallback to reliability_score
-                    effective_reliability_score=model.get(
-                        "effective_reliability_score"
-                    ) or model["reliability_score"],
+                    # Fix A1: `or` маскирует легитимный 0.0, используем `is not None`
+                    effective_reliability_score=(
+                        model["effective_reliability_score"]
+                        if model.get("effective_reliability_score") is not None
+                        else model["reliability_score"]
+                    ),
                     recent_request_count=model.get("recent_request_count") or 0,
                     decision_reason=model.get("decision_reason") or "fallback",
+                    # Метрики для tiebreaker и stats
+                    success_rate=model.get("success_rate", 0.0),
+                    average_response_time=model.get("average_response_time", 0.0),
+                    request_count=model.get("request_count", 0),
                     # F012: Rate Limit Handling
                     available_at=model.get("available_at"),
                 )

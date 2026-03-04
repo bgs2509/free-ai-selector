@@ -44,16 +44,16 @@ async def get_models_stats(request: Request) -> ModelsStatsResponse:
         # Fetch all models (including inactive for stats)
         models = await data_api_client.get_all_models(active_only=False)
 
-        # Convert to response schema
+        # Convert to response schema (используем реальные метрики из Data API)
         model_stats = [
             AIModelStatsResponse(
                 id=model.id,
                 name=model.name,
                 provider=model.provider,
                 reliability_score=model.reliability_score,
-                success_rate=model.reliability_score / 0.6 if model.reliability_score > 0 else 0.0,  # Approximate
-                average_response_time=0.0,  # Will be computed by Data API
-                total_requests=0,  # Will be fetched from Data API model details
+                success_rate=model.success_rate,
+                average_response_time=model.average_response_time,
+                total_requests=model.request_count,
                 is_active=model.is_active,
             )
             for model in models
