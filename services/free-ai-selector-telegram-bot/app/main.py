@@ -140,9 +140,9 @@ async def test_all_providers() -> Optional[dict]:
 # =============================================================================
 
 if not TELEGRAM_BOT_TOKEN:
-    raise ValueError("TELEGRAM_BOT_TOKEN environment variable is required")
+    logger.warning("telegram_bot_token_not_set", hint="Bot won't start without TELEGRAM_BOT_TOKEN")
 
-bot = Bot(token=TELEGRAM_BOT_TOKEN)
+bot = Bot(token=TELEGRAM_BOT_TOKEN or "000000000:AAFakeTokenForImportOnly")
 dp = Dispatcher()
 router = Router()
 
@@ -464,6 +464,9 @@ async def main():
 
     Starts polling and handles graceful shutdown.
     """
+    if not TELEGRAM_BOT_TOKEN:
+        raise ValueError("TELEGRAM_BOT_TOKEN environment variable is required")
+
     logger.info("service_starting", business_api_url=BUSINESS_API_URL)
 
     # Verify Business API connection
@@ -531,4 +534,10 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    if not TELEGRAM_BOT_TOKEN:
+        logger.error("telegram_bot_token_missing", hint="Set TELEGRAM_BOT_TOKEN to start the bot")
+        # Не падаем — контейнер может использоваться для тестов
+        import signal
+        signal.pause()
+    else:
+        asyncio.run(main())

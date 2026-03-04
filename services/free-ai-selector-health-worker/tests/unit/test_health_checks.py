@@ -224,8 +224,8 @@ class TestUniversalHealthCheck:
     async def test_dispatches_to_openai(self, monkeypatch):
         monkeypatch.setenv("GROQ_API_KEY", "test-key")
 
-        with patch("app.main.check_openai_format", new_callable=AsyncMock) as mock_check:
-            mock_check.return_value = (True, 1.0)
+        mock_check = AsyncMock(return_value=(True, 1.0))
+        with patch.dict("app.main.API_FORMAT_CHECKERS", {"openai": mock_check}):
             healthy, resp_time = await universal_health_check(
                 "https://api.groq.com/v1/chat", "openai", "Groq"
             )

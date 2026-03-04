@@ -2,7 +2,7 @@
 Unit tests for AIModel repository
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
@@ -278,7 +278,11 @@ class TestF012RateLimitHandling:
 
         assert updated_model.available_at is not None
         # available_at should be approximately 1 hour from now
-        time_diff = (updated_model.available_at - datetime.utcnow()).total_seconds()
+        now = datetime.now(timezone.utc)
+        available_at = updated_model.available_at
+        if available_at.tzinfo is None:
+            available_at = available_at.replace(tzinfo=timezone.utc)
+        time_diff = (available_at - now).total_seconds()
         assert 3500 < time_diff < 3700  # Allow some tolerance
 
     async def test_set_availability_clear_cooldown(self, test_db: AsyncSession):

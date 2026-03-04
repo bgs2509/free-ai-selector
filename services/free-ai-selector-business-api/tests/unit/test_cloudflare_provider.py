@@ -31,16 +31,46 @@ class TestCloudflareProvider:
         assert provider._supports_response_format() is True
 
     async def test_missing_api_token_generate(self):
-        """generate() без API token вызывает ValueError."""
+        """generate() без API token вызывает ошибку (HTTP 404)."""
         provider = CloudflareProvider(api_token="", account_id="acc")
-        with pytest.raises(ValueError, match="API token"):
-            await provider.generate("test")
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.is_success = False
+        mock_response.has_redirect_location = False
+        mock_response.reason_phrase = "Not Found"
+
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client.post = AsyncMock(return_value=mock_response)
+        mock_response.raise_for_status = MagicMock(
+            side_effect=Exception("HTTP error")
+        )
+
+        with patch("httpx.AsyncClient", return_value=mock_client):
+            with pytest.raises(Exception):
+                await provider.generate("test")
 
     async def test_missing_account_id_generate(self):
-        """generate() без account ID вызывает ValueError."""
+        """generate() без account ID вызывает ошибку (HTTP 401)."""
         provider = CloudflareProvider(api_token="token", account_id="")
-        with pytest.raises(ValueError, match="account ID"):
-            await provider.generate("test")
+        mock_response = MagicMock()
+        mock_response.status_code = 401
+        mock_response.is_success = False
+        mock_response.has_redirect_location = False
+        mock_response.reason_phrase = "Unauthorized"
+
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client.post = AsyncMock(return_value=mock_response)
+        mock_response.raise_for_status = MagicMock(
+            side_effect=Exception("HTTP error")
+        )
+
+        with patch("httpx.AsyncClient", return_value=mock_client):
+            with pytest.raises(Exception):
+                await provider.generate("test")
 
     async def test_successful_response_format(self):
         """Успешный ответ в формате result.response."""

@@ -1,18 +1,19 @@
 """
 Pytest configuration and fixtures for Data API tests.
 Использует реальный PostgreSQL с транзакционной изоляцией.
+
+Паттерн: session.commit() подменён на session.flush() — данные
+отправляются в БД (видны в текущей транзакции), но транзакция
+НЕ коммитится. После теста ROLLBACK откатывает всё.
 """
 
-import asyncio
 import os
 from typing import AsyncGenerator
 
 import pytest
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    create_async_engine,
-    async_sessionmaker,
-)
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from app.infrastructure.database.models import Base
 
@@ -23,41 +24,38 @@ TEST_DATABASE_URL = os.getenv(
 )
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    """Event loop для всей тестовой сессии."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="session")
-async def test_engine():
-    """Engine создаётся один раз за сессию."""
-    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    yield engine
-    await engine.dispose()
-
-
 @pytest.fixture(scope="function")
-async def test_db(test_engine) -> AsyncGenerator[AsyncSession, None]:
+async def test_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Тестовая сессия с транзакционной изоляцией.
-    Каждый тест — отдельная транзакция, откатывается после завершения.
+
+    - NullPool: каждый тест получает свежее соединение (asyncpg привязан
+      к event loop, а pytest-asyncio создаёт новый loop для каждого теста).
+    - commit() заменён на flush(): INSERT/UPDATE отправляются в БД,
+      но транзакция остаётся открытой.
+    - После теста conn.rollback() откатывает все изменения.
     """
-    connection = await test_engine.connect()
-    transaction = await connection.begin()
+    engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 
-    session_factory = async_sessionmaker(
-        bind=connection,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
-    async with session_factory() as session:
+    async with engine.connect() as conn:
+        await conn.begin()
+
+        session = AsyncSession(bind=conn, expire_on_commit=False)
+        session.commit = session.flush  # type: ignore[assignment]
+
+        # Очистить таблицы внутри транзакции — тест видит пустую БД.
+        # ROLLBACK после теста восстановит все данные.
+        await session.execute(text("DELETE FROM prompt_history"))
+        await session.execute(text("DELETE FROM ai_models"))
+        await session.flush()
+
         yield session
 
-    await transaction.rollback()
-    await connection.close()
+        await session.close()
+        if conn.in_transaction():
+            await conn.rollback()
+
+    await engine.dispose()

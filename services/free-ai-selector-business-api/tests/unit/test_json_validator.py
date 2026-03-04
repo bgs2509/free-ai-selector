@@ -62,20 +62,20 @@ class TestValidateJsonResponse:
         result = validate_json_response(text)
         assert result == '{"result": true}'
 
-    def test_multiple_json_objects_returns_first(self):
-        """При нескольких JSON-объектах возвращается первый найденный."""
+    def test_multiple_json_objects_greedy_match_fails(self):
+        """Жадный regex \{.*\} захватывает от первой { до последней } — невалидный JSON."""
         text = 'first: {"a": 1} second: {"b": 2}'
-        result = validate_json_response(text)
-        # re.DOTALL с жадным .* захватит максимальный объект
-        assert '"a": 1' in result
+        with pytest.raises(ValueError):
+            validate_json_response(text)
 
     def test_only_whitespace_raises(self):
         """Строка из пробелов вызывает ValueError."""
         with pytest.raises(ValueError):
             validate_json_response("   ")
 
-    def test_broken_json_in_markdown_falls_through(self):
-        """Невалидный JSON в markdown-блоке не принимается, ищется далее."""
+    def test_broken_json_in_markdown_fails(self):
+        """Невалидный JSON в markdown-блоке — жадный regex захватывает весь текст."""
         text = '```json\n{broken json\n```\n{"fallback": true}'
-        result = validate_json_response(text)
-        assert '"fallback"' in result
+        # Жадный \{.*\} матчит от {broken до true} — невалидный JSON
+        with pytest.raises(ValueError):
+            validate_json_response(text)

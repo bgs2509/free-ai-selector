@@ -1,12 +1,14 @@
 """
-Integration tests for AI Models API endpoints
+Integration tests for AI Models API endpoints.
+Использует test_db с транзакционной изоляцией через dependency override.
 """
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from uuid import uuid4
 
 from app.main import app
+from app.infrastructure.database.connection import get_db
 
 
 @pytest.mark.integration
@@ -19,10 +21,17 @@ class TestModelsAPI:
         return f"{prefix}-{uuid4().hex[:8]}"
 
     @pytest.fixture
-    async def client(self):
-        """Create test client."""
-        async with AsyncClient(app=app, base_url="http://test") as ac:
+    async def client(self, test_db):
+        """Create test client with get_db override."""
+
+        async def override_get_db():
+            yield test_db
+
+        app.dependency_overrides[get_db] = override_get_db
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
             yield ac
+        app.dependency_overrides.clear()
 
     async def test_health_check(self, client: AsyncClient):
         """Test health check endpoint."""
@@ -46,6 +55,7 @@ class TestModelsAPI:
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
+        assert len(data) == 0
 
     async def test_create_and_get_model(self, client: AsyncClient):
         """Test creating and fetching a model."""
@@ -109,6 +119,7 @@ class TestModelsAPI:
         }
 
         create_response = await client.post("/api/v1/models", json=create_payload)
+        assert create_response.status_code == 201
         model_id = create_response.json()["id"]
 
         # Increment success
