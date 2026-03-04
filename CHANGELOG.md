@@ -33,13 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `json_validator.py` — утилита для извлечения валидного JSON из ответов провайдеров (обработка markdown-обёрток, embedded JSON) (cb6d5d8)
 - Интеграция JSON-валидации в fallback loop с retry при невалидном JSON (cb6d5d8)
 
-### ✨ Added — Decay-Weighted Scoring Algorithm
+### ✨ Added — Decay-Weighted Scoring Algorithm (Fix C+D2)
 
-Замена бинарного переключения recent/long-term на плавный decay-weighted алгоритм.
+Замена бинарного переключения recent/long-term на плавный decay-weighted алгоритм. Long-term score больше не используется для выбора модели — только актуальные данные из `prompt_history`.
 
-- `get_recent_weighted_stats_for_all_models()` с SQL decay-формулой: `weight = POW(0.98, hours_ago)` — свежие данные доминируют (7ad97eb)
-- Удалён long-term fallback: модели без данных получают `score=1.0` (explore new models first) (7ad97eb)
-- Упрощён `_calculate_recent_metrics`: без `MIN_REQUESTS` порога, без blending (7ad97eb)
+- **Fix C+D2**: `get_recent_weighted_stats_for_all_models()` с SQL decay-формулой: `weight = POW(0.98, hours_ago)` — свежие данные доминируют (1ч=98%, 1д=61%, 3д=23%, 7д=3%) (7ad97eb)
+- Удалён long-term fallback и бинарный `MIN_REQUESTS_FOR_RECENT` переключатель: модели без данных получают `score=1.0` (explore new models first) (7ad97eb)
+- Упрощён `_calculate_recent_metrics`: единый `decision_reason="decay_weighted_score"` вместо `"recent_score"`/`"fallback"` (7ad97eb)
+- Обновлены тесты F015 под новый формат данных: `weighted_success_rate`/`weighted_avg_response_time` вместо `success_count`/`avg_response_time` (a31f200)
 - Без миграций БД
 
 ### ✨ Added — F026: Unified JSON Logging
