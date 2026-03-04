@@ -20,6 +20,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.9.1] - 2026-03-04
+
+### 🔄 Changed — Docker Compose Profiles for Telegram Bot
+
+Telegram Bot больше не запускается по умолчанию — требуется явное включение через Docker Compose profile `bot`. Решает проблему конфликта polling при использовании одного токена на нескольких VPS.
+
+- **Docker Compose profiles**: добавлен `profiles: ["bot"]` к сервису `free-ai-selector-telegram-bot` — `docker compose up` больше не запускает бота (c87b264)
+- **Makefile WITH_BOT**: переменная `COMPOSE_PROFILES` с поддержкой `WITH_BOT=1` для включения profile bot (c87b264)
+- **Новые targets**: `make local-bot` и `make vps-bot` — запуск с ботом; `make local` и `make vps` — без бота (c87b264)
+- **Условный тест-раннер**: `run_container_tests.py` динамически определяет наличие контейнера бота через `docker inspect`, пропускает ожидание если бот не запущен (c87b264)
+
+### 🐛 Fixed — Docker Warnings
+
+- Добавлен дефолт `${TELEGRAM_BOT_TOKEN:-}` в `docker-compose.yml` — устранён WARN о неустановленной переменной при запуске без бота (e6666cc)
+- Исправлен `FROM ... as base` → `FROM ... AS base` в Dockerfile data-api и business-api — устранён `FromAsCasing` warning (e6666cc)
+
+---
+
 ## [2.9.0] - 2026-03-04
 
 ### ✨ Added — JSON response_format Support
