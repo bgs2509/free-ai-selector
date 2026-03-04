@@ -547,15 +547,16 @@ class TestF011BSystemPromptsAndResponseFormat:
         mock_primary_provider = AsyncMock()
         mock_primary_provider.generate.side_effect = Exception("API Error")
 
-        # Mock fallback provider (succeeds)
+        # Mock fallback provider (succeeds with valid JSON for response_format)
         mock_fallback_provider = AsyncMock()
-        mock_fallback_provider.generate.return_value = "Fallback response"
+        mock_fallback_provider.generate.return_value = '{"result": "Fallback response"}'
 
         # Registry returns different providers for primary and fallback
         mock_registry.get_provider.side_effect = [mock_primary_provider, mock_fallback_provider]
         mock_registry.get_api_key_env.side_effect = lambda p: {
             "Groq": "GROQ_API_KEY", "Cerebras": "CEREBRAS_API_KEY"
         }.get(p, "")
+        mock_registry.supports_response_format.return_value = True
 
         # Mock models returned from Data API (2 models for fallback)
         mock_data_api_client.get_all_models.return_value = [
@@ -594,7 +595,7 @@ class TestF011BSystemPromptsAndResponseFormat:
         response = await use_case.execute(request)
 
         assert response.success is True
-        assert response.response_text == "Fallback response"
+        assert response.response_text == '{"result": "Fallback response"}'
 
         # Verify fallback provider received the same parameters
         assert mock_fallback_provider.generate.call_count == 1
