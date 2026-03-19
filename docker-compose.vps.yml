@@ -23,6 +23,8 @@ services:
   # В базовом docker-compose.yml networks не указаны для business-api,
   # т.к. в local-режиме используется network_mode: host (для VPN).
   free-ai-selector-business-api:
+    ports:
+      - "127.0.0.1:8020:8000"
     networks:
       - free-ai-selector-network
       - proxy-network
