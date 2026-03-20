@@ -7,36 +7,19 @@
 # 3) нагрузочным тестированием через Locust в Docker;
 # 4) единым контекстом прогона (RUN_ID, source, scenario) для трассировки.
 #
-# ВАЖНО:
-# - По умолчанию используется MODE=local.
-# - Для VPS режима передайте MODE=vps.
-# - Для нагрузочных прогонов всегда формируется RUN_ID, который прокидывается
-#   во все сервисы и в Locust.
+# Единая конфигурация: docker-compose.yml для всех окружений.
+# Различия между окружениями — через значения в .env.
 # =============================================================================
 
-.PHONY: help local vps build up down restart restart-recreate logs logs-data logs-business logs-bot logs-worker logs-db clean test test-data test-business lint format migrate seed health health-check ensure-up-with-context shell-data shell-business db-shell dev status \
+.PHONY: help build up down restart restart-recreate logs logs-data logs-business logs-bot logs-worker logs-db clean test test-data test-business lint format migrate seed health health-check ensure-up-with-context shell-data shell-business db-shell dev status \
 	load-test load-test-ui load-test-ui-up load-test-ui-down load-test-ui-logs load-test-baseline load-test-ramp-up load-test-sustained load-test-failover load-test-recovery load-test-oversize load-test-all cleanup-load-test
 
 # =============================================================================
-# Core Mode Configuration
+# Core Configuration
 # =============================================================================
 
-# Режим запуска инфраструктуры:
-# - local: docker-compose.yml + docker-compose.override.yml
-# - vps:   docker-compose.yml + docker-compose.vps.yml
-MODE ?= local
-
-ifeq ($(MODE),local)
-# Команда Docker Compose для локального режима.
-# Override-файл подхватывается автоматически.
+# Единая конфигурация: docker-compose.yml для всех окружений.
 COMPOSE := docker compose
-else ifeq ($(MODE),vps)
-# Команда Docker Compose для VPS режима.
-# Override-файл local НЕ подключается.
-COMPOSE := docker compose -f docker-compose.yml -f docker-compose.vps.yml
-else
-$(error Unsupported MODE='$(MODE)'. Use MODE=local or MODE=vps)
-endif
 
 # =============================================================================
 # Unified Run Context (for traceability/audit)
@@ -102,8 +85,8 @@ LOCUST_IMAGE ?= locustio/locust:2.43.3
 # Путь к locustfile внутри репозитория.
 LOCUST_FILE ?= docs/api-tests/locustfile.py
 
-# URL Business API из Docker-сети (внутренний DNS сервиса).
-LOCUST_HOST ?= http://free-ai-selector-business-api:8000
+# URL Business API (host network, порт 8020).
+LOCUST_HOST ?= http://localhost:8020
 
 # Папка для результатов load-теста (CSV/HTML/JSONL).
 LOAD_TEST_RESULTS_DIR ?= docs/api-tests/results
@@ -160,12 +143,8 @@ LOAD_TEST_RUN_SCENARIO ?= load-test:$(LOAD_TEST_SCENARIO)
 help:
 	@echo "Free AI Selector - Available Commands:"
 	@echo ""
-	@echo "Runtime mode:"
-	@echo "  make local                 - Запуск всех сервисов (порты 8000/8001)"
-	@echo "  make vps                   - VPS режим (за nginx reverse proxy)"
-	@echo "  make up                    - Запуск в текущем MODE (по умолчанию local)"
-	@echo "  make <target> MODE=local   - Выполнить target в локальном режиме"
-	@echo "  make <target> MODE=vps     - Выполнить target в VPS режиме"
+	@echo "Startup:"
+	@echo "  make up                    - Запуск всех сервисов (порты 8020/8021)"
 	@echo ""
 	@echo "Service management:"
 	@echo "  make build                 - Build all Docker images"
@@ -219,32 +198,20 @@ help:
 	@echo "  AUDIT_JSONL_HOST_PATH=$(AUDIT_JSONL_HOST_PATH)  (host path)"
 
 # =============================================================================
-# Mode Shortcuts
-# =============================================================================
-
-# Запуск локального режима (все сервисы).
-local:
-	@$(MAKE) up MODE=local RUN_SOURCE=make:local RUN_SCENARIO=infra:local
-
-# Запуск VPS режима (все сервисы).
-vps:
-	@$(MAKE) up MODE=vps RUN_SOURCE=make:vps RUN_SCENARIO=infra:vps
-
-# =============================================================================
 # Service Lifecycle Commands
 # =============================================================================
 
 # Сборка образов всех сервисов.
 # RUN_ID намеренно не используется в build-args, чтобы не ломать Docker cache.
 build:
-	@echo "Building images (MODE=$(MODE))"
+	@echo "Building images"
 	$(COMPOSE) build
 
 # Гарантирует, что сервисы запущены с текущим run/audit контекстом.
 # Используется как preflight перед test/lint/migrate/... командами.
 ensure-up-with-context:
 	@mkdir -p "$(AUDIT_RESULTS_DIR)"
-	@echo "Ensuring services are running with current run context (MODE=$(MODE))"
+	@echo "Ensuring services are running with current run context"
 	@echo "Run context: RUN_ID=$(RUN_ID), RUN_SOURCE=$(RUN_SOURCE), RUN_SCENARIO=$(RUN_SCENARIO), RUN_STARTED_AT=$(RUN_STARTED_AT)"
 	@echo "Audit paths: container=$(AUDIT_JSONL_PATH), host=$(AUDIT_JSONL_HOST_PATH)"
 	@RUN_ID="$(RUN_ID)" \
@@ -254,12 +221,12 @@ ensure-up-with-context:
 	AUDIT_ENABLED="$(AUDIT_ENABLED)" \
 	AUDIT_JSONL_PATH="$(AUDIT_JSONL_PATH)" \
 	$(COMPOSE) up -d
-	@$(MAKE) health-check MODE=$(MODE)
+	@$(MAKE) health-check
 
 # Запуск всех сервисов с пересборкой, затем health-check.
 up:
 	@mkdir -p "$(AUDIT_RESULTS_DIR)"
-	@echo "Starting services (MODE=$(MODE))"
+	@echo "Starting services"
 	@echo "Run context: RUN_ID=$(RUN_ID), RUN_SOURCE=$(RUN_SOURCE), RUN_SCENARIO=$(RUN_SCENARIO), RUN_STARTED_AT=$(RUN_STARTED_AT)"
 	@echo "Audit paths: container=$(AUDIT_JSONL_PATH), host=$(AUDIT_JSONL_HOST_PATH)"
 	@RUN_ID="$(RUN_ID)" \
@@ -271,9 +238,9 @@ up:
 	$(COMPOSE) up -d --build
 	@echo "Waiting for services to be healthy..."
 	@sleep 5
-	@$(MAKE) health-check MODE=$(MODE)
+	@$(MAKE) health-check
 
-# Остановка всех сервисов в текущем MODE.
+# Остановка всех сервисов.
 # Перед остановкой очищает зависшие Locust-контейнеры.
 down:
 	@$(MAKE) cleanup-load-test >/dev/null
@@ -289,8 +256,8 @@ restart:
 # Используйте эту команду, когда нужно применить новый RUN контекст.
 restart-recreate:
 	@echo "Recreating containers with current run context"
-	@$(MAKE) down MODE=$(MODE)
-	@$(MAKE) up MODE=$(MODE) RUN_SOURCE=make:restart-recreate RUN_SCENARIO=infra:restart-recreate
+	@$(MAKE) down
+	@$(MAKE) up RUN_SOURCE=make:restart-recreate RUN_SCENARIO=infra:restart-recreate
 
 # Логи всех сервисов (follow).
 logs:
@@ -337,22 +304,22 @@ clean:
 # Запуск полного контейнерного тест-раннера.
 # Скрипт поднимет/остановит docker-стек и выведет агрегированный отчет.
 test:
-	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:test RUN_SCENARIO=qa:test >/dev/null
+	@$(MAKE) ensure-up-with-context RUN_SOURCE=make:test RUN_SCENARIO=qa:test >/dev/null
 	@COMPOSE_CMD='$(COMPOSE)' python3 scripts/run_container_tests.py
 
 # Запуск unit/integration тестов Data API.
 test-data:
-	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:test-data RUN_SCENARIO=qa:test-data >/dev/null
+	@$(MAKE) ensure-up-with-context RUN_SOURCE=make:test-data RUN_SCENARIO=qa:test-data >/dev/null
 	$(COMPOSE) exec free-ai-selector-data-postgres-api pytest tests/ -v --cov=app --cov-report=term-missing
 
 # Запуск unit/integration тестов Business API.
 test-business:
-	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:test-business RUN_SCENARIO=qa:test-business >/dev/null
+	@$(MAKE) ensure-up-with-context RUN_SOURCE=make:test-business RUN_SCENARIO=qa:test-business >/dev/null
 	$(COMPOSE) exec free-ai-selector-business-api pytest tests/ -v --cov=app --cov-report=term-missing
 
 # Запуск линтеров для Data API и Business API.
 lint:
-	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:lint RUN_SCENARIO=qa:lint >/dev/null
+	@$(MAKE) ensure-up-with-context RUN_SOURCE=make:lint RUN_SCENARIO=qa:lint >/dev/null
 	@echo "Running ruff..."
 	$(COMPOSE) exec free-ai-selector-data-postgres-api ruff check app/
 	$(COMPOSE) exec free-ai-selector-business-api ruff check app/
@@ -367,18 +334,18 @@ lint:
 
 # Форматирование кода ruff format.
 format:
-	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:format RUN_SCENARIO=qa:format >/dev/null
+	@$(MAKE) ensure-up-with-context RUN_SOURCE=make:format RUN_SCENARIO=qa:format >/dev/null
 	$(COMPOSE) exec free-ai-selector-data-postgres-api ruff format app/
 	$(COMPOSE) exec free-ai-selector-business-api ruff format app/
 
 # Применение миграций alembic.
 migrate:
-	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:migrate RUN_SCENARIO=db:migrate >/dev/null
+	@$(MAKE) ensure-up-with-context RUN_SOURCE=make:migrate RUN_SCENARIO=db:migrate >/dev/null
 	$(COMPOSE) exec free-ai-selector-data-postgres-api alembic upgrade head
 
 # Наполнение БД стартовыми данными.
 seed:
-	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:seed RUN_SCENARIO=db:seed >/dev/null
+	@$(MAKE) ensure-up-with-context RUN_SOURCE=make:seed RUN_SCENARIO=db:seed >/dev/null
 	$(COMPOSE) exec free-ai-selector-data-postgres-api python -m app.infrastructure.database.seed
 
 # =============================================================================
@@ -388,41 +355,35 @@ seed:
 # Проверка health сервисов.
 # Гарантирует запуск сервисов с актуальным RUN контекстом перед проверкой.
 health:
-	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:health RUN_SCENARIO=ops:health >/dev/null
+	@$(MAKE) ensure-up-with-context RUN_SOURCE=make:health RUN_SCENARIO=ops:health >/dev/null
 
 # Низкоуровневый health-check без preflight.
 # Используется внутри up/ensure-up-with-context, чтобы не создавать рекурсию.
 health-check:
-	@echo "Checking service health (MODE=$(MODE))..."
+	@echo "Checking service health..."
 	@echo ""
 	@echo "PostgreSQL:"
 	@$(COMPOSE) exec postgres pg_isready -U free_ai_selector_user >/dev/null && echo "  ✅ Ready" || echo "  ❌ Not ready"
 	@echo ""
-	@echo "Data API (container localhost:8001/health):"
-	@$(COMPOSE) exec free-ai-selector-data-postgres-api curl -f -s http://localhost:8001/health >/dev/null && echo "  ✅ Healthy" || echo "  ❌ Unhealthy"
+	@echo "Data API (localhost:8021):"
+	@curl -f -s http://localhost:8021/health >/dev/null && echo "  ✅ Healthy" || echo "  ❌ Unhealthy"
 	@echo ""
-	@echo "Business API (container localhost:8000/health):"
-	@$(COMPOSE) exec free-ai-selector-business-api curl -f -s http://localhost:8000/health >/dev/null && echo "  ✅ Healthy" || echo "  ❌ Unhealthy"
-	@if [ "$(MODE)" = "local" ]; then \
-	    echo ""; \
-	    echo "Host ports (local mode only):"; \
-	    curl -f -s http://localhost:8001/health >/dev/null && echo "  ✅ Data API host port healthy" || echo "  ❌ Data API host port unavailable"; \
-	    curl -f -s http://localhost:8000/health >/dev/null && echo "  ✅ Business API host port healthy" || echo "  ❌ Business API host port unavailable"; \
-	fi
+	@echo "Business API (localhost:8020):"
+	@curl -f -s http://localhost:8020/health >/dev/null && echo "  ✅ Healthy" || echo "  ❌ Unhealthy"
 
 # Shell внутри контейнера Data API.
 shell-data:
-	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:shell-data RUN_SCENARIO=ops:shell-data >/dev/null
+	@$(MAKE) ensure-up-with-context RUN_SOURCE=make:shell-data RUN_SCENARIO=ops:shell-data >/dev/null
 	$(COMPOSE) exec free-ai-selector-data-postgres-api /bin/sh
 
 # Shell внутри контейнера Business API.
 shell-business:
-	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:shell-business RUN_SCENARIO=ops:shell-business >/dev/null
+	@$(MAKE) ensure-up-with-context RUN_SOURCE=make:shell-business RUN_SCENARIO=ops:shell-business >/dev/null
 	$(COMPOSE) exec free-ai-selector-business-api /bin/sh
 
 # PSQL shell внутри контейнера PostgreSQL.
 db-shell:
-	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:db-shell RUN_SCENARIO=ops:db-shell >/dev/null
+	@$(MAKE) ensure-up-with-context RUN_SOURCE=make:db-shell RUN_SCENARIO=ops:db-shell >/dev/null
 	$(COMPOSE) exec postgres psql -U free_ai_selector_user -d free_ai_selector_db
 
 # Фореграунд запуск compose (удобно для локальной отладки).
@@ -448,7 +409,7 @@ status:
 # Базовая команда нагрузочного теста:
 # 1) Поднимает весь docker-стек;
 # 2) Передает RUN_ID/AUDIT контекст в сервисы и Locust;
-# 3) Запускает Locust (headless или UI);
+# 3) Запускает Locust (headless или UI) на host network;
 # 4) Сохраняет CSV/HTML/JSONL результаты;
 # 5) После завершения останавливает docker-стек.
 load-test:
@@ -458,7 +419,7 @@ load-test:
 	    echo "ERROR: Locust file not found: $(LOCUST_FILE)"; \
 	    exit 2; \
 	fi
-	@echo "Starting load test: scenario=$(LOAD_TEST_SCENARIO), users=$(LOAD_TEST_USERS), run_time=$(LOAD_TEST_RUN_TIME), mode=$(MODE), ui=$(LOAD_TEST_WITH_UI)"
+	@echo "Starting load test: scenario=$(LOAD_TEST_SCENARIO), users=$(LOAD_TEST_USERS), run_time=$(LOAD_TEST_RUN_TIME), ui=$(LOAD_TEST_WITH_UI)"
 	@echo "Run context: RUN_ID=$(RUN_ID), RUN_SOURCE=$(RUN_SOURCE), RUN_SCENARIO=$(LOAD_TEST_RUN_SCENARIO), RUN_STARTED_AT=$(RUN_STARTED_AT)"
 	@echo "Audit: AUDIT_ENABLED=$(AUDIT_ENABLED), container=$(AUDIT_JSONL_PATH), host=$(AUDIT_JSONL_HOST_PATH)"
 	@set -e; \
@@ -468,7 +429,7 @@ load-test:
 	    $(COMPOSE) down; \
 	}; \
 	trap cleanup EXIT INT TERM; \
-	$(MAKE) ensure-up-with-context MODE=$(MODE) \
+	$(MAKE) ensure-up-with-context \
 	    RUN_ID="$(RUN_ID)" \
 	    RUN_SOURCE="$(RUN_SOURCE)" \
 	    RUN_SCENARIO="$(LOAD_TEST_RUN_SCENARIO)" \
@@ -477,10 +438,8 @@ load-test:
 	    AUDIT_JSONL_PATH="$(AUDIT_JSONL_PATH)" \
 	    AUDIT_JSONL_HOST_PATH="$(AUDIT_JSONL_HOST_PATH)" \
 	    >/dev/null; \
-	DOCKER_PORT_ARG=""; \
 	LOCUST_CMD="locust -f $(LOCUST_FILE) --host $(LOCUST_HOST)"; \
 	if [ "$(LOAD_TEST_WITH_UI)" = "true" ]; then \
-	    DOCKER_PORT_ARG="-p $(LOAD_TEST_WEB_PORT):$(LOAD_TEST_WEB_PORT)"; \
 	    LOCUST_CMD="$$LOCUST_CMD --web-host 0.0.0.0 --web-port $(LOAD_TEST_WEB_PORT)"; \
 	    if [ "$(LOAD_TEST_AUTOSTART)" = "true" ]; then \
 	        LOCUST_CMD="$$LOCUST_CMD --autostart --autoquit $(LOAD_TEST_AUTOQUIT_SECONDS) --users $(LOAD_TEST_USERS) --spawn-rate $(LOAD_TEST_SPAWN_RATE) --run-time $(LOAD_TEST_RUN_TIME) --csv $(LOAD_TEST_RESULTS_DIR)/$(LOAD_TEST_PREFIX) --html $(LOAD_TEST_RESULTS_DIR)/$(LOAD_TEST_PREFIX).html"; \
@@ -490,9 +449,9 @@ load-test:
 	    LOCUST_CMD="$$LOCUST_CMD --headless --users $(LOAD_TEST_USERS) --spawn-rate $(LOAD_TEST_SPAWN_RATE) --run-time $(LOAD_TEST_RUN_TIME) --csv $(LOAD_TEST_RESULTS_DIR)/$(LOAD_TEST_PREFIX) --html $(LOAD_TEST_RESULTS_DIR)/$(LOAD_TEST_PREFIX).html"; \
 	fi; \
 	docker rm -f "$(LOCUST_RUN_CONTAINER_NAME)" >/dev/null 2>&1 || true; \
-	docker run --name "$(LOCUST_RUN_CONTAINER_NAME)" --rm $$DOCKER_PORT_ARG \
+	docker run --name "$(LOCUST_RUN_CONTAINER_NAME)" --rm \
 	    --entrypoint /bin/sh \
-	    --network free-ai-selector-network \
+	    --network host \
 	    -v "$(PWD):/work" \
 	    -w /work \
 	    -e LOCUST_SCENARIO="$(LOAD_TEST_SCENARIO)" \
@@ -525,12 +484,11 @@ load-test-ui-up:
 	    echo "ERROR: Locust file not found: $(LOCUST_FILE)"; \
 	    exit 2; \
 	fi
-	@$(MAKE) ensure-up-with-context MODE=$(MODE) RUN_SOURCE=make:load-test-ui-up RUN_SCENARIO=load-test:ui >/dev/null
+	@$(MAKE) ensure-up-with-context RUN_SOURCE=make:load-test-ui-up RUN_SCENARIO=load-test:ui >/dev/null
 	@docker rm -f "$(LOCUST_UI_CONTAINER_NAME)" >/dev/null 2>&1 || true
 	@docker run -d --name "$(LOCUST_UI_CONTAINER_NAME)" \
-	    -p "$(LOAD_TEST_WEB_PORT):$(LOAD_TEST_WEB_PORT)" \
 	    --entrypoint /bin/sh \
-	    --network free-ai-selector-network \
+	    --network host \
 	    -v "$(PWD):/work" \
 	    -w /work \
 	    -e LOCUST_SCENARIO="$(LOAD_TEST_SCENARIO)" \
@@ -654,5 +612,5 @@ load-test-all:
 # Очищает зависшие locust-контейнеры, которые могут удерживать docker-сеть.
 cleanup-load-test:
 	@docker rm -f "$(LOCUST_UI_CONTAINER_NAME)" >/dev/null 2>&1 || true
-	@docker ps -a --format '{{.Names}}' | rg '^free-ai-selector-locust-run-' | xargs -r docker rm -f >/dev/null 2>&1 || true
-	@docker ps -a --filter "network=free-ai-selector-network" --filter "ancestor=$(LOCUST_IMAGE)" --format '{{.ID}}' | xargs -r docker rm -f >/dev/null 2>&1 || true
+	@docker ps -a --format '{{.Names}}' | grep '^free-ai-selector-locust-run-' | xargs -r docker rm -f >/dev/null 2>&1 || true
+	@docker ps -a --filter "ancestor=$(LOCUST_IMAGE)" --format '{{.ID}}' | xargs -r docker rm -f >/dev/null 2>&1 || true

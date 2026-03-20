@@ -1,18 +1,19 @@
 # =============================================================================
-# Free AI Selector - Docker Compose (базовая конфигурация)
+# Free AI Selector - Docker Compose (единая конфигурация)
 # =============================================================================
-# Базовый файл с полным определением всех сервисов.
-# Используется совместно с override-файлами:
+# Единый файл для всех окружений (локальная разработка, VPS).
+# Различия между окружениями — только через значения в .env.
 #
-# Локальная разработка (по умолчанию):
-#   docker compose up
-#   (автоматически подгружает docker-compose.override.yml)
+# Сетевая модель:
+#   HOST network: Business API (:8020), Telegram Bot, Health Worker
+#   BRIDGE network: Data API (8021→8001), PostgreSQL
 #
-# VPS/production режим:
-#   docker compose -f docker-compose.yml -f docker-compose.vps.yml up
+# Зачем host: VPN-маршрутизация для AI-провайдеров и Telegram API,
+# доступность для других проектов через localhost:8020.
 #
-# Порты API не публикуются в базовой конфигурации (security by default).
-# Для локального доступа к API см. docker-compose.override.yml.
+# Запуск:
+#   docker compose up -d --build
+#   или: make up
 # =============================================================================
 
 services:
@@ -43,13 +44,16 @@ services:
   # ---------------------------------------------------------------------------
   # Data API Service (PostgreSQL Data Layer)
   # ---------------------------------------------------------------------------
-  # Порты не публикуются в базовой конфигурации.
-  # Для локального доступа см. docker-compose.override.yml.
+  # Остаётся на bridge-сети. Порт 8021 проброшен на хост для доступа
+  # от сервисов на host network и для локальной разработки.
+  # http://localhost:8021/docs — OpenAPI документация Data API.
   free-ai-selector-data-postgres-api:
     build:
       context: ./services/free-ai-selector-data-postgres-api
       dockerfile: Dockerfile
     container_name: free-ai-selector-data-postgres-api
+    ports:
+      - "127.0.0.1:8021:8001"
     environment:
       DATABASE_URL: ${DATABASE_URL}
       DATA_API_HOST: ${DATA_API_HOST}
@@ -85,20 +89,22 @@ services:
   # ---------------------------------------------------------------------------
   # Business API Service (Business Logic Layer)
   # ---------------------------------------------------------------------------
-  # Порты не публикуются в базовой конфигурации.
-  # Для локального доступа см. docker-compose.override.yml.
-  # Для VPS-режима с nginx см. docker-compose.vps.yml.
+  # Host network для VPN-маршрутизации к AI-провайдерам.
+  # Uvicorn слушает порт 8020 (переопределён через command).
+  # http://localhost:8020/docs — OpenAPI документация Business API.
   free-ai-selector-business-api:
     build:
       context: ./services/free-ai-selector-business-api
       dockerfile: Dockerfile
     container_name: free-ai-selector-business-api
+    network_mode: host
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8020", "--no-access-log"]
     environment:
       BUSINESS_API_HOST: ${BUSINESS_API_HOST}
       BUSINESS_API_PORT: ${BUSINESS_API_PORT}
       BUSINESS_API_LOG_LEVEL: ${BUSINESS_API_LOG_LEVEL}
       LOG_LEVEL: ${BUSINESS_API_LOG_LEVEL:-INFO}
-      DATA_API_URL: ${DATA_API_URL}
+      DATA_API_URL: ${DATA_API_URL:-http://localhost:8021}
       GROQ_API_KEY: ${GROQ_API_KEY}
       CEREBRAS_API_KEY: ${CEREBRAS_API_KEY}
       SAMBANOVA_API_KEY: ${SAMBANOVA_API_KEY}
@@ -143,7 +149,7 @@ services:
       free-ai-selector-data-postgres-api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8020/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -157,16 +163,18 @@ services:
   # ---------------------------------------------------------------------------
   # Telegram Bot Service (User Interface Layer)
   # ---------------------------------------------------------------------------
+  # Host network для доступа к Telegram API (polling) и Business API.
   free-ai-selector-telegram-bot:
     build:
       context: ./services/free-ai-selector-telegram-bot
       dockerfile: Dockerfile
     container_name: free-ai-selector-telegram-bot
+    network_mode: host
     environment:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_BOT_LOG_LEVEL: ${TELEGRAM_BOT_LOG_LEVEL}
       LOG_LEVEL: ${TELEGRAM_BOT_LOG_LEVEL:-INFO}
-      BUSINESS_API_URL: ${BUSINESS_API_URL_BOT}
+      BUSINESS_API_URL: ${BUSINESS_API_URL_BOT:-http://localhost:8020}
       BOT_ADMIN_IDS: ${BOT_ADMIN_IDS}
       BOT_MAX_MESSAGE_LENGTH: ${BOT_MAX_MESSAGE_LENGTH}
       ENVIRONMENT: ${ENVIRONMENT}
@@ -174,8 +182,6 @@ services:
     depends_on:
       free-ai-selector-business-api:
         condition: service_healthy
-    networks:
-      - free-ai-selector-network
     restart: unless-stopped
     volumes:
       - ./services/free-ai-selector-telegram-bot:/app
@@ -184,17 +190,19 @@ services:
   # ---------------------------------------------------------------------------
   # Health Worker Service (Background Monitoring)
   # ---------------------------------------------------------------------------
+  # Host network для доступа к Business API и Data API через localhost.
   free-ai-selector-health-worker:
     build:
       context: ./services/free-ai-selector-health-worker
       dockerfile: Dockerfile
     container_name: free-ai-selector-health-worker
+    network_mode: host
     environment:
       WORKER_LOG_LEVEL: ${WORKER_LOG_LEVEL}
       LOG_LEVEL: ${WORKER_LOG_LEVEL:-INFO}
       HEALTH_CHECK_INTERVAL: ${HEALTH_CHECK_INTERVAL}
-      DATA_API_URL: ${DATA_API_URL_WORKER}
-      BUSINESS_API_URL: http://free-ai-selector-business-api:8000
+      DATA_API_URL: ${DATA_API_URL_WORKER:-http://localhost:8021}
+      BUSINESS_API_URL: ${BUSINESS_API_URL_WORKER:-http://localhost:8020}
       ENVIRONMENT: ${ENVIRONMENT}
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
       RUN_ID: ${RUN_ID:-}
@@ -208,8 +216,6 @@ services:
         condition: service_healthy
       free-ai-selector-business-api:
         condition: service_healthy
-    networks:
-      - free-ai-selector-network
     restart: unless-stopped
     volumes:
       - ./services/free-ai-selector-health-worker:/app
@@ -220,7 +226,8 @@ services:
 # Networks
 # =============================================================================
 networks:
-  # Внутренняя сеть для связи между сервисами кластера
+  # Bridge-сеть для Data API и PostgreSQL.
+  # Сервисы на host network обращаются к Data API через проброшенный порт 8021.
   free-ai-selector-network:
     driver: bridge
     name: free-ai-selector-network

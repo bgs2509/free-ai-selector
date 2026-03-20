@@ -12,6 +12,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### TASK-001: Унификация Docker-сетей — host network + порты 802x
+
+#### Added
+- `network_mode: host` для Business API, Telegram Bot, Health Worker в `docker-compose.yml`
+- Uvicorn command/healthcheck override для Business API (порт 8020)
+- Проброс порта Data API `8021:8001` на хост
+
+#### Changed
+- Business API порт: 8000 → 8020 (Dockerfile, docker-compose.yml)
+- Data API хост-порт: 8001 → 8021 (внутренний порт 8001 без изменений)
+- Makefile: убрана MODE=local/vps логика, единый `COMPOSE := docker compose`
+- Locust: `--network host` вместо `--network free-ai-selector-network`
+- Вся документация обновлена под новые порты
+
+#### Removed
+- `docker-compose.override.yml` — конфигурация перенесена в `docker-compose.yml`
+- `docker-compose.vps.yml` — больше не нужен (proxy-network не используется при host mode)
+- `make local` / `make vps` — заменены на единый `make up`
+
 ### Planned for v4.0 (April 2026)
 - **BREAKING**: Remove old command names (`/aidd-idea`, `/aidd-generate`, `/aidd-finalize`)
 - **BREAKING**: Remove old role files (`architect.md`, `implementer.md`)
