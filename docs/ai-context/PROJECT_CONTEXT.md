@@ -167,7 +167,7 @@ class ProcessPromptUseCase:
 
 | Variable | Service | Description |
 |----------|---------|-------------|
-| `DATA_API_URL` | Business API | URL Data API (http://free-ai-selector-data-postgres-api:8001) |
+| `DATA_API_URL` | Business API | URL Data API (http://localhost:8021) |
 | `DATABASE_URL` | Data API | PostgreSQL connection string |
 | `GROQ_API_KEY` | Business API | Groq API key |
 | `CEREBRAS_API_KEY` | Business API | Cerebras API key |

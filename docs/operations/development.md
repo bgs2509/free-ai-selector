@@ -12,8 +12,8 @@
 
 ## Getting Started
 
-> Для разработки используйте `local` режим (по умолчанию).
-> `vps` режим нужен для VPS/proxy сценариев и запускается отдельно.
+> Единый `docker-compose.yml` используется для всех окружений.
+> Различия между окружениями задаются через значения в `.env`.
 
 ### 1. Clone and Setup
 
@@ -48,8 +48,8 @@ Get free API keys from (all providers require NO credit card):
 # Build all services
 make build
 
-# Start local mode
-make local
+# Start services
+make up
 
 # Initialize database
 make migrate
@@ -161,9 +161,7 @@ free-ai-selector/
 │       ├── Dockerfile
 │       └── requirements.txt
 │
-├── docker-compose.yml          # Базовая конфигурация (все сервисы, без портов)
-├── docker-compose.override.yml # Локальный режим (порты 8000/8001)
-├── docker-compose.vps.yml      # VPS режим (proxy-network)
+├── docker-compose.yml          # Единая конфигурация для всех окружений
 ├── Makefile                    # Development commands
 ├── README.md                   # Project overview
 └── .env.example                # Environment template
@@ -199,8 +197,8 @@ from app.infrastructure.database.connection import get_db  # NO!
 
 Each service runs in a **separate container**:
 
-- **free-ai-selector-data-postgres-api** (port 8001)
-- **free-ai-selector-business-api** (port 8000)
+- **free-ai-selector-data-postgres-api** (port 8021 on host / 8001 internal)
+- **free-ai-selector-business-api** (port 8020)
 - **free-ai-selector-telegram-bot** (no exposed port)
 - **free-ai-selector-health-worker** (no exposed port)
 - **postgres** (port 5432)
@@ -300,8 +298,8 @@ make db-shell
 make health
 
 # Via curl
-curl http://localhost:8001/health  # Data API
-curl http://localhost:8000/health  # Business API
+curl http://localhost:8021/health  # Data API
+curl http://localhost:8020/health  # Business API
 ```
 
 ### View Service Logs
@@ -345,14 +343,14 @@ make logs-db
 ### Port Already in Use
 
 ```bash
-# Find process using port 8000
-lsof -i :8000
+# Find process using port 8020
+lsof -i :8020
 
 # Kill process
 kill -9 <PID>
 
 # Or change port in .env
-BUSINESS_API_PORT=8080
+BUSINESS_API_PORT=8020
 ```
 
 ### Tests Failing

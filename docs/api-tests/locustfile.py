@@ -2,7 +2,7 @@
 Шаблон нагрузочного теста для Business API (Locust).
 
 Запуск (пример):
-    locust -f docs/api-tests/locustfile.py --host http://localhost:8000 \
+    locust -f docs/api-tests/locustfile.py --host http://localhost:8020 \
         --users 1 --spawn-rate 1 --run-time 10m
 
 Ключевые переменные окружения:
@@ -115,7 +115,7 @@ INCLUDE_OVERSIZE_PROMPT = _env_bool("INCLUDE_OVERSIZE_PROMPT", False)
 WRITE_RESULTS_JSONL = _env_bool("WRITE_RESULTS_JSONL", True)
 AUDIT_ENABLED = _env_bool("AUDIT_ENABLED", True)
 
-HOST = os.getenv("LOCUST_HOST", "http://localhost:8000").strip()
+HOST = os.getenv("LOCUST_HOST", "http://localhost:8020").strip()
 API_PREFIX = os.getenv("API_PREFIX", "/api/v1").strip()
 PROMPT_PATH = os.getenv("PROMPT_PATH", f"{API_PREFIX}/prompts/process").strip()
 MODEL_STATS_PATH = os.getenv("MODEL_STATS_PATH", f"{API_PREFIX}/models/stats").strip()

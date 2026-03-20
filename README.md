@@ -60,8 +60,8 @@ Free AI Selector is a **reliability-based AI routing platform** that automatical
 
 | Service | Purpose | Port | Technology |
 |---------|---------|------|------------|
-| **free-ai-selector-data-postgres-api** | Data layer - CRUD operations for AI models and prompt history | 8001 | FastAPI + SQLAlchemy 2.0 async |
-| **free-ai-selector-business-api** | Business logic - prompt processing, model selection, AI provider integration | 8000 | FastAPI + httpx |
+| **free-ai-selector-data-postgres-api** | Data layer - CRUD operations for AI models and prompt history | 8021 (host) / 8001 (internal) | FastAPI + SQLAlchemy 2.0 async |
+| **free-ai-selector-business-api** | Business logic - prompt processing, model selection, AI provider integration | 8020 | FastAPI + httpx |
 | **free-ai-selector-telegram-bot** | User interface for end users (Russian language) | - | Aiogram 3.13+ |
 | **free-ai-selector-health-worker** | Background monitoring - hourly synthetic checks, stats updates | - | AsyncIO + APScheduler |
 | **free-ai-selector-postgres** | PostgreSQL 16 database | 5432 | PostgreSQL 16 |
@@ -132,7 +132,7 @@ BOT_ADMIN_IDS=123456789,987654321
 
 ```bash
 make build  # Build all Docker images
-make local  # Local mode: direct access to localhost:8000/8001
+make up     # Start services (access via localhost:8020/8021)
 ```
 
 Wait ~30 seconds for services to initialize, then verify health:
@@ -141,20 +141,14 @@ Wait ~30 seconds for services to initialize, then verify health:
 make health
 ```
 
-Expected output in `local` mode:
+Expected output:
 ```
 ✅ PostgreSQL: Ready
-✅ Data API (http://localhost:8001/health): Healthy
-✅ Business API (http://localhost:8000/health): Healthy
+✅ Data API (http://localhost:8021/health): Healthy
+✅ Business API (http://localhost:8020/health): Healthy
 ```
 
-For VPS/reverse-proxy mode use:
-
-```bash
-make vps  # Uses docker-compose.yml + docker-compose.vps.yml
-```
-
-`make up` defaults to local mode (safe for development).
+Single `docker-compose.yml` is used for all environments. Differences are configured through `.env` values.
 
 ### 4. Initialize Database
 
@@ -169,12 +163,12 @@ make seed     # Seed with initial AI models
 
 ```bash
 # 1. Simple prompt (automatic model selection)
-curl -X POST http://localhost:8000/api/v1/prompts/process \
+curl -X POST http://localhost:8020/api/v1/prompts/process \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Generate a short poem about AI"}'
 
 # 2. Prompt with system instructions
-curl -X POST http://localhost:8000/api/v1/prompts/process \
+curl -X POST http://localhost:8020/api/v1/prompts/process \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "List 3 benefits of AI",
@@ -182,7 +176,7 @@ curl -X POST http://localhost:8000/api/v1/prompts/process \
   }'
 
 # 3. Request JSON response format
-curl -X POST http://localhost:8000/api/v1/prompts/process \
+curl -X POST http://localhost:8020/api/v1/prompts/process \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "Generate a list of 3 programming languages with their primary use cases",
@@ -190,7 +184,7 @@ curl -X POST http://localhost:8000/api/v1/prompts/process \
   }'
 
 # 4. Combined: System prompt + JSON format
-curl -X POST http://localhost:8000/api/v1/prompts/process \
+curl -X POST http://localhost:8020/api/v1/prompts/process \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "Analyze the pros and cons of microservices architecture",
@@ -199,7 +193,7 @@ curl -X POST http://localhost:8000/api/v1/prompts/process \
   }'
 
 # Get model statistics
-curl http://localhost:8000/api/v1/models/stats
+curl http://localhost:8020/api/v1/models/stats
 ```
 
 **Note**:
@@ -276,9 +270,7 @@ All 6 providers are **100% free with NO credit card required**:
 
 ```bash
 make help           # Show all available commands
-make local          # Start local mode (ports 8000/8001)
-make vps            # Start VPS/proxy mode
-make up             # Start in current MODE (default: local)
+make up             # Start services (ports 8020/8021)
 make down           # Stop services
 make logs           # View logs from all services
 make logs-business  # View Business API logs only
@@ -320,9 +312,7 @@ free-ai-selector/
 │   └── free-ai-selector-health-worker/        # Background monitoring
 │       └── ...
 ├── shared/                     # Shared utilities (future)
-├── docker-compose.yml          # Base config (all services, no ports)
-├── docker-compose.override.yml # Local mode override (ports 8000/8001)
-├── docker-compose.vps.yml      # VPS mode override (proxy-network)
+├── docker-compose.yml          # Single config for all environments
 ├── Makefile                    # Development commands
 └── README.md                   # This file
 ```
@@ -347,10 +337,10 @@ Level 2 maturity requires **≥75% code coverage** for all services.
 
 | Сервис | Swagger UI | ReDoc |
 |--------|------------|-------|
-| Business API | http://localhost:8000/docs | http://localhost:8000/redoc |
-| Data API | http://localhost:8001/docs | http://localhost:8001/redoc |
+| Business API | http://localhost:8020/docs | http://localhost:8020/redoc |
+| Data API | http://localhost:8021/docs | http://localhost:8021/redoc |
 
-### Business API (port 8000)
+### Business API (port 8020)
 
 Бизнес-логика, маршрутизация промптов и интеграция с AI-провайдерами.
 
@@ -365,7 +355,7 @@ Level 2 maturity requires **≥75% code coverage** for all services.
 **Основной endpoint** — `POST /api/v1/prompts/process`:
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/prompts/process \
+curl -X POST http://localhost:8020/api/v1/prompts/process \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "Write a poem about AI",
@@ -379,7 +369,7 @@ curl -X POST http://localhost:8000/api/v1/prompts/process \
 
 При перегрузке возвращает **429** / **503** с заголовком `Retry-After` и структурированным `ErrorResponse`.
 
-### Data API (port 8001)
+### Data API (port 8021 host / 8001 internal)
 
 CRUD для AI-моделей и истории промптов. Внутренний сервис — не доступен извне.
 

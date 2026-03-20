@@ -4,7 +4,7 @@
 
 ## Service Inventory
 
-### 1. free-ai-selector-business-api (Port 8000)
+### 1. free-ai-selector-business-api (Port 8020)
 
 **Назначение:** Выбор лучшей AI-модели и генерация ответов
 
@@ -20,7 +20,7 @@
 | AI Providers | `app/infrastructure/ai_providers/*.py` | 6 provider implementations |
 | HTTP Client | `app/infrastructure/http_clients/data_api_client.py` | Data API client |
 
-### 2. free-ai-selector-data-postgres-api (Port 8001)
+### 2. free-ai-selector-data-postgres-api (Port 8021 host / 8001 internal)
 
 **Назначение:** CRUD операции для AI-моделей и истории промптов
 
@@ -63,8 +63,8 @@
 sequenceDiagram
     participant User as User/Telegram
     participant Proxy as nginx-proxy (VPS)
-    participant Business as Business API :8000
-    participant Data as Data API :8001
+    participant Business as Business API :8020
+    participant Data as Data API :8021
     participant DB as PostgreSQL :5432
     participant AI as AI Provider
 
@@ -108,7 +108,7 @@ sequenceDiagram
 | Business API | AI Providers | HTTPS | Various | Generate AI responses |
 | Telegram Bot | Business API | HTTP | POST /api/v1/prompts/process | Process user prompts |
 | Health Worker | Data API | HTTP | Various | Update health stats |
-| nginx-proxy (VPS) | Business API | HTTP | /* | Reverse proxy |
+| nginx-proxy (VPS) | Business API | HTTP | /* | Reverse proxy (to localhost:8020) |
 
 ---
 
@@ -183,7 +183,7 @@ sequenceDiagram
 ### Business API
 
 ```bash
-DATA_API_URL=http://free-ai-selector-data-postgres-api:8001
+DATA_API_URL=http://localhost:8021
 # Существующие провайдеры (5)
 GROQ_API_KEY=xxx
 CEREBRAS_API_KEY=xxx
@@ -217,14 +217,14 @@ POSTGRES_PASSWORD=xxx
 
 ```bash
 TELEGRAM_BOT_TOKEN=xxx
-BUSINESS_API_URL=http://free-ai-selector-business-api:8000
+BUSINESS_API_URL=http://localhost:8020
 BOT_ADMIN_IDS=123456,789012
 ```
 
 ### Health Worker
 
 ```bash
-DATA_API_URL=http://free-ai-selector-data-postgres-api:8001
+DATA_API_URL=http://localhost:8021
 HEALTH_CHECK_INTERVAL=3600
 SYNTHETIC_TEST_PROMPT="Hello! Please respond with 'OK'"
 ```
@@ -233,19 +233,19 @@ SYNTHETIC_TEST_PROMPT="Hello! Please respond with 'OK'"
 
 ## Docker Network
 
-Services communicate via two Docker networks:
+Services use a mix of host and bridge networking:
+
+- **Business API, Telegram Bot, Health Worker**: `network_mode: host` (доступны на localhost)
+- **Data API, PostgreSQL**: bridge network (`free-ai-selector-network`)
 
 ```yaml
 networks:
   free-ai-selector-network:
     driver: bridge
-    # Внутренняя сеть для связи между сервисами
-  proxy-network:
-    external: true
-    # Внешняя сеть для связи с nginx-proxy (VPS)
+    # Сеть для Data API и PostgreSQL
 ```
 
-**Internal DNS:**
-- `free-ai-selector-business-api:8000`
-- `free-ai-selector-data-postgres-api:8001`
-- `postgres:5432`
+**Host-accessible ports:**
+- `localhost:8020` — Business API (host network)
+- `localhost:8021` — Data API (bridge, port mapping 8021:8001)
+- `localhost:5432` — PostgreSQL (bridge, port mapping)

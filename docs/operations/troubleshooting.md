@@ -2,8 +2,7 @@
 
 > Руководство по решению типичных проблем Free AI Selector.
 
-> Примеры ниже ориентированы на локальный режим (`make local`, MODE=local по умолчанию).
-> Для VPS режима добавляйте `MODE=vps` к командам `make`.
+> Единый `docker-compose.yml` используется для всех окружений.
 
 ---
 
@@ -61,7 +60,7 @@ lsof -i :5432
 # Если порт занят, остановить локальный PostgreSQL
 sudo systemctl stop postgresql
 
-# Или изменить порт в docker-compose.override.yml
+# Или изменить порт в .env
 ```
 
 ### Порты заняты
@@ -70,8 +69,8 @@ sudo systemctl stop postgresql
 
 ```bash
 # Проверить порты
-lsof -i :8000
-lsof -i :8001
+lsof -i :8020
+lsof -i :8021
 lsof -i :5432
 ```
 
@@ -79,7 +78,7 @@ lsof -i :5432
 
 ```bash
 # Остановить конфликтующие сервисы
-sudo kill -9 $(lsof -t -i :8000)
+sudo kill -9 $(lsof -t -i :8020)
 ```
 
 ---
@@ -97,7 +96,7 @@ sudo kill -9 $(lsof -t -i :8000)
 
 ```bash
 # Тест провайдеров
-curl -X POST http://localhost:8000/api/v1/providers/test
+curl -X POST http://localhost:8020/api/v1/providers/test
 
 # Проверить логи
 make logs-business | grep -i "provider\|error\|failed"
@@ -113,7 +112,7 @@ docker compose exec free-ai-selector-business-api env | grep API_KEY
 docker compose exec free-ai-selector-business-api env | grep -E "API_KEY|ACCOUNT_ID|API_TOKEN"
 
 # 3. Перезапустить сервисы
-make down && make local
+make down && make up
 ```
 
 ### Rate Limit Exceeded
@@ -139,7 +138,7 @@ make down && make local
 **Диагностика:**
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/providers/test | jq '.results[] | select(.success == false)'
+curl -X POST http://localhost:8020/api/v1/providers/test | jq '.results[] | select(.success == false)'
 ```
 
 **Решение:**
@@ -173,7 +172,7 @@ curl -X POST http://localhost:8000/api/v1/providers/test | jq '.results[] | sele
 docker compose exec postgres psql -U free_ai_selector_user -d free_ai_selector_db -c "SELECT 1"
 
 # Проверить Data API
-curl http://localhost:8001/health
+curl http://localhost:8021/health
 ```
 
 **Решения:**
@@ -209,7 +208,7 @@ docker compose logs free-ai-selector-data-postgres-api | grep -i alembic
 **Диагностика:**
 
 ```bash
-curl http://localhost:8001/api/v1/models
+curl http://localhost:8021/api/v1/models
 # Ожидается: {"models": [...], "total": 6}
 ```
 
@@ -302,7 +301,7 @@ docker compose up -d
 LOG_LEVEL=DEBUG
 
 # Перезапустить
-make down && make local
+make down && make up
 ```
 
 ### Просмотр логов конкретного сервиса
@@ -339,7 +338,7 @@ make db-shell
 
 - [ ] `docker compose ps` - все контейнеры Up и healthy
 - [ ] `make health` - все endpoints отвечают
-- [ ] `curl http://localhost:8001/api/v1/models` - есть модели в БД
+- [ ] `curl http://localhost:8021/api/v1/models` - есть модели в БД
 - [ ] `curl -X POST .../providers/test` - провайдеры работают
 - [ ] `.env` файл существует и содержит ключи
 - [ ] `docker compose logs` - нет критических ошибок

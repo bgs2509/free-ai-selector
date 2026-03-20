@@ -53,19 +53,13 @@ TELEGRAM_BOT_TOKEN=...
 # Собрать Docker образы
 make build
 
-# Локальный режим (рекомендовано для разработки)
-make local
+# Запуск сервисов
+make up
 ```
 
 Подождите ~30 секунд для инициализации.
 
-Для VPS/reverse proxy режима используйте:
-
-```bash
-make vps
-```
-
-`make up` по умолчанию запускает local-режим.
+Единый `docker-compose.yml` используется для всех окружений. Различия задаются через `.env`.
 
 ---
 
@@ -75,12 +69,12 @@ make vps
 make health
 ```
 
-Ожидаемый вывод в `local` режиме:
+Ожидаемый вывод:
 
 ```
 ✅ PostgreSQL: Ready
-✅ Data API (http://localhost:8001/health): Healthy
-✅ Business API (http://localhost:8000/health): Healthy
+✅ Data API (http://localhost:8021/health): Healthy
+✅ Business API (http://localhost:8020/health): Healthy
 ```
 
 ---
@@ -103,7 +97,7 @@ make seed
 
 ```bash
 # Обработать промпт
-curl -X POST http://localhost:8000/api/v1/prompts/process \
+curl -X POST http://localhost:8020/api/v1/prompts/process \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Привет! Напиши короткое стихотворение об AI"}'
 ```
@@ -125,7 +119,7 @@ curl -X POST http://localhost:8000/api/v1/prompts/process \
 ### Статистика моделей
 
 ```bash
-curl http://localhost:8000/api/v1/models/stats
+curl http://localhost:8020/api/v1/models/stats
 ```
 
 ---
@@ -134,7 +128,7 @@ curl http://localhost:8000/api/v1/models/stats
 
 1. Получить токен у [@BotFather](https://t.me/BotFather)
 2. Добавить в `.env`: `TELEGRAM_BOT_TOKEN=...`
-3. Перезапустить: `make down && make local`
+3. Перезапустить: `make down && make up`
 4. Найти бота в Telegram и отправить `/start`
 
 ---
