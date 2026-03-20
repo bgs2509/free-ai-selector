@@ -446,7 +446,7 @@ make logs-business
 
 2. **Протестируйте REST API**:
    ```bash
-   curl -X POST http://localhost:8000/api/v1/prompts/process \
+   curl -X POST http://localhost:8020/api/v1/prompts/process \
      -H "Content-Type: application/json" \
      -d '{"prompt": "Привет! Расскажи о себе"}'
    ```
@@ -458,7 +458,7 @@ make logs-business
 
 4. **Мониторьте статистику**:
    ```bash
-   curl http://localhost:8000/api/v1/models/stats
+   curl http://localhost:8020/api/v1/models/stats
    ```
 
 ---
