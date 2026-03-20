@@ -191,21 +191,7 @@ services:
       LOG_LEVEL: ${WORKER_LOG_LEVEL:-INFO}
       HEALTH_CHECK_INTERVAL: ${HEALTH_CHECK_INTERVAL}
       DATA_API_URL: ${DATA_API_URL_WORKER}
-      GROQ_API_KEY: ${GROQ_API_KEY}
-      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY}
-      SAMBANOVA_API_KEY: ${SAMBANOVA_API_KEY}
-      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY}
-      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID}
-      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
-      # F003: Новые провайдеры (6 шт.)
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
-      FIREWORKS_API_KEY: ${FIREWORKS_API_KEY:-}
-      HYPERBOLIC_API_KEY: ${HYPERBOLIC_API_KEY:-}
-      NOVITA_API_KEY: ${NOVITA_API_KEY:-}
-      SCALEWAY_API_KEY: ${SCALEWAY_API_KEY:-}
-      SYNTHETIC_TEST_PROMPT: ${SYNTHETIC_TEST_PROMPT}
+      BUSINESS_API_URL: http://free-ai-selector-business-api:8000
       ENVIRONMENT: ${ENVIRONMENT}
       REQUEST_ID_HEADER: ${REQUEST_ID_HEADER}
       RUN_ID: ${RUN_ID:-}
@@ -216,6 +202,8 @@ services:
       AUDIT_JSONL_PATH: ${AUDIT_JSONL_PATH:-/audit/audit.jsonl}
     depends_on:
       free-ai-selector-data-postgres-api:
+        condition: service_healthy
+      free-ai-selector-business-api:
         condition: service_healthy
     networks:
       - free-ai-selector-network

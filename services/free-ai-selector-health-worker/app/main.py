@@ -2,23 +2,17 @@
 AI Manager Platform - Health Worker Service
 
 Background worker for synthetic monitoring of AI providers.
-Runs health checks hourly and updates model statistics.
-Level 2 (Development Ready) maturity.
+Delegates health checks to Business API (POST /providers/test),
+which uses correct provider-specific classes and model names.
+Runs checks hourly and logs results.
 
-F008 SSOT Architecture:
-    Provider list is fetched from Data API (PostgreSQL as SSOT).
-    Each model contains api_format field for dynamic dispatch.
-    F018: API key env var names resolved via PROVIDER_ENV_VARS dict (SSOT).
-    Universal health checker uses api_format to select check function.
-
-Supports all providers configured in seed.py (currently 12).
+Business API already updates increment-success/failure in Data API,
+so health worker acts as a thin scheduler — no direct provider calls needed.
 """
 
 import asyncio
 import os
-import time
 import uuid
-from typing import Optional
 
 import httpx
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -36,31 +30,11 @@ SERVICE_NAME = "free-ai-selector-health-worker"
 LOG_LEVEL = os.getenv("WORKER_LOG_LEVEL", "INFO")
 HEALTH_CHECK_INTERVAL = int(os.getenv("HEALTH_CHECK_INTERVAL", "3600"))  # seconds
 DATA_API_URL = os.getenv("DATA_API_URL", "http://localhost:8001")
-SYNTHETIC_TEST_PROMPT = os.getenv("SYNTHETIC_TEST_PROMPT", "Generate a simple greeting message")
-HEALTH_WORKER_USER_ID = "__health_worker__"
+BUSINESS_API_URL = os.getenv("BUSINESS_API_URL", "http://free-ai-selector-business-api:8000")
 RUN_ID = os.getenv("RUN_ID", "").strip()
 RUN_SOURCE = os.getenv("RUN_SOURCE", "").strip()
 RUN_SCENARIO = os.getenv("RUN_SCENARIO", "").strip()
 RUN_STARTED_AT = os.getenv("RUN_STARTED_AT", "").strip()
-
-# Special env vars for Cloudflare (needs account_id)
-CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
-
-# F018: SSOT для API key env var names (отдельный микросервис, не может импортировать ProviderRegistry)
-PROVIDER_ENV_VARS: dict[str, str] = {
-    "Groq": "GROQ_API_KEY",
-    "Cerebras": "CEREBRAS_API_KEY",
-    "SambaNova": "SAMBANOVA_API_KEY",
-    "HuggingFace": "HUGGINGFACE_API_KEY",
-    "Cloudflare": "CLOUDFLARE_API_TOKEN",
-    "DeepSeek": "DEEPSEEK_API_KEY",
-    "OpenRouter": "OPENROUTER_API_KEY",
-    "GitHubModels": "GITHUB_TOKEN",
-    "Fireworks": "FIREWORKS_API_KEY",
-    "Hyperbolic": "HYPERBOLIC_API_KEY",
-    "Novita": "NOVITA_API_KEY",
-    "Scaleway": "SCALEWAY_API_KEY",
-}
 
 # =============================================================================
 # Logging Configuration (AIDD Framework: structlog)
@@ -70,9 +44,8 @@ setup_logging(SERVICE_NAME)
 logger = get_logger(__name__)
 
 # =============================================================================
-# Universal Health Check Functions (F008 SSOT)
+# Utility Functions
 # =============================================================================
-# Dispatch by api_format from database instead of hardcoded provider names
 
 
 def format_exception_message(error: Exception) -> str:
@@ -88,170 +61,9 @@ def format_exception_message(error: Exception) -> str:
     return type(error).__name__
 
 
-def _get_api_key(env_var: str) -> Optional[str]:
-    """
-    Get API key from environment variable (F008 SSOT).
-
-    Args:
-        env_var: Environment variable name
-
-    Returns:
-        API key value or None if not set
-    """
-    return os.getenv(env_var, "") or None
-
-
-async def check_openai_format(
-    endpoint: str, api_key: str, provider: str
-) -> tuple[bool, float]:
-    """
-    Universal health check for OpenAI-compatible APIs (F008 SSOT).
-
-    Used by: Groq, Cerebras, SambaNova, DeepSeek, OpenRouter, GitHubModels,
-             Fireworks, Hyperbolic, Novita, Scaleway
-
-    Args:
-        endpoint: API endpoint URL
-        api_key: API key for authentication
-        provider: Provider name for logging
-
-    Returns:
-        Tuple of (is_healthy, response_time_seconds)
-    """
-    start_time = time.time()
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            }
-            # OpenRouter requires referer header
-            if "openrouter" in endpoint.lower():
-                headers["HTTP-Referer"] = "https://github.com/free-ai-selector"
-
-            payload = {
-                "model": "auto",  # Model is not important for health check
-                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
-                "max_tokens": 50,
-            }
-            response = await client.post(endpoint, headers=headers, json=payload)
-            response_time = time.time() - start_time
-            return response.status_code == 200, response_time
-    except Exception as e:
-        logger.error(
-            "health_check_failed",
-            provider=provider,
-            api_format="openai",
-            error=format_exception_message(e),
-        )
-        return False, time.time() - start_time
-
-
-async def check_huggingface_format(
-    endpoint: str, api_key: str, provider: str
-) -> tuple[bool, float]:
-    """
-    Health check for HuggingFace Inference API format (F008 SSOT).
-
-    Used by: HuggingFace
-
-    Args:
-        endpoint: API endpoint URL
-        api_key: API key for authentication
-        provider: Provider name for logging
-
-    Returns:
-        Tuple of (is_healthy, response_time_seconds)
-    """
-    start_time = time.time()
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            headers = {"Authorization": f"Bearer {api_key}"}
-            payload = {
-                "inputs": SYNTHETIC_TEST_PROMPT,
-                "parameters": {"max_new_tokens": 50},
-            }
-            response = await client.post(endpoint, headers=headers, json=payload)
-            response_time = time.time() - start_time
-            # 200 OK or 503 (model loading) both indicate API is responding
-            return response.status_code in [200, 503], response_time
-    except Exception as e:
-        logger.error(
-            "health_check_failed",
-            provider=provider,
-            api_format="huggingface",
-            error=format_exception_message(e),
-        )
-        return False, time.time() - start_time
-
-
-async def check_cloudflare_format(
-    endpoint: str, api_key: str, provider: str
-) -> tuple[bool, float]:
-    """
-    Health check for Cloudflare Workers AI format (F008 SSOT).
-
-    Used by: Cloudflare
-
-    Note: Requires CLOUDFLARE_ACCOUNT_ID env var for endpoint URL.
-
-    Args:
-        endpoint: API endpoint URL with {account_id} placeholder
-        api_key: API token for authentication
-        provider: Provider name for logging
-
-    Returns:
-        Tuple of (is_healthy, response_time_seconds)
-    """
-    if not CLOUDFLARE_ACCOUNT_ID:
-        logger.warning(
-            "provider_config_missing",
-            provider=provider,
-            missing="CLOUDFLARE_ACCOUNT_ID",
-        )
-        return False, 0.0
-
-    start_time = time.time()
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            }
-            # Replace {account_id} placeholder in endpoint URL
-            actual_endpoint = endpoint.replace("{account_id}", CLOUDFLARE_ACCOUNT_ID)
-            payload = {
-                "messages": [{"role": "user", "content": SYNTHETIC_TEST_PROMPT}],
-                "max_tokens": 50,
-            }
-            response = await client.post(actual_endpoint, headers=headers, json=payload)
-            response_time = time.time() - start_time
-            return response.status_code == 200, response_time
-    except Exception as e:
-        logger.error(
-            "health_check_failed",
-            provider=provider,
-            api_format="cloudflare",
-            error=format_exception_message(e),
-        )
-        return False, time.time() - start_time
-
-
-# =============================================================================
-# API Format Dispatch Dictionary (F008 SSOT)
-# =============================================================================
-# Maps api_format from database to check function
-
-API_FORMAT_CHECKERS = {
-    "openai": check_openai_format,
-    "huggingface": check_huggingface_format,
-    "cloudflare": check_cloudflare_format,
-}
-
-
 def _build_trace_headers() -> dict[str, str]:
     """
-    Собирает headers для межсервисных запросов в Data API.
+    Собирает headers для межсервисных запросов.
 
     Хедеры нужны для end-to-end трассировки:
     - X-Request-ID / X-Correlation-ID
@@ -273,58 +85,6 @@ def _build_trace_headers() -> dict[str, str]:
     return headers
 
 
-async def universal_health_check(
-    endpoint: str,
-    api_format: str,
-    provider: str,
-) -> tuple[bool, float]:
-    """
-    Universal health check dispatcher (F008 SSOT, F018).
-
-    Resolves API key env var name via PROVIDER_ENV_VARS dict,
-    then dispatches to appropriate format-specific checker based on api_format.
-
-    Args:
-        endpoint: API endpoint URL from database
-        api_format: API format discriminator from database
-        provider: Provider name for logging and env var lookup
-
-    Returns:
-        Tuple of (is_healthy, response_time_seconds)
-    """
-    # F018: Resolve env var name from provider name
-    env_var = PROVIDER_ENV_VARS.get(provider, "")
-    if not env_var:
-        logger.warning(
-            "provider_env_var_unknown",
-            provider=provider,
-        )
-        return False, 0.0
-
-    # Get API key from environment
-    api_key = _get_api_key(env_var)
-    if not api_key:
-        logger.warning(
-            "provider_api_key_missing",
-            provider=provider,
-            env_var=env_var,
-        )
-        return False, 0.0
-
-    # Get format-specific checker
-    checker = API_FORMAT_CHECKERS.get(api_format)
-    if not checker:
-        logger.warning(
-            "unknown_api_format",
-            provider=provider,
-            api_format=api_format,
-        )
-        return False, 0.0
-
-    # Run check
-    return await checker(endpoint, api_key, provider)
-
-
 # =============================================================================
 # Main Health Check Job
 # =============================================================================
@@ -332,16 +92,12 @@ async def universal_health_check(
 
 async def run_health_checks():
     """
-    Run synthetic health checks for all AI models (F008 SSOT).
+    Делегирует health check в Business API (POST /providers/test).
 
-    Fetches models from Data API (including api_format),
-    checks each provider using universal health checker,
-    and updates statistics based on results.
-
-    F012: Rate-limited providers (available_at > now) are excluded
-    from health checks via available_only=true parameter.
+    Business API сам вызывает провайдеров с правильными model names
+    и обновляет increment-success/failure в Data API.
+    Health worker только логирует результаты.
     """
-    # Генерируем job_id для этого цикла проверок
     job_id = uuid.uuid4().hex[:12]
     logger.info("health_check_job_started", job_id=job_id)
     audit_event(
@@ -355,206 +111,74 @@ async def run_health_checks():
     )
 
     try:
-        # Fetch all active models from Data API (F008: includes api_format)
-        # F012: available_only=true excludes rate-limited providers
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(
-                f"{DATA_API_URL}/api/v1/models?active_only=true&available_only=true",
+        # Вызываем business-api (сам обновляет increment-success/failure)
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            response = await client.post(
+                f"{BUSINESS_API_URL}/providers/test",
                 headers=_build_trace_headers(),
             )
             response.raise_for_status()
-            models = response.json()
+            data = response.json()
 
-        logger.info("fetched_models_for_check", job_id=job_id, models_count=len(models))
+        # Считаем результаты
+        results = data.get("results", [])
+        healthy = [r for r in results if r.get("status") == "success"]
+        unhealthy = [r for r in results if r.get("status") != "success"]
 
-        healthy_count = 0
-        unhealthy_count = 0
-        skipped_count = 0
-
-        # Check each model using universal health checker
-        for model in models:
-            model_id = model["id"]
-            model_name = model["name"]
-            provider = model["provider"]
-            endpoint = model["api_endpoint"]
-            # F008 SSOT: api_format from database
-            api_format = model.get("api_format", "openai")
-
+        # Логируем каждый результат
+        for r in healthy:
             logger.info(
-                "checking_model",
+                "model_healthy",
                 job_id=job_id,
-                model=model_name,
-                provider=provider,
-                api_format=api_format,
+                model=r.get("model"),
+                provider=r.get("provider"),
+                response_time_seconds=r.get("response_time"),
             )
             audit_event(
-                "model_call_start",
+                "model_call_success",
                 {
                     "source": "health_worker",
                     "job_id": job_id,
-                    "model_id": model_id,
-                    "model": model_name,
-                    "provider": provider,
-                    "api_format": api_format,
-                    "prompt_chars": len(SYNTHETIC_TEST_PROMPT),
+                    "model": r.get("model"),
+                    "provider": r.get("provider"),
+                    "duration_ms": round(r.get("response_time", 0) * 1000.0, 2),
                 },
             )
 
-            # F008: Use universal health check with api_format dispatch
-            # F018: env_var resolved inside via PROVIDER_ENV_VARS
-            is_healthy, response_time = await universal_health_check(
-                endpoint=endpoint,
-                api_format=api_format,
-                provider=provider,
+        for r in unhealthy:
+            logger.warning(
+                "model_unhealthy",
+                job_id=job_id,
+                model=r.get("model"),
+                provider=r.get("provider"),
+                error=r.get("error"),
+            )
+            audit_event(
+                "model_call_error",
+                {
+                    "source": "health_worker",
+                    "job_id": job_id,
+                    "model": r.get("model"),
+                    "provider": r.get("provider"),
+                    "error": r.get("error"),
+                },
             )
 
-            # Skip if no API key configured (response_time == 0.0 indicates missing key)
-            if response_time == 0.0 and not is_healthy:
-                skipped_count += 1
-                audit_event(
-                    "model_call_error",
-                    {
-                        "source": "health_worker",
-                        "job_id": job_id,
-                        "model_id": model_id,
-                        "model": model_name,
-                        "provider": provider,
-                        "duration_ms": 0.0,
-                        "error_type": "ProviderNotConfigured",
-                        "error": "Provider API key missing or provider env var unknown",
-                    },
-                )
-                continue
-
-            # Update model statistics in Data API
-            try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    if is_healthy:
-                        healthy_count += 1
-                        logger.info(
-                            "model_healthy",
-                            job_id=job_id,
-                            model=model_name,
-                            provider=provider,
-                            response_time_seconds=round(response_time, 2),
-                        )
-                        audit_event(
-                            "model_call_success",
-                            {
-                                "source": "health_worker",
-                                "job_id": job_id,
-                                "model_id": model_id,
-                                "model": model_name,
-                                "provider": provider,
-                                "duration_ms": round(response_time * 1000.0, 2),
-                                "response_chars": None,
-                            },
-                        )
-                        await client.post(
-                            f"{DATA_API_URL}/api/v1/models/{model_id}/increment-success",
-                            params={"response_time": response_time},
-                            headers=_build_trace_headers(),
-                        )
-                        # Fix B: Записать в prompt_history для recent_score
-                        try:
-                            await client.post(
-                                f"{DATA_API_URL}/api/v1/history",
-                                json={
-                                    "user_id": HEALTH_WORKER_USER_ID,
-                                    "prompt_text": f"[health_check] {provider}/{model_name}",
-                                    "selected_model_id": model_id,
-                                    "response_text": None,
-                                    "response_time": str(round(response_time, 3)),
-                                    "success": True,
-                                    "error_message": None,
-                                },
-                                headers=_build_trace_headers(),
-                            )
-                        except Exception as hist_err:
-                            logger.warning(
-                                "health_history_write_failed",
-                                error=format_exception_message(hist_err),
-                            )
-                    else:
-                        unhealthy_count += 1
-                        logger.warning(
-                            "model_unhealthy",
-                            job_id=job_id,
-                            model=model_name,
-                            provider=provider,
-                        )
-                        audit_event(
-                            "model_call_error",
-                            {
-                                "source": "health_worker",
-                                "job_id": job_id,
-                                "model_id": model_id,
-                                "model": model_name,
-                                "provider": provider,
-                                "duration_ms": round(response_time * 1000.0, 2),
-                                "error_type": "UnhealthyResponse",
-                                "error": "Provider health check returned non-healthy status",
-                            },
-                        )
-                        await client.post(
-                            f"{DATA_API_URL}/api/v1/models/{model_id}/increment-failure",
-                            params={"response_time": response_time},
-                            headers=_build_trace_headers(),
-                        )
-                        # Fix B: Записать в prompt_history для recent_score
-                        try:
-                            await client.post(
-                                f"{DATA_API_URL}/api/v1/history",
-                                json={
-                                    "user_id": HEALTH_WORKER_USER_ID,
-                                    "prompt_text": f"[health_check] {provider}/{model_name}",
-                                    "selected_model_id": model_id,
-                                    "response_text": None,
-                                    "response_time": str(round(response_time, 3)),
-                                    "success": False,
-                                    "error_message": "Health check failed",
-                                },
-                                headers=_build_trace_headers(),
-                            )
-                        except Exception as hist_err:
-                            logger.warning(
-                                "health_history_write_failed",
-                                error=format_exception_message(hist_err),
-                            )
-            except Exception as update_error:
-                logger.error(
-                    "stats_update_failed",
-                    job_id=job_id,
-                    model=model_name,
-                    error=format_exception_message(update_error),
-                )
-                audit_event(
-                    "health_stats_update_failed",
-                    {
-                        "job_id": job_id,
-                        "model_id": model_id,
-                        "model": model_name,
-                        "provider": provider,
-                        "error": format_exception_message(update_error),
-                    },
-                )
-
+        # Итог
         logger.info(
             "health_check_job_completed",
             job_id=job_id,
-            healthy=healthy_count,
-            unhealthy=unhealthy_count,
-            skipped=skipped_count,
-            total=len(models),
+            healthy=len(healthy),
+            unhealthy=len(unhealthy),
+            total=len(results),
         )
         audit_event(
             "health_check_job_completed",
             {
                 "job_id": job_id,
-                "healthy": healthy_count,
-                "unhealthy": unhealthy_count,
-                "skipped": skipped_count,
-                "total": len(models),
+                "healthy": len(healthy),
+                "unhealthy": len(unhealthy),
+                "total": len(results),
             },
         )
 
@@ -576,18 +200,19 @@ async def run_health_checks():
 
 async def main():
     """
-    Main worker entry point (F008 SSOT).
+    Main worker entry point.
 
     Sets up scheduler and runs health checks at configured interval.
-    Provider list is fetched from Data API dynamically.
+    Delegates actual provider testing to Business API.
     """
     logger.info(
         "service_starting",
         data_api_url=DATA_API_URL,
+        business_api_url=BUSINESS_API_URL,
         health_check_interval_seconds=HEALTH_CHECK_INTERVAL,
     )
 
-    # Verify Data API connection and fetch provider list (F008 SSOT)
+    # Проверяем доступность business-api
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             # Check Data API health
@@ -601,33 +226,21 @@ async def main():
                     status_code=response.status_code,
                 )
 
-            # F008 SSOT: Fetch providers from Data API to log configured ones
-            models_response = await client.get(
-                f"{DATA_API_URL}/api/v1/models?active_only=true",
-                headers=_build_trace_headers(),
+            # Check Business API health
+            response = await client.get(
+                f"{BUSINESS_API_URL}/health", headers=_build_trace_headers()
             )
-            if models_response.status_code == 200:
-                models = models_response.json()
-                # F018: Check which providers have API keys configured via PROVIDER_ENV_VARS
-                configured_providers = []
-                for model in models:
-                    provider = model.get("provider", "")
-                    env_var = PROVIDER_ENV_VARS.get(provider, "")
-                    if env_var and _get_api_key(env_var):
-                        configured_providers.append(provider)
-
-                logger.info(
-                    "configured_providers",
-                    count=len(configured_providers),
-                    total=len(models),
-                    providers=configured_providers,
+            if response.status_code == 200:
+                logger.info("business_api_connected", status="healthy")
+            else:
+                logger.warning(
+                    "business_api_connected",
+                    status="unhealthy",
+                    status_code=response.status_code,
                 )
 
-                if len(configured_providers) == 0:
-                    logger.warning("no_providers_configured")
-
     except Exception as e:
-        logger.error("data_api_connection_failed", error=format_exception_message(e))
+        logger.error("api_connection_failed", error=format_exception_message(e))
         raise
 
     # Run initial health check
