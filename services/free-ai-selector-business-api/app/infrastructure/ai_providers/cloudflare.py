@@ -91,7 +91,7 @@ class CloudflareProvider(AIProviderBase):
         # Cloudflare uses messages format (similar to OpenAI)
         payload = {
             "messages": messages,
-            "max_tokens": kwargs.get("max_tokens", 512),
+            "max_tokens": kwargs.get("max_tokens", 2048),
             "temperature": kwargs.get("temperature", 0.7),
         }
 

@@ -114,7 +114,7 @@ async def run_health_checks():
         # Вызываем business-api (сам обновляет increment-success/failure)
         async with httpx.AsyncClient(timeout=180.0) as client:
             response = await client.post(
-                f"{BUSINESS_API_URL}/providers/test",
+                f"{BUSINESS_API_URL}/api/v1/providers/test",
                 headers=_build_trace_headers(),
             )
             response.raise_for_status()

@@ -138,7 +138,7 @@ class OpenAICompatibleProvider(AIProviderBase):
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
-            "max_tokens": kwargs.get("max_tokens", 512),
+            "max_tokens": kwargs.get("max_tokens", 2048),
             "temperature": kwargs.get("temperature", 0.7),
             "top_p": kwargs.get("top_p", 0.9),
         }
@@ -157,13 +157,28 @@ class OpenAICompatibleProvider(AIProviderBase):
         return payload
 
     def _parse_response(self, result: dict[str, Any]) -> str:
-        """Парсинг OpenAI-совместимого ответа."""
+        """Парсинг OpenAI-совместимого ответа.
+
+        Handles reasoning models (e.g. gpt-oss-20b) that may put all output
+        into reasoning_content while leaving content empty.
+        """
         if "choices" in result and len(result["choices"]) > 0:
             message = result["choices"][0].get("message", {})
             content = message.get("content", "")
             if isinstance(content, list):
                 content = " ".join(str(item) for item in content)
-            return str(content).strip()
+            content = str(content).strip()
+            # Fallback to reasoning_content for reasoning models
+            if not content:
+                reasoning = message.get("reasoning_content", "")
+                if reasoning:
+                    content = str(reasoning).strip()
+                    logger.info(
+                        "using_reasoning_content",
+                        provider=self.PROVIDER_NAME,
+                        reasoning_chars=len(content),
+                    )
+            return content
         else:
             err_msg = sanitize_error_message(str(result))
             logger.error("unexpected_response", provider=self.PROVIDER_NAME, error=err_msg)

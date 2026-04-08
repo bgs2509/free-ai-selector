@@ -314,6 +314,12 @@ class ProcessPromptUseCase:
                     model=model,
                 )
 
+                # Empty response check (mirrors test_all_providers.py logic)
+                if not response_text or not response_text.strip():
+                    raise ProviderError(
+                        f"Empty response from {model.provider}/{model.name}"
+                    )
+
                 # Валидация JSON-ответа если запрошен response_format
                 if request.response_format and request.response_format.get("type") == "json_object":
                     from app.utils.json_validator import validate_json_response
