@@ -527,3 +527,74 @@ class TestProviderTags:
         from app.infrastructure.ai_providers.registry import ProviderRegistry
         tags = ProviderRegistry.get_tags("Unknown")
         assert tags == set()
+
+
+@pytest.mark.unit
+class TestMaxOutputTokens:
+    """Tests for MAX_OUTPUT_TOKENS per-provider."""
+
+    def test_groq_max_output_tokens(self):
+        from app.infrastructure.ai_providers.groq import GroqProvider
+        assert GroqProvider.MAX_OUTPUT_TOKENS == 32768
+
+    def test_cerebras_max_output_tokens(self):
+        from app.infrastructure.ai_providers.cerebras import CerebrasProvider
+        assert CerebrasProvider.MAX_OUTPUT_TOKENS == 8192
+
+    def test_huggingface_max_output_tokens(self):
+        from app.infrastructure.ai_providers.huggingface import HuggingFaceProvider
+        assert HuggingFaceProvider.MAX_OUTPUT_TOKENS == 8192
+
+    def test_openrouter_max_output_tokens(self):
+        from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
+        assert OpenRouterProvider.MAX_OUTPUT_TOKENS == 16384
+
+    def test_github_max_output_tokens(self):
+        from app.infrastructure.ai_providers.github_models import GitHubModelsProvider
+        assert GitHubModelsProvider.MAX_OUTPUT_TOKENS == 16384
+
+    def test_fireworks_max_output_tokens(self):
+        from app.infrastructure.ai_providers.fireworks import FireworksProvider
+        assert FireworksProvider.MAX_OUTPUT_TOKENS == 4096
+
+    def test_novita_max_output_tokens(self):
+        from app.infrastructure.ai_providers.novita import NovitaProvider
+        assert NovitaProvider.MAX_OUTPUT_TOKENS == 16384
+
+    def test_base_default(self):
+        from app.infrastructure.ai_providers.base import OpenAICompatibleProvider
+        assert OpenAICompatibleProvider.MAX_OUTPUT_TOKENS == 2048
+
+    def test_payload_uses_max_output_tokens(self):
+        """_build_payload uses MAX_OUTPUT_TOKENS as default instead of hardcoded 2048."""
+        from app.infrastructure.ai_providers.groq import GroqProvider
+
+        provider = GroqProvider(api_key="test-key")
+        payload = provider._build_payload("hello")
+        assert payload["max_tokens"] == 32768
+
+    def test_payload_kwarg_overrides_max_output_tokens(self):
+        """Explicit max_tokens kwarg overrides MAX_OUTPUT_TOKENS."""
+        from app.infrastructure.ai_providers.groq import GroqProvider
+
+        provider = GroqProvider(api_key="test-key")
+        payload = provider._build_payload("hello", max_tokens=1024)
+        assert payload["max_tokens"] == 1024
+
+
+@pytest.mark.unit
+class TestOpenRouterTimeout:
+    """Tests for OpenRouter increased timeout for reasoning models."""
+
+    def test_openrouter_timeout_180s(self):
+        from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
+
+        provider = OpenRouterProvider(api_key="test-key")
+        assert provider.timeout == 180.0
+
+    def test_groq_timeout_default(self):
+        """Other providers keep default 30s."""
+        from app.infrastructure.ai_providers.groq import GroqProvider
+
+        provider = GroqProvider(api_key="test-key")
+        assert provider.timeout == 30.0

@@ -32,3 +32,5 @@ class OpenRouterProvider(OpenAICompatibleProvider):
         "X-Title": "Free AI Selector",
     }
     TAGS: ClassVar[set[str]] = {"code", "reasoning", "russian", "tools"}
+    MAX_OUTPUT_TOKENS: ClassVar[int] = 16384
+    TIMEOUT = 180.0  # Reasoning models (R1) need 50-120s for long prompts
