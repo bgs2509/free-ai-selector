@@ -1333,3 +1333,60 @@ class TestF025Backpressure:
             await use_case.execute(request)
 
         assert exc_info.value.retry_after_seconds == 45
+
+
+@pytest.mark.unit
+class TestTagFiltering:
+    """Tests for tag-based model filtering."""
+
+    def test_filter_by_tags_matches(self):
+        """Models with all requested tags are kept."""
+        from app.application.use_cases.process_prompt import ProcessPromptUseCase
+        from app.domain.models import AIModelInfo
+
+        uc = ProcessPromptUseCase.__new__(ProcessPromptUseCase)
+        models = [
+            AIModelInfo(id=1, name="M1", provider="Groq", api_endpoint="", reliability_score=0.9, is_active=True),
+            AIModelInfo(id=2, name="M2", provider="Cerebras", api_endpoint="", reliability_score=0.8, is_active=True),
+        ]
+        result = uc._filter_by_tags(models, ["fast", "json"])
+        assert len(result) == 2  # Both Groq and Cerebras have fast+json
+
+    def test_filter_by_tags_excludes(self):
+        """Models missing a requested tag are excluded."""
+        from app.application.use_cases.process_prompt import ProcessPromptUseCase
+        from app.domain.models import AIModelInfo
+
+        uc = ProcessPromptUseCase.__new__(ProcessPromptUseCase)
+        models = [
+            AIModelInfo(id=1, name="M1", provider="Groq", api_endpoint="", reliability_score=0.9, is_active=True),
+            AIModelInfo(id=2, name="M2", provider="HuggingFace", api_endpoint="", reliability_score=0.8, is_active=True),
+        ]
+        result = uc._filter_by_tags(models, ["json"])
+        # Groq has json, HuggingFace does not
+        assert len(result) == 1
+        assert result[0].provider == "Groq"
+
+    def test_filter_by_tags_none_returns_all(self):
+        """No tags filter returns all models."""
+        from app.application.use_cases.process_prompt import ProcessPromptUseCase
+        from app.domain.models import AIModelInfo
+
+        uc = ProcessPromptUseCase.__new__(ProcessPromptUseCase)
+        models = [
+            AIModelInfo(id=1, name="M1", provider="Groq", api_endpoint="", reliability_score=0.9, is_active=True),
+        ]
+        result = uc._filter_by_tags(models, None)
+        assert len(result) == 1
+
+    def test_filter_by_tags_fallback_when_empty(self):
+        """If no models match tags, fallback to all models."""
+        from app.application.use_cases.process_prompt import ProcessPromptUseCase
+        from app.domain.models import AIModelInfo
+
+        uc = ProcessPromptUseCase.__new__(ProcessPromptUseCase)
+        models = [
+            AIModelInfo(id=1, name="M1", provider="Groq", api_endpoint="", reliability_score=0.9, is_active=True),
+        ]
+        result = uc._filter_by_tags(models, ["nonexistent_tag"])
+        assert len(result) == 1  # fallback to all

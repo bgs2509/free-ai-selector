@@ -181,9 +181,12 @@ class ProcessPromptUseCase:
                 response_format=None,
             )
 
+        # Step 2.6: Filter by tags if requested
+        tag_filtered_models = self._filter_by_tags(json_filtered_models, request.tags)
+
         # Step 3: Sort by effective reliability score (F010) + tiebreaker by speed
         sorted_models = sorted(
-            json_filtered_models,
+            tag_filtered_models,
             key=lambda m: (m.effective_reliability_score, -m.average_response_time),
             reverse=True,
         )
@@ -632,6 +635,28 @@ class ProcessPromptUseCase:
             total=len(models),
             fallback="system_prompt",
         )
+        return models
+
+    def _filter_by_tags(
+        self,
+        models: list[AIModelInfo],
+        tags: Optional[list[str]],
+    ) -> list[AIModelInfo]:
+        """Filter models by provider tags. Fallback to all if none match."""
+        if not tags:
+            return models
+
+        tag_set = set(tags)
+        capable = [
+            m for m in models
+            if tag_set.issubset(ProviderRegistry.get_tags(m.provider))
+        ]
+
+        if capable:
+            logger.info("tag_filter", total=len(models), matched=len(capable), tags=tags)
+            return capable
+
+        logger.warning("no_tag_matched_models", total=len(models), tags=tags, fallback="all")
         return models
 
     def _filter_configured_models(self, models: list[AIModelInfo]) -> list[AIModelInfo]:
