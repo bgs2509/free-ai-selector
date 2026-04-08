@@ -203,6 +203,22 @@
         .status-dot.offline { background: var(--error); }
         .link { color: var(--primary); text-decoration: none; font-weight: 500; }
         .link:hover { text-decoration: underline; }
+        .tag-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .tag-pill {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1.5px solid var(--border);
+            color: var(--text-light);
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .tag-pill:hover { border-color: var(--primary); color: var(--primary); }
+        .tag-pill.active { background: var(--primary); border-color: var(--primary); color: white; }
         .hidden { display: none !important; }
         @media (max-width: 640px) {
             .page-wrapper { padding: 16px; align-items: flex-start; }
@@ -245,6 +261,18 @@
                                 <input type="radio" name="response-format" value="json">
                                 <span>JSON</span>
                             </label>
+                        </div>
+                    </div>
+
+                    <div class="format-selector">
+                        <label class="format-label">Теги (фильтр моделей):</label>
+                        <div class="tag-pills" id="tag-pills">
+                            <span class="tag-pill" data-tag="fast">fast</span>
+                            <span class="tag-pill" data-tag="json">json</span>
+                            <span class="tag-pill" data-tag="code">code</span>
+                            <span class="tag-pill" data-tag="reasoning">reasoning</span>
+                            <span class="tag-pill" data-tag="tools">tools</span>
+                            <span class="tag-pill" data-tag="lightweight">lightweight</span>
                         </div>
                     </div>
 
@@ -303,6 +331,7 @@
                                     <th>Провайдер</th>
                                     <th>Score</th>
                                     <th>Успех</th>
+                                    <th>Теги</th>
                                 </tr>
                             </thead>
                             <tbody id="stats-tbody"></tbody>
@@ -356,6 +385,16 @@
 
         const API_BASE = detectApiBase();
         const MANUAL_MODEL_MIN_SCORE = 0.4;
+        const PROVIDER_TAGS = {
+            Groq: ['fast', 'json', 'code', 'tools'],
+            Cerebras: ['fast', 'json', 'lightweight'],
+            HuggingFace: ['lightweight'],
+            Cloudflare: ['json', 'code'],
+            OpenRouter: ['code', 'reasoning', 'tools'],
+            GitHubModels: ['fast', 'json', 'tools'],
+            Fireworks: ['json', 'code'],
+            Novita: ['json', 'lightweight'],
+        };
         let manualModelsLoaded = false;
 
         // Исправляем ссылку API Docs для корректной работы за proxy
@@ -383,6 +422,12 @@
         function getMedal(r) { return r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : ''; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
         function getCheckedValue(name) { return Array.from(document.getElementsByName(name)).find(r => r.checked)?.value; }
+        function getSelectedTags() { return Array.from(document.querySelectorAll('.tag-pill.active')).map(el => el.dataset.tag); }
+        function initTagPills() {
+            document.querySelectorAll('.tag-pill').forEach(pill => {
+                pill.addEventListener('click', () => pill.classList.toggle('active'));
+            });
+        }
 
         function setAutoModeWithError(message) {
             const modelModeRadios = document.getElementsByName('model-mode');
@@ -513,6 +558,10 @@
                 payload.system_prompt = systemPrompt;
             }
 
+            // Добавить tags если выбраны
+            const selectedTags = getSelectedTags();
+            if (selectedTags.length > 0) payload.tags = selectedTags;
+
             // Добавить response_format если JSON выбран
             const selectedFormat = Array.from(formatRadios).find(r => r.checked)?.value;
             if (selectedFormat === 'json') {
@@ -564,16 +613,19 @@
                 models.forEach((model, i) => {
                     const rank = i + 1;
                     const row = document.createElement('tr');
+                    const providerTags = PROVIDER_TAGS[model.provider] || [];
+                    const tagsHtml = providerTags.map(t => `<span class="tag-pill" style="padding:2px 8px;font-size:11px;cursor:default;">${t}</span>`).join(' ');
                     row.innerHTML = `
                         <td class="rank-cell"><span class="medal">${getMedal(rank)}</span>${rank > 3 ? rank : ''}</td>
                         <td>${escapeHtml(model.name || '—')}</td>
                         <td>${escapeHtml(model.provider || '—')}</td>
                         <td class="score-cell">${model.reliability_score?.toFixed(2) || '—'}</td>
                         <td>${formatPercent(model.success_rate)}</td>
+                        <td>${tagsHtml}</td>
                     `;
                     tbody.appendChild(row);
                 });
-                if (models.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#666;">Нет данных</td></tr>';
+                if (models.length === 0) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#666;">Нет данных</td></tr>';
                 show(tableContainer);
             } catch (e) { showError(errorBox, e.message); }
             finally { hide(loader); if (refreshBtn) refreshBtn.style.animation = ''; }
@@ -619,7 +671,7 @@
 
         function showError(box, msg) { box.textContent = msg; show(box); }
 
-        function init() { initTabs(); initModelSelector(); checkHealth(); setInterval(checkHealth, 30000); }
+        function init() { initTabs(); initModelSelector(); initTagPills(); checkHealth(); setInterval(checkHealth, 30000); }
 
         document.addEventListener('DOMContentLoaded', init);
         document.addEventListener('DOMContentLoaded', () => {
