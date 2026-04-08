@@ -31,6 +31,7 @@ class GitHubModelsProvider(OpenAICompatibleProvider):
     API_KEY_ENV = "GITHUB_TOKEN"
     SUPPORTS_RESPONSE_FORMAT = True  # F011-B: Supports json_schema format
     TAGS: ClassVar[set[str]] = {"fast", "json", "russian", "tools"}
+    MAX_OUTPUT_TOKENS: ClassVar[int] = 16384
 
     def _is_health_check_success(self, response: httpx.Response) -> bool:
         """GitHub Models возвращает < 500 при успехе."""

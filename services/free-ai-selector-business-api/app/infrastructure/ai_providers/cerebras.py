@@ -28,3 +28,4 @@ class CerebrasProvider(OpenAICompatibleProvider):
     API_KEY_ENV = "CEREBRAS_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
     TAGS: ClassVar[set[str]] = {"fast", "json", "russian", "lightweight"}
+    MAX_OUTPUT_TOKENS: ClassVar[int] = 8192

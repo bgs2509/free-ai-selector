@@ -28,3 +28,4 @@ class GroqProvider(OpenAICompatibleProvider):
     API_KEY_ENV = "GROQ_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
     TAGS: ClassVar[set[str]] = {"fast", "json", "code", "russian", "tools"}
+    MAX_OUTPUT_TOKENS: ClassVar[int] = 32768

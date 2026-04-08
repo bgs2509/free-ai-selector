@@ -91,6 +91,7 @@ class OpenAICompatibleProvider(AIProviderBase):
     EXTRA_HEADERS: ClassVar[dict[str, str]] = {}
     TIMEOUT: ClassVar[float] = 30.0
     TAGS: ClassVar[set[str]] = set()
+    MAX_OUTPUT_TOKENS: ClassVar[int] = 2048
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         """
@@ -139,7 +140,7 @@ class OpenAICompatibleProvider(AIProviderBase):
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
-            "max_tokens": kwargs.get("max_tokens", 2048),
+            "max_tokens": kwargs.get("max_tokens", self.MAX_OUTPUT_TOKENS),
             "temperature": kwargs.get("temperature", 0.7),
             "top_p": kwargs.get("top_p", 0.9),
         }

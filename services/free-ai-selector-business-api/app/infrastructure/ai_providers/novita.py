@@ -28,3 +28,4 @@ class NovitaProvider(OpenAICompatibleProvider):
     API_KEY_ENV = "NOVITA_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
     TAGS: ClassVar[set[str]] = {"json", "russian", "lightweight"}
+    MAX_OUTPUT_TOKENS: ClassVar[int] = 16384

@@ -27,3 +27,4 @@ class HuggingFaceProvider(OpenAICompatibleProvider):
     API_KEY_ENV = "HUGGINGFACE_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = False
     TAGS: ClassVar[set[str]] = {"russian", "lightweight"}
+    MAX_OUTPUT_TOKENS: ClassVar[int] = 8192

@@ -29,6 +29,7 @@ class FireworksProvider(OpenAICompatibleProvider):
     API_KEY_ENV = "FIREWORKS_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
     TAGS: ClassVar[set[str]] = {"json", "code", "russian"}
+    MAX_OUTPUT_TOKENS: ClassVar[int] = 4096
 
     def _build_payload(self, prompt: str, **kwargs: Any) -> dict[str, Any]:
         """Cap max_tokens at 4096 (Fireworks non-streaming limit)."""
