@@ -53,6 +53,7 @@ class PromptRequest:
     # NEW: F011-B - System Prompts & JSON Response Support
     system_prompt: Optional[str] = None  # System prompt for AI guidance
     response_format: Optional[dict] = None  # Structured output specification
+    tags: Optional[list[str]] = None  # Filter models by provider tags
 
 
 @dataclass

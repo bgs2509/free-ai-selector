@@ -36,6 +36,11 @@ class ProcessPromptRequest(BaseModel):
         description="Optional response format specification. Example: {'type': 'json_object'}"
     )
 
+    tags: Optional[list[str]] = Field(
+        None,
+        description="Optional list of tags to filter models (e.g. ['fast', 'json']). Models must have ALL requested tags.",
+    )
+
     @field_validator("response_format")
     @classmethod
     def validate_response_format(cls, v: Optional[dict]) -> Optional[dict]:

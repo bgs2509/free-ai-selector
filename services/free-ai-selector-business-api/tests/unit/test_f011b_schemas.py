@@ -169,3 +169,26 @@ class TestPromptRequestDTO:
         assert dto.prompt_text == "Test prompt"
         assert dto.system_prompt == "System message"
         assert dto.response_format == {"type": "json_object"}
+
+
+@pytest.mark.unit
+class TestTagsParameter:
+    """Tests for tags parameter in API schema."""
+
+    def test_schema_accepts_tags(self):
+        from app.api.v1.schemas import ProcessPromptRequest
+
+        req = ProcessPromptRequest(prompt="hello", tags=["fast", "json"])
+        assert req.tags == ["fast", "json"]
+
+    def test_schema_tags_optional(self):
+        from app.api.v1.schemas import ProcessPromptRequest
+
+        req = ProcessPromptRequest(prompt="hello")
+        assert req.tags is None
+
+    def test_domain_prompt_request_tags(self):
+        from app.domain.models import PromptRequest
+
+        req = PromptRequest(user_id="u1", prompt_text="hello", tags=["code"])
+        assert req.tags == ["code"]
