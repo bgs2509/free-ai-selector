@@ -385,3 +385,69 @@ class TestBaseProviderReasoningFallback:
         }
         response = provider._parse_response(result)
         assert response == "Hello!"
+
+
+@pytest.mark.unit
+class TestFireworksReasoningTags:
+    """Tests for Fireworks GPT-OSS-20B proprietary tag stripping."""
+
+    def test_parse_strips_channel_tags_with_assistant(self):
+        """Fireworks content with <|channel|> tags extracts text after <|start|>assistant."""
+        from app.infrastructure.ai_providers.fireworks import FireworksProvider
+
+        provider = FireworksProvider(api_key="test-key")
+        result = {
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": '<|channel|>analysis<|message|>Some reasoning here.<|end|><|start|>assistant Hello!',
+                }
+            }]
+        }
+        response = provider._parse_response(result)
+        assert response == "Hello!"
+
+    def test_parse_strips_channel_tags_fallback_to_message(self):
+        """When no <|start|>assistant, extract from <|message|> content."""
+        from app.infrastructure.ai_providers.fireworks import FireworksProvider
+
+        provider = FireworksProvider(api_key="test-key")
+        result = {
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": '<|channel|>analysis<|message|>The answer is 42.<|end|>',
+                }
+            }]
+        }
+        response = provider._parse_response(result)
+        assert response == "The answer is 42."
+
+    def test_parse_normal_content_unchanged(self):
+        """Normal content without tags passes through."""
+        from app.infrastructure.ai_providers.fireworks import FireworksProvider
+
+        provider = FireworksProvider(api_key="test-key")
+        result = {
+            "choices": [{
+                "message": {"role": "assistant", "content": "Hello!"}
+            }]
+        }
+        response = provider._parse_response(result)
+        assert response == "Hello!"
+
+    def test_parse_empty_after_assistant_tag_uses_message(self):
+        """When text after <|start|>assistant is empty, fall back to <|message|>."""
+        from app.infrastructure.ai_providers.fireworks import FireworksProvider
+
+        provider = FireworksProvider(api_key="test-key")
+        result = {
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": '<|channel|>analysis<|message|>User wants hello.<|end|><|start|>assistant',
+                }
+            }]
+        }
+        response = provider._parse_response(result)
+        assert response == "User wants hello."
