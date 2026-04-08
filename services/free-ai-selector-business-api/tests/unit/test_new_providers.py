@@ -451,3 +451,32 @@ class TestFireworksReasoningTags:
         }
         response = provider._parse_response(result)
         assert response == "User wants hello."
+
+
+@pytest.mark.unit
+class TestFireworksMaxTokensCap:
+    """Tests for Fireworks max_tokens cap at 4096."""
+
+    def test_build_payload_caps_max_tokens(self):
+        """max_tokens > 4096 is capped to 4096."""
+        from app.infrastructure.ai_providers.fireworks import FireworksProvider
+
+        provider = FireworksProvider(api_key="test-key")
+        payload = provider._build_payload("hello", max_tokens=8192)
+        assert payload["max_tokens"] == 4096
+
+    def test_build_payload_keeps_lower_max_tokens(self):
+        """max_tokens <= 4096 is unchanged."""
+        from app.infrastructure.ai_providers.fireworks import FireworksProvider
+
+        provider = FireworksProvider(api_key="test-key")
+        payload = provider._build_payload("hello", max_tokens=2048)
+        assert payload["max_tokens"] == 2048
+
+    def test_build_payload_default_max_tokens(self):
+        """Default max_tokens (2048) is unchanged."""
+        from app.infrastructure.ai_providers.fireworks import FireworksProvider
+
+        provider = FireworksProvider(api_key="test-key")
+        payload = provider._build_payload("hello")
+        assert payload["max_tokens"] == 2048

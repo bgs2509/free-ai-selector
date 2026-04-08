@@ -29,6 +29,13 @@ class FireworksProvider(OpenAICompatibleProvider):
     API_KEY_ENV = "FIREWORKS_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
 
+    def _build_payload(self, prompt: str, **kwargs: Any) -> dict[str, Any]:
+        """Cap max_tokens at 4096 (Fireworks non-streaming limit)."""
+        payload = super()._build_payload(prompt, **kwargs)
+        if payload.get("max_tokens", 0) > 4096:
+            payload["max_tokens"] = 4096
+        return payload
+
     def _parse_response(self, result: dict[str, Any]) -> str:
         """Strip proprietary reasoning tags from gpt-oss-20b responses."""
         content = super()._parse_response(result)
