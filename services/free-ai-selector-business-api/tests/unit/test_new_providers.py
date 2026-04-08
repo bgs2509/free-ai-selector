@@ -329,3 +329,59 @@ class TestProvidersInheritance:
                 assert hasattr(
                     provider, method
                 ), f"{provider.__class__.__name__} должен иметь метод {method}"
+
+
+@pytest.mark.unit
+class TestBaseProviderReasoningFallback:
+    """Tests for _parse_response reasoning field fallback."""
+
+    def test_parse_response_reasoning_field_fallback(self):
+        """OpenRouter returns 'reasoning' instead of 'reasoning_content'."""
+        from app.infrastructure.ai_providers.groq import GroqProvider
+
+        provider = GroqProvider(api_key="test-key")
+        result = {
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": None,
+                    "reasoning": "The user wants hello. I should say Hello.",
+                }
+            }]
+        }
+        response = provider._parse_response(result)
+        assert response == "The user wants hello. I should say Hello."
+
+    def test_parse_response_reasoning_content_still_works(self):
+        """Existing reasoning_content fallback still works."""
+        from app.infrastructure.ai_providers.groq import GroqProvider
+
+        provider = GroqProvider(api_key="test-key")
+        result = {
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": None,
+                    "reasoning_content": "thinking...",
+                }
+            }]
+        }
+        response = provider._parse_response(result)
+        assert response == "thinking..."
+
+    def test_parse_response_content_takes_priority(self):
+        """When content exists, reasoning fields are ignored."""
+        from app.infrastructure.ai_providers.groq import GroqProvider
+
+        provider = GroqProvider(api_key="test-key")
+        result = {
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": "Hello!",
+                    "reasoning": "thinking...",
+                }
+            }]
+        }
+        response = provider._parse_response(result)
+        assert response == "Hello!"

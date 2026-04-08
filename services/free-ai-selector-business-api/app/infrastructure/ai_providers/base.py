@@ -167,10 +167,13 @@ class OpenAICompatibleProvider(AIProviderBase):
             content = message.get("content", "")
             if isinstance(content, list):
                 content = " ".join(str(item) for item in content)
-            content = str(content).strip()
-            # Fallback to reasoning_content for reasoning models
+            content = str(content).strip() if content is not None else ""
+            # Fallback to reasoning_content / reasoning for reasoning models
             if not content:
-                reasoning = message.get("reasoning_content", "")
+                reasoning = (
+                    message.get("reasoning_content", "")
+                    or message.get("reasoning", "")
+                )
                 if reasoning:
                     content = str(reasoning).strip()
                     logger.info(
