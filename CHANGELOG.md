@@ -12,7 +12,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### TASK-001: Унификация Docker-сетей — host network + порты 802x
+### Planned for v4.0 (April 2026)
+- **BREAKING**: Remove old command names (`/aidd-idea`, `/aidd-generate`, `/aidd-finalize`)
+- **BREAKING**: Remove old role files (`architect.md`, `implementer.md`)
+- **BREAKING**: Only v3 naming conventions supported
+- Require migration to v3 before upgrade
+
+---
+
+## [3.1.0] - 2026-04-08
+
+### 🐛 Fixed — Empty AI Responses from Reasoning Models (4 fixes)
+
+Комплексное исправление проблемы пустых ответов от AI-провайдеров. Корневая причина: модель `gpt-oss-20b` (Fireworks) — reasoning модель, которая при `max_tokens=512` тратила все токены на `reasoning_content`, оставляя `content` пустым в ~75% запросов. Пустые ответы ошибочно считались "success", не понижая reliability score.
+
+- **F1: max_tokens 512 → 2048** в `base.py` и `cloudflare.py` — reasoning модели получают достаточно токенов для content после chain-of-thought (340b831)
+- **F2: Парсинг reasoning_content** в `base.py._parse_response()` — если `content` пуст, используется `reasoning_content` как fallback (340b831)
+- **F3: Пустой ответ = ProviderError** в `process_prompt.py` — пустой `response_text` бросает `ProviderError`, что триггерит fallback на следующего провайдера и понижает reliability score. Логика зеркалит `test_all_providers.py` (340b831)
+- **F4: Health Worker URL fix** — `/providers/test` → `/api/v1/providers/test` в health-worker. Эндпоинт возвращал 404 из-за отсутствия prefix `/api/v1`, синтетический мониторинг не работал (340b831)
+
+### 📄 Documentation — Ollama Integration Plan
+
+- План интеграции Ollama для локального LLM inference на RTX 4060 (9e10389)
+- Provider benchmark: 12 провайдеров × 3 промпта × 2 формата (e186791)
+
+---
+
+## [3.0.0] - 2026-03-20
+
+### ✨ Added — TASK-001: Унификация Docker-сетей — host network + порты 802x
 
 #### Added
 - `network_mode: host` для Business API, Telegram Bot, Health Worker в `docker-compose.yml`
@@ -31,11 +59,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docker-compose.vps.yml` — больше не нужен (proxy-network не используется при host mode)
 - `make local` / `make vps` — заменены на единый `make up`
 
-### Planned for v4.0 (April 2026)
-- **BREAKING**: Remove old command names (`/aidd-idea`, `/aidd-generate`, `/aidd-finalize`)
-- **BREAKING**: Remove old role files (`architect.md`, `implementer.md`)
-- **BREAKING**: Only v3 naming conventions supported
-- Require migration to v3 before upgrade
+### 🔄 Changed — Retry & Circuit Breaker Tuning
+
+- Отключены retry для упрощения fallback loop (04d383a)
+- Ускорен lockout circuit breaker (04d383a)
+- Health checks делегированы в Business API вместо прямых вызовов провайдеров (0e43f78)
+
+### 🧪 Testing — 80% Coverage Milestone
+
+- 456/456 тестов проходят (a3aa478)
+- 80% покрытие для всех 4 микросервисов с реальным PostgreSQL (cca5cc5)
 
 ---
 

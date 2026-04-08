@@ -81,16 +81,19 @@ docker compose exec free-ai-selector-data-postgres-api pytest tests/unit/test_do
 
 ## AI-провайдеры
 
-12 бесплатных провайдеров в `services/free-ai-selector-business-api/app/infrastructure/ai_providers/`:
+10 бесплатных провайдеров в `services/free-ai-selector-business-api/app/infrastructure/ai_providers/`:
 - Существующие (5): `groq.py`, `cerebras.py`, `sambanova.py`, `huggingface.py`, `cloudflare.py`
-- Новые F003 (7): `deepseek.py`, `openrouter.py`, `github_models.py`, `fireworks.py`, `hyperbolic.py`, `novita.py`, `scaleway.py`
+- Новые F003 (5): `deepseek.py`, `openrouter.py`, `github_models.py`, `fireworks.py`, `hyperbolic.py`, `novita.py`, `scaleway.py`
+- Удалены: Kluster, Nebius (v2.9.0)
 
-Все наследуют от `base.py:AIProviderBase` (должны реализовать `generate()`, `health_check()`, `get_provider_name()`).
+Все OpenAI-совместимые провайдеры наследуют от `base.py:OpenAICompatibleProvider`. Cloudflare имеет собственную реализацию.
+
+**Reasoning модели** (e.g. Fireworks `gpt-oss-20b`): ответ может быть в `reasoning_content` вместо `content`. `_parse_response()` автоматически использует `reasoning_content` как fallback. Дефолт `max_tokens=2048` обеспечивает достаточно токенов для reasoning + content.
 
 ### Добавление нового провайдера
 
-1. Создать `services/free-ai-selector-business-api/app/infrastructure/ai_providers/newprovider.py`, наследующий `AIProviderBase`
-2. Зарегистрировать в `app/application/use_cases/process_prompt.py:ProcessPromptUseCase.providers`
+1. Создать `services/free-ai-selector-business-api/app/infrastructure/ai_providers/newprovider.py`, наследующий `OpenAICompatibleProvider`
+2. Зарегистрировать в `app/infrastructure/ai_providers/registry.py:PROVIDER_CLASSES`
 3. Добавить модель в `services/free-ai-selector-data-postgres-api/app/infrastructure/database/seed.py`
 4. Добавить env-переменную в `.env` и `docker-compose.yml`
 
