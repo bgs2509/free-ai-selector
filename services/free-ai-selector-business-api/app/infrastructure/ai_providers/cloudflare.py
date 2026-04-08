@@ -186,7 +186,7 @@ class CloudflareProvider(AIProviderBase):
 class CloudflareGemma3Provider(CloudflareProvider):
     """Cloudflare Workers AI — Google Gemma 3 12B (140+ languages, strong Russian)."""
 
-    TAGS: ClassVar[set[str]] = {"json", "code", "russian"}
+    TAGS: ClassVar[set[str]] = {"fast", "json", "code", "russian"}
 
     def __init__(self):
         super().__init__(model="@cf/google/gemma-3-12b-it")
@@ -198,7 +198,7 @@ class CloudflareGemma3Provider(CloudflareProvider):
 class CloudflareQwen3Provider(CloudflareProvider):
     """Cloudflare Workers AI — Qwen3 30B MoE (119+ languages, strong Russian)."""
 
-    TAGS: ClassVar[set[str]] = {"json", "code", "russian"}
+    TAGS: ClassVar[set[str]] = {"fast", "json", "code", "russian"}
 
     def __init__(self):
         super().__init__(model="@cf/qwen/qwen3-30b-a3b-fp8")
