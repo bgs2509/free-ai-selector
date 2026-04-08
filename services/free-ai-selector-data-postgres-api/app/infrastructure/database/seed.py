@@ -36,7 +36,7 @@ SEED_MODELS = [
         "api_format": "openai",
     },
     {
-        "name": "Llama 3.3 70B",
+        "name": "Llama 3.1 8B",
         "provider": "Cerebras",
         "api_endpoint": "https://api.cerebras.ai/v1/chat/completions",
         "is_active": True,
@@ -91,7 +91,7 @@ SEED_MODELS = [
     # Новые провайдеры F003 — Фаза 2: Дополнительные (4 шт.)
     # ═══════════════════════════════════════════════════════════════════════════
     {
-        "name": "Llama 3.1 70B (Fireworks)",
+        "name": "GPT-OSS-20B (Fireworks)",
         "provider": "Fireworks",
         "api_endpoint": "https://api.fireworks.ai/inference/v1/chat/completions",
         "is_active": True,
@@ -105,7 +105,7 @@ SEED_MODELS = [
         "api_format": "openai",
     },
     {
-        "name": "Llama 3.1 70B (Novita)",
+        "name": "Llama 3.1 8B Instruct (Novita)",
         "provider": "Novita",
         "api_endpoint": "https://api.novita.ai/v3/openai/chat/completions",
         "is_active": True,
