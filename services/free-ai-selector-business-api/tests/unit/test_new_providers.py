@@ -474,12 +474,12 @@ class TestFireworksMaxTokensCap:
         assert payload["max_tokens"] == 2048
 
     def test_build_payload_default_max_tokens(self):
-        """Default max_tokens (2048) is unchanged."""
+        """Default max_tokens uses MAX_OUTPUT_TOKENS (4096 for Fireworks)."""
         from app.infrastructure.ai_providers.fireworks import FireworksProvider
 
         provider = FireworksProvider(api_key="test-key")
         payload = provider._build_payload("hello")
-        assert payload["max_tokens"] == 2048
+        assert payload["max_tokens"] == 4096
 
 
 @pytest.mark.unit
