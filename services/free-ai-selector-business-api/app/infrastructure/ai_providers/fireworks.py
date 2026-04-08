@@ -28,7 +28,7 @@ class FireworksProvider(OpenAICompatibleProvider):
     DEFAULT_MODEL = "accounts/fireworks/models/gpt-oss-20b"
     API_KEY_ENV = "FIREWORKS_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
-    TAGS: ClassVar[set[str]] = {"json", "code", "russian"}
+    TAGS: ClassVar[set[str]] = {"json", "code"}
     MAX_OUTPUT_TOKENS: ClassVar[int] = 4096
 
     def _build_payload(self, prompt: str, **kwargs: Any) -> dict[str, Any]:

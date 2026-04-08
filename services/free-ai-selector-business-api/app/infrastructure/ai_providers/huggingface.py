@@ -26,5 +26,5 @@ class HuggingFaceProvider(OpenAICompatibleProvider):
     DEFAULT_MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
     API_KEY_ENV = "HUGGINGFACE_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = False
-    TAGS: ClassVar[set[str]] = {"russian", "lightweight"}
+    TAGS: ClassVar[set[str]] = {"lightweight"}
     MAX_OUTPUT_TOKENS: ClassVar[int] = 8192
