@@ -1,0 +1,324 @@
+{
+  "cerebras": {
+    "id": "chatcmpl-11059f59-5d15-4381-9c49-10ddc6ff4f01",
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "message": {
+          "content": "Hello",
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1775664091,
+    "model": "llama3.1-8b",
+    "system_fingerprint": "fp_b40e0c5d2218b13b6479",
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 43,
+      "completion_tokens": 2,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 41,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    },
+    "time_info": {
+      "queue_time": 0.614444931,
+      "prompt_time": 0.00324704,
+      "completion_time": 0.000799482,
+      "total_time": 0.6205258369445801,
+      "created": 1775664091.0897577
+    }
+  },
+  "cloudflare": {
+    "result": {
+      "response": "Hello.",
+      "tool_calls": [],
+      "usage": {
+        "prompt_tokens": 41,
+        "completion_tokens": 3,
+        "total_tokens": 44,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    "success": true,
+    "errors": [],
+    "messages": []
+  },
+  "fireworks": {
+    "id": "chatcmpl-ee4911c522e5474da3bd15efcf904c54",
+    "object": "chat.completion",
+    "created": 1775664115,
+    "model": "accounts/fireworks/models/gpt-oss-20b",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "<|channel|>analysis<|message|>User instruction: \"Say hello in one word.\" We must say hello in one word: \"Hello\" or \"Hi\". The user says \"Say hello in one word.\" So respond with \"Hello\". Probably acceptable.<|end|><|start|>assistant"
+        },
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 78,
+      "total_tokens": 128,
+      "completion_tokens": 50,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    }
+  },
+  "github": {
+    "choices": [
+      {
+        "content_filter_results": {
+          "hate": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "protected_material_code": {
+            "filtered": false,
+            "detected": false
+          },
+          "protected_material_text": {
+            "filtered": false,
+            "detected": false
+          },
+          "self_harm": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "sexual": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "violence": {
+            "filtered": false,
+            "severity": "safe"
+          }
+        },
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hello!",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1775664111,
+    "id": "chatcmpl-DSPdfoBQ2RS1jr1PMcqmHG27LVBJD",
+    "model": "gpt-4o-mini-2024-07-18",
+    "object": "chat.completion",
+    "prompt_filter_results": [
+      {
+        "prompt_index": 0,
+        "content_filter_results": {
+          "hate": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "jailbreak": {
+            "filtered": false,
+            "detected": false
+          },
+          "self_harm": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "sexual": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "violence": {
+            "filtered": false,
+            "severity": "safe"
+          }
+        }
+      }
+    ],
+    "system_fingerprint": "fp_eb37e061ec",
+    "usage": {
+      "completion_tokens": 3,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 13,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 16
+    }
+  },
+  "groq": {
+    "id": "chatcmpl-9a03e00b-4fc4-415b-8ad8-3b8ee15266f8",
+    "object": "chat.completion",
+    "created": 1775664088,
+    "model": "llama-3.3-70b-versatile",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Hello"
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "queue_time": 0.180940862,
+      "prompt_tokens": 41,
+      "prompt_time": 0.00748094,
+      "completion_tokens": 2,
+      "completion_time": 0.006682253,
+      "total_tokens": 43,
+      "total_time": 0.014163193
+    },
+    "usage_breakdown": null,
+    "system_fingerprint": "fp_d42c28f9ce",
+    "x_groq": {
+      "id": "req_01knpx7h87ejtrk77qpk70f4z6",
+      "seed": 2103736965
+    },
+    "service_tier": "on_demand"
+  },
+  "huggingface": {
+    "id": "5e75d1c9b1389184ff83053d74f008e4",
+    "object": "chat.completion",
+    "created": 1775664095,
+    "model": "meta-llama/llama-3-8b-instruct",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Hello."
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 41,
+      "completion_tokens": 3,
+      "total_tokens": 44,
+      "prompt_tokens_details": null,
+      "completion_tokens_details": null
+    },
+    "system_fingerprint": ""
+  },
+  "novita": {
+    "id": "e5b213651c0d48f984c76fbc405f975c",
+    "object": "chat.completion",
+    "created": 1775664119,
+    "model": "meta-llama/llama-3.1-8b-instruct",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Hello."
+        },
+        "finish_reason": "stop",
+        "content_filter_results": {
+          "hate": {
+            "filtered": false
+          },
+          "self_harm": {
+            "filtered": false
+          },
+          "sexual": {
+            "filtered": false
+          },
+          "violence": {
+            "filtered": false
+          },
+          "jailbreak": {
+            "filtered": false,
+            "detected": false
+          },
+          "profanity": {
+            "filtered": false,
+            "detected": false
+          }
+        }
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 41,
+      "completion_tokens": 3,
+      "total_tokens": 44,
+      "prompt_tokens_details": null,
+      "completion_tokens_details": null
+    },
+    "system_fingerprint": ""
+  },
+  "openrouter": {
+    "id": "gen-1775664102-VkN0afhfCVOy6tPf7Y0q",
+    "object": "chat.completion",
+    "created": 1775664102,
+    "model": "deepseek/deepseek-r1-0528",
+    "provider": "Nebius",
+    "system_fingerprint": null,
+    "choices": [
+      {
+        "index": 0,
+        "logprobs": null,
+        "finish_reason": "length",
+        "native_finish_reason": "length",
+        "message": {
+          "role": "assistant",
+          "content": null,
+          "refusal": null,
+          "reasoning": "Hmm, the user wants me to say \"hello\" but specifically only using one word. How concise! \n\nOkay, let me think about common one-word greetings. \"Hello\" itself would be obvious but predictable. \"Hi\" is shorter and",
+          "reasoning_details": [
+            {
+              "type": "reasoning.text",
+              "text": "Hmm, the user wants me to say \"hello\" but specifically only using one word. How concise! \n\nOkay, let me think about common one-word greetings. \"Hello\" itself would be obvious but predictable. \"Hi\" is shorter and",
+              "format": "unknown",
+              "index": 0
+            }
+          ]
+        }
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 12,
+      "completion_tokens": 50,
+      "total_tokens": 62,
+      "cost": 0.0001296,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.0001296,
+        "upstream_inference_prompt_cost": 9.6e-06,
+        "upstream_inference_completions_cost": 0.00012
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 55,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    }
+  }
+}
