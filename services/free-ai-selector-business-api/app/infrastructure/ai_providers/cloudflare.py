@@ -181,3 +181,23 @@ class CloudflareProvider(AIProviderBase):
         F011-B: Cloudflare supports both json_object and json_schema formats.
         """
         return True
+
+
+class CloudflareGemma3Provider(CloudflareProvider):
+    """Cloudflare Workers AI — Google Gemma 3 12B (140+ languages, strong Russian)."""
+
+    def __init__(self):
+        super().__init__(model="@cf/google/gemma-3-12b-it")
+
+    def get_provider_name(self) -> str:
+        return "CloudflareGemma3"
+
+
+class CloudflareQwen3Provider(CloudflareProvider):
+    """Cloudflare Workers AI — Qwen3 30B MoE (119+ languages, strong Russian)."""
+
+    def __init__(self):
+        super().__init__(model="@cf/qwen/qwen3-30b-a3b-fp8")
+
+    def get_provider_name(self) -> str:
+        return "CloudflareQwen3"

@@ -7,6 +7,8 @@ Seeds the database with initial AI models for verified free-tier providers (no c
 - SambaNova (Meta-Llama-3.3-70B-Instruct) - 20 RPM, 430 tokens/sec
 - HuggingFace (Meta-Llama-3-8B-Instruct) - Rate limited, free inference API
 - Cloudflare (Llama 3.3 70B FP8 Fast) - 10,000 Neurons/day
+- Cloudflare (Gemma 3 12B IT) - 140+ languages, strong Russian
+- Cloudflare (Qwen3 30B A3B FP8) - 119+ languages, strong Russian
 """
 
 import asyncio
@@ -60,6 +62,20 @@ SEED_MODELS = [
         "name": "Llama 3.3 70B Instruct FP8 Fast",
         "provider": "Cloudflare",
         "api_endpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "is_active": True,
+        "api_format": "cloudflare",
+    },
+    {
+        "name": "Gemma 3 12B IT (Cloudflare)",
+        "provider": "CloudflareGemma3",
+        "api_endpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/google/gemma-3-12b-it",
+        "is_active": True,
+        "api_format": "cloudflare",
+    },
+    {
+        "name": "Qwen3 30B A3B FP8 (Cloudflare)",
+        "provider": "CloudflareQwen3",
+        "api_endpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/qwen/qwen3-30b-a3b-fp8",
         "is_active": True,
         "api_format": "cloudflare",
     },

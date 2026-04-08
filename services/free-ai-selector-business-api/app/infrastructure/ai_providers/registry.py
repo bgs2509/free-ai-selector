@@ -20,7 +20,11 @@ from typing import Optional
 
 from app.infrastructure.ai_providers.base import AIProviderBase
 from app.infrastructure.ai_providers.cerebras import CerebrasProvider
-from app.infrastructure.ai_providers.cloudflare import CloudflareProvider
+from app.infrastructure.ai_providers.cloudflare import (
+    CloudflareProvider,
+    CloudflareGemma3Provider,
+    CloudflareQwen3Provider,
+)
 from app.infrastructure.ai_providers.deepseek import DeepSeekProvider
 from app.infrastructure.ai_providers.fireworks import FireworksProvider
 from app.infrastructure.ai_providers.github_models import GitHubModelsProvider
@@ -41,6 +45,8 @@ PROVIDER_CLASSES: dict[str, type[AIProviderBase]] = {
     "SambaNova": SambanovaProvider,
     "HuggingFace": HuggingFaceProvider,
     "Cloudflare": CloudflareProvider,
+    "CloudflareGemma3": CloudflareGemma3Provider,
+    "CloudflareQwen3": CloudflareQwen3Provider,
     # Новые провайдеры F003 — Фаза 1: Приоритетные (2 шт.)
     "DeepSeek": DeepSeekProvider,
     "OpenRouter": OpenRouterProvider,
