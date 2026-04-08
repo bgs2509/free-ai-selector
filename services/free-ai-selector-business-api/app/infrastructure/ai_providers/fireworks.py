@@ -9,7 +9,7 @@ F013: Refactored to use OpenAICompatibleProvider base class.
 """
 
 import re
-from typing import Any
+from typing import Any, ClassVar
 
 from app.infrastructure.ai_providers.base import OpenAICompatibleProvider
 
@@ -28,6 +28,7 @@ class FireworksProvider(OpenAICompatibleProvider):
     DEFAULT_MODEL = "accounts/fireworks/models/gpt-oss-20b"
     API_KEY_ENV = "FIREWORKS_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
+    TAGS: ClassVar[set[str]] = {"json", "code", "russian"}
 
     def _build_payload(self, prompt: str, **kwargs: Any) -> dict[str, Any]:
         """Cap max_tokens at 4096 (Fireworks non-streaming limit)."""

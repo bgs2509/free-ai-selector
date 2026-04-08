@@ -480,3 +480,50 @@ class TestFireworksMaxTokensCap:
         provider = FireworksProvider(api_key="test-key")
         payload = provider._build_payload("hello")
         assert payload["max_tokens"] == 2048
+
+
+@pytest.mark.unit
+class TestProviderTags:
+    """Tests for TAGS ClassVar on providers."""
+
+    def test_groq_tags(self):
+        from app.infrastructure.ai_providers.groq import GroqProvider
+        assert GroqProvider.TAGS == {"fast", "json", "code", "russian", "tools"}
+
+    def test_cerebras_tags(self):
+        from app.infrastructure.ai_providers.cerebras import CerebrasProvider
+        assert CerebrasProvider.TAGS == {"fast", "json", "russian", "lightweight"}
+
+    def test_huggingface_tags(self):
+        from app.infrastructure.ai_providers.huggingface import HuggingFaceProvider
+        assert HuggingFaceProvider.TAGS == {"russian", "lightweight"}
+
+    def test_openrouter_tags(self):
+        from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
+        assert OpenRouterProvider.TAGS == {"code", "reasoning", "russian", "tools"}
+
+    def test_github_tags(self):
+        from app.infrastructure.ai_providers.github_models import GitHubModelsProvider
+        assert GitHubModelsProvider.TAGS == {"fast", "json", "russian", "tools"}
+
+    def test_fireworks_tags(self):
+        from app.infrastructure.ai_providers.fireworks import FireworksProvider
+        assert FireworksProvider.TAGS == {"json", "code", "russian"}
+
+    def test_novita_tags(self):
+        from app.infrastructure.ai_providers.novita import NovitaProvider
+        assert NovitaProvider.TAGS == {"json", "russian", "lightweight"}
+
+    def test_base_tags_empty(self):
+        from app.infrastructure.ai_providers.base import OpenAICompatibleProvider
+        assert OpenAICompatibleProvider.TAGS == set()
+
+    def test_registry_get_tags(self):
+        from app.infrastructure.ai_providers.registry import ProviderRegistry
+        tags = ProviderRegistry.get_tags("Groq")
+        assert tags == {"fast", "json", "code", "russian", "tools"}
+
+    def test_registry_get_tags_unknown(self):
+        from app.infrastructure.ai_providers.registry import ProviderRegistry
+        tags = ProviderRegistry.get_tags("Unknown")
+        assert tags == set()

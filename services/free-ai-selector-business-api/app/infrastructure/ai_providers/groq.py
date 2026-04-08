@@ -8,6 +8,8 @@ Speed: Up to 1,800 tokens/sec.
 F013: Refactored to use OpenAICompatibleProvider base class.
 """
 
+from typing import ClassVar
+
 from app.infrastructure.ai_providers.base import OpenAICompatibleProvider
 
 
@@ -25,3 +27,4 @@ class GroqProvider(OpenAICompatibleProvider):
     DEFAULT_MODEL = "llama-3.3-70b-versatile"
     API_KEY_ENV = "GROQ_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
+    TAGS: ClassVar[set[str]] = {"fast", "json", "code", "russian", "tools"}

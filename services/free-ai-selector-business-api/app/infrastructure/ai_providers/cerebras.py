@@ -8,6 +8,8 @@ Speed: 2,500+ tokens/sec on Wafer-Scale Engine.
 F013: Refactored to use OpenAICompatibleProvider base class.
 """
 
+from typing import ClassVar
+
 from app.infrastructure.ai_providers.base import OpenAICompatibleProvider
 
 
@@ -25,3 +27,4 @@ class CerebrasProvider(OpenAICompatibleProvider):
     DEFAULT_MODEL = "llama3.1-8b"
     API_KEY_ENV = "CEREBRAS_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
+    TAGS: ClassVar[set[str]] = {"fast", "json", "russian", "lightweight"}

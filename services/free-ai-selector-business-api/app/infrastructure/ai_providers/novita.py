@@ -8,6 +8,8 @@ OpenAI-совместимый API формат.
 F013: Refactored to use OpenAICompatibleProvider base class.
 """
 
+from typing import ClassVar
+
 from app.infrastructure.ai_providers.base import OpenAICompatibleProvider
 
 
@@ -25,3 +27,4 @@ class NovitaProvider(OpenAICompatibleProvider):
     DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct"
     API_KEY_ENV = "NOVITA_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
+    TAGS: ClassVar[set[str]] = {"json", "russian", "lightweight"}

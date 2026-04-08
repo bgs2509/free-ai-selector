@@ -115,6 +115,14 @@ class ProviderRegistry:
         return False
 
     @classmethod
+    def get_tags(cls, name: str) -> set[str]:
+        """Get provider tags without creating an instance."""
+        provider_class = PROVIDER_CLASSES.get(name)
+        if provider_class and hasattr(provider_class, "TAGS"):
+            return provider_class.TAGS
+        return set()
+
+    @classmethod
     def reset(cls) -> None:
         """Сбросить кэш instances (для тестов)."""
         cls._instances.clear()

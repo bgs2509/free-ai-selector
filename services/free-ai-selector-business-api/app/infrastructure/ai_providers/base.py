@@ -90,6 +90,7 @@ class OpenAICompatibleProvider(AIProviderBase):
     SUPPORTS_RESPONSE_FORMAT: ClassVar[bool] = False
     EXTRA_HEADERS: ClassVar[dict[str, str]] = {}
     TIMEOUT: ClassVar[float] = 30.0
+    TAGS: ClassVar[set[str]] = set()
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         """

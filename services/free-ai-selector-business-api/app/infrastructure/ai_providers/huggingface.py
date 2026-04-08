@@ -7,6 +7,8 @@ Free tier available with HuggingFace account.
 F013: Refactored to use OpenAICompatibleProvider base class.
 """
 
+from typing import ClassVar
+
 from app.infrastructure.ai_providers.base import OpenAICompatibleProvider
 
 
@@ -24,3 +26,4 @@ class HuggingFaceProvider(OpenAICompatibleProvider):
     DEFAULT_MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
     API_KEY_ENV = "HUGGINGFACE_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = False
+    TAGS: ClassVar[set[str]] = {"russian", "lightweight"}

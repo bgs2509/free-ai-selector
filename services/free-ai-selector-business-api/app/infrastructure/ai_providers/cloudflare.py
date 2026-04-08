@@ -7,7 +7,7 @@ Supports multiple models for text, image, and speech tasks.
 """
 
 import os
-from typing import Optional
+from typing import ClassVar, Optional
 
 import httpx
 from app.utils.security import sanitize_error_message
@@ -28,6 +28,7 @@ class CloudflareProvider(AIProviderBase):
 
     API_KEY_ENV = "CLOUDFLARE_API_TOKEN"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
+    TAGS: ClassVar[set[str]] = {"json", "code", "russian"}
 
     def __init__(
         self,

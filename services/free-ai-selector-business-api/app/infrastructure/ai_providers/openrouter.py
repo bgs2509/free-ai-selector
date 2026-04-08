@@ -8,6 +8,8 @@ OpenAI-совместимый API формат.
 F013: Refactored to use OpenAICompatibleProvider base class.
 """
 
+from typing import ClassVar
+
 from app.infrastructure.ai_providers.base import OpenAICompatibleProvider
 
 
@@ -29,3 +31,4 @@ class OpenRouterProvider(OpenAICompatibleProvider):
         "HTTP-Referer": "https://github.com/free-ai-selector",
         "X-Title": "Free AI Selector",
     }
+    TAGS: ClassVar[set[str]] = {"code", "reasoning", "russian", "tools"}
