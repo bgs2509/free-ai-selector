@@ -20,6 +20,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.2.0] - 2026-04-08
+
+### ✨ Added — Tag-Based Model Filtering & New Cloudflare Models
+
+- **Tag system**: каждый провайдер имеет `TAGS: ClassVar[set[str]]` для фильтрации. 7 тегов: `fast`, `json`, `code`, `reasoning`, `russian`, `tools`, `lightweight` (73b0a1e)
+- **Tags in API**: параметр `tags` в `PromptRequest` — фильтрация моделей по тегам перед выбором (c06fe07, 0735b91)
+- **Tags in Web UI**: интерактивные tag pills для фильтрации моделей (ff1685e, ba94701)
+- **CloudflareGemma3**: Gemma 3 12B IT — 140+ языков, хорошая поддержка русского (af4de71)
+- **CloudflareQwen3**: Qwen3 30B A3B FP8 — 119+ языков, хорошая поддержка русского (af4de71)
+- **MAX_OUTPUT_TOKENS**: per-provider настройка вместо глобального hardcoded 2048 (5c0960e)
+- **OpenRouter timeout**: увеличен до 180s для reasoning моделей (f57c839)
+
+### 🐛 Fixed
+
+- Удалён тег `russian` у Llama-based провайдеров — вызывал language contamination (9cf87e8)
+- Исправлены имена моделей в seed.py: Cerebras=8B, Fireworks=GPT-OSS-20B, Novita=8B (7dd5307)
+- Fireworks: cap max_tokens=4096 для non-streaming (6969ec9)
+- Fireworks: strip proprietary `<think>` reasoning tags из ответа (bae6cc2)
+- OpenRouter: добавлен fallback на `reasoning_content` для R1 парсинга (9dec94a)
+
+---
+
 ## [3.1.0] - 2026-04-08
 
 ### 🐛 Fixed — Empty AI Responses from Reasoning Models (4 fixes)
