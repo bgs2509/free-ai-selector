@@ -17,7 +17,8 @@
 | ProcessPrompt UC | `app/application/use_cases/process_prompt.py` | Core business logic |
 | TestProviders UC | `app/application/use_cases/test_all_providers.py` | Provider testing |
 | Domain Models | `app/domain/models.py` | PromptRequest, PromptResponse, AIModelInfo |
-| AI Providers | `app/infrastructure/ai_providers/*.py` | 6 provider implementations |
+| AI Providers | `app/infrastructure/ai_providers/*.py` | 14 provider implementations |
+| Provider Registry | `app/infrastructure/ai_providers/registry.py` | SSOT for provider mapping, tags |
 | HTTP Client | `app/infrastructure/http_clients/data_api_client.py` | Data API client |
 
 ### 2. free-ai-selector-data-postgres-api (Port 8021 host / 8001 internal)
@@ -114,28 +115,29 @@ sequenceDiagram
 
 ## AI Providers
 
-**Существующие (5 провайдеров)**:
+**Существующие провайдеры (7 шт.)**:
 
-| Provider | Class | Model | Rate Limits |
-|----------|-------|-------|-------------|
-| Groq | `GroqProvider` | Llama 3.3 70B | 20 RPM |
-| Cerebras | `CerebrasProvider` | Llama 3.3 70B | 30 RPM, 1M tokens/day |
-| SambaNova | `SambanovaProvider` | Llama 3.3 70B | 20 RPM |
-| HuggingFace | `HuggingFaceProvider` | Llama 3 8B | Variable |
-| Cloudflare | `CloudflareProvider` | Llama 3.3 70B FP8 | 10K neurons/day |
+| Provider | Class | Model | Tags | Rate Limits |
+|----------|-------|-------|------|-------------|
+| Groq | `GroqProvider` | Llama 3.3 70B | fast, json, code, tools | 20 RPM |
+| Cerebras | `CerebrasProvider` | Llama 3.1 8B | fast, json, lightweight | 30 RPM, 1M tokens/day |
+| SambaNova | `SambanovaProvider` | Llama 3.3 70B | — | 20 RPM |
+| HuggingFace | `HuggingFaceProvider` | Llama 3 8B | lightweight | Variable |
+| Cloudflare | `CloudflareProvider` | Llama 3.3 70B FP8 | json, code | 10K neurons/day |
+| CloudflareGemma3 | `CloudflareGemma3Provider` | Gemma 3 12B IT | fast, json, code, russian | 10K neurons/day |
+| CloudflareQwen3 | `CloudflareQwen3Provider` | Qwen3 30B A3B FP8 | fast, json, code, russian | 10K neurons/day |
 
-**Новые F003 (9 провайдеров)**:
+**F003 провайдеры (7 шт.)**:
 
-| Provider | Class | Model | Rate Limits |
-|----------|-------|-------|-------------|
-| DeepSeek | `DeepSeekProvider` | DeepSeek Chat | 60 RPM |
-| OpenRouter | `OpenRouterProvider` | DeepSeek R1 Free | 20 RPM |
-| GitHub Models | `GitHubModelsProvider` | GPT-4o Mini | 15 RPM, 150 RPD |
-| Fireworks | `FireworksProvider` | Llama 3.1 70B | $1 free credits |
-| Hyperbolic | `HyperbolicProvider` | Llama 3.1 70B | Free tier |
-| Novita | `NovitaProvider` | Llama 3.3 70B | Free tier |
-| Scaleway | `ScalewayProvider` | Llama 3.3 70B | Free tier |
-| Kluster | `KlusterProvider` | Llama 3.3 70B | Free tier |
+| Provider | Class | Model | Tags | Rate Limits |
+|----------|-------|-------|------|-------------|
+| DeepSeek | `DeepSeekProvider` | DeepSeek Chat | — | 60 RPM |
+| OpenRouter | `OpenRouterProvider` | DeepSeek R1 | code, reasoning, russian, tools | 20 RPM |
+| GitHub Models | `GitHubModelsProvider` | GPT-4o Mini | fast, json, russian, tools | 15 RPM, 150 RPD |
+| Fireworks | `FireworksProvider` | GPT-OSS-20B | json, code | $1 free credits |
+| Hyperbolic | `HyperbolicProvider` | Llama 3.3 70B | — | Free tier |
+| Novita | `NovitaProvider` | Llama 3.1 8B | json, lightweight | Free tier |
+| Scaleway | `ScalewayProvider` | Llama 3.1 70B | — | Free tier |
 
 ---
 
@@ -191,7 +193,7 @@ SAMBANOVA_API_KEY=xxx
 HUGGINGFACE_API_KEY=xxx
 CLOUDFLARE_ACCOUNT_ID=xxx
 CLOUDFLARE_API_TOKEN=xxx
-# Новые провайдеры F003 (9)
+# Новые провайдеры F003 (7)
 DEEPSEEK_API_KEY=xxx
 OPENROUTER_API_KEY=xxx
 GITHUB_TOKEN=xxx
@@ -199,7 +201,6 @@ FIREWORKS_API_KEY=xxx
 HYPERBOLIC_API_KEY=xxx
 NOVITA_API_KEY=xxx
 SCALEWAY_API_KEY=xxx
-KLUSTER_API_KEY=xxx
 ```
 
 ### Data API

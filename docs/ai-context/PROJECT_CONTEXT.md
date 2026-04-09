@@ -95,28 +95,30 @@ services/free-ai-selector-data-postgres-api/
 
 ### 3. AI Provider Pattern
 
-Все AI провайдеры наследуют от `AIProviderBase`:
+Все OpenAI-совместимые провайдеры наследуют от `OpenAICompatibleProvider`. Cloudflare имеет собственную реализацию.
 
 ```python
-from app.infrastructure.ai_providers.base import AIProviderBase
+from app.infrastructure.ai_providers.base import OpenAICompatibleProvider
+from typing import ClassVar
 
-class NewProvider(AIProviderBase):
+class NewProvider(OpenAICompatibleProvider):
     """New AI provider implementation."""
 
-    async def generate(self, prompt: str, **kwargs) -> str:
-        """Generate AI response for given prompt."""
-        # Implementation here
-        pass
+    API_KEY_ENV: ClassVar[str] = "NEW_PROVIDER_API_KEY"
+    MAX_OUTPUT_TOKENS: ClassVar[int] = 2048
+    TAGS: ClassVar[set[str]] = {"fast", "json"}  # Tag-based filtering
 
-    async def health_check(self) -> bool:
-        """Check if provider is available."""
-        # Implementation here
-        pass
-
-    def get_provider_name(self) -> str:
-        """Return provider name for logging/stats."""
-        return "NewProvider"
+    def __init__(self):
+        super().__init__(
+            api_key_env="NEW_PROVIDER_API_KEY",
+            base_url="https://api.newprovider.com/v1",
+            model="model-name",
+        )
 ```
+
+**Доступные теги:** `fast`, `json`, `code`, `reasoning`, `russian`, `tools`, `lightweight`
+
+**Reasoning модели:** ответ может быть в `reasoning_content` вместо `content`. `_parse_response()` автоматически использует `reasoning_content` как fallback.
 
 ### 4. Use Case Pattern
 
@@ -128,19 +130,22 @@ class ProcessPromptUseCase:
 
     def __init__(self, data_api_client: DataAPIClient):
         self.data_api_client = data_api_client
-        # Providers loaded from registry (F008 SSOT)
-        # 14 total: Groq, Cerebras, SambaNova, HuggingFace, Cloudflare
-        # + DeepSeek, OpenRouter, GitHubModels, Fireworks, Hyperbolic,
+        # 14 providers loaded from ProviderRegistry (F008 SSOT)
+        # Existing: Groq, Cerebras, SambaNova, HuggingFace,
+        #           Cloudflare, CloudflareGemma3, CloudflareQwen3
+        # F003: DeepSeek, OpenRouter, GitHubModels, Fireworks,
+        #       Hyperbolic, Novita, Scaleway
 
     async def execute(self, request: PromptRequest) -> PromptResponse:
         """Execute prompt processing.
 
         Steps:
             1. Fetch active models from Data API
-            2. Select best model by reliability_score
-            3. Generate response with selected provider
-            4. Update statistics in Data API
-            5. Record history
+            2. Filter by tags if specified in request
+            3. Select best model by reliability_score
+            4. Generate response with selected provider
+            5. Update statistics in Data API
+            6. Record history
         """
         pass
 ```
@@ -182,7 +187,6 @@ class ProcessPromptUseCase:
 | `HYPERBOLIC_API_KEY` | Business API | Hyperbolic API key (F003) |
 | `NOVITA_API_KEY` | Business API | Novita API key (F003) |
 | `SCALEWAY_API_KEY` | Business API | Scaleway API key (F003) |
-| `KLUSTER_API_KEY` | Business API | Kluster API key (F003) |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot | Bot token from @BotFather |
 
 ---

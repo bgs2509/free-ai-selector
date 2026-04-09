@@ -21,7 +21,7 @@
 | Документ | Описание |
 |----------|----------|
 | [project/overview.md](project/overview.md) | Обзор проекта и бизнес-логика |
-| [project/ai-providers.md](project/ai-providers.md) | 6 AI-провайдеров и как добавить нового |
+| [project/ai-providers.md](project/ai-providers.md) | 14 AI-провайдеров, теги и как добавить нового |
 | [project/reliability-formula.md](project/reliability-formula.md) | Формула расчёта надёжности |
 | [project/database-schema.md](project/database-schema.md) | Схема базы данных |
 
