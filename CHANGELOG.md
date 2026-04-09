@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fireworks: cap max_tokens=4096 для non-streaming (6969ec9)
 - Fireworks: strip proprietary `<think>` reasoning tags из ответа (bae6cc2)
 - OpenRouter: добавлен fallback на `reasoning_content` для R1 парсинга (9dec94a)
+- Fireworks: исправлен тест default max_tokens для соответствия MAX_OUTPUT_TOKENS (aaad881)
 
 ---
 
@@ -75,6 +76,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Makefile: убрана MODE=local/vps логика, единый `COMPOSE := docker compose`
 - Locust: `--network host` вместо `--network free-ai-selector-network`
 - Вся документация обновлена под новые порты
+
+#### Fixed
+- `.env.example` обновлён под host-mode networking (802x порты) (a69738c)
 
 #### Removed
 - `docker-compose.override.yml` — конфигурация перенесена в `docker-compose.yml`
