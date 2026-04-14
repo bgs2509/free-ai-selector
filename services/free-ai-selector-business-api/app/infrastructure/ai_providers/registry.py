@@ -35,6 +35,7 @@ from app.infrastructure.ai_providers.novita import NovitaProvider
 from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
 from app.infrastructure.ai_providers.sambanova import SambanovaProvider
 from app.infrastructure.ai_providers.scaleway import ScalewayProvider
+from app.infrastructure.ai_providers.ollama import OLLAMA_PROVIDERS
 
 
 # Единственное место с маппингом provider_name → ProviderClass
@@ -57,6 +58,8 @@ PROVIDER_CLASSES: dict[str, type[AIProviderBase]] = {
     "Novita": NovitaProvider,
     "Scaleway": ScalewayProvider,
     # Новые провайдеры F003 — Фаза 3: Резервные (0 шт.)
+    # Локальные провайдеры (Ollama)
+    **OLLAMA_PROVIDERS,
 }
 
 
