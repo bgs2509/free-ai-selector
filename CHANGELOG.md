@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Ollama provider for local LLM support (`Ollama-Gemma4-E2B`)
+- Tag-based filtering: `"local"` tag for Ollama models
+- Configurable `OLLAMA_BASE_URL` for multi-environment deployment
+- Separate `ollama-docker` project for containerized Ollama with GPU
+
 ### Planned for v4.0 (April 2026)
 - **BREAKING**: Remove old command names (`/aidd-idea`, `/aidd-generate`, `/aidd-finalize`)
 - **BREAKING**: Remove old role files (`architect.md`, `implementer.md`)

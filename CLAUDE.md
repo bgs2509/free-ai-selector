@@ -81,9 +81,10 @@ docker compose exec free-ai-selector-data-postgres-api pytest tests/unit/test_do
 
 ## AI-провайдеры
 
-10 бесплатных провайдеров в `services/free-ai-selector-business-api/app/infrastructure/ai_providers/`:
+11 бесплатных провайдеров в `services/free-ai-selector-business-api/app/infrastructure/ai_providers/`:
 - Существующие (5): `groq.py`, `cerebras.py`, `sambanova.py`, `huggingface.py`, `cloudflare.py`
 - Новые F003 (5): `deepseek.py`, `openrouter.py`, `github_models.py`, `fireworks.py`, `hyperbolic.py`, `novita.py`, `scaleway.py`
+- Ollama (локальный): `ollama.py`
 - Удалены: Kluster, Nebius (v2.9.0)
 
 Все OpenAI-совместимые провайдеры наследуют от `base.py:OpenAICompatibleProvider`. Cloudflare имеет собственную реализацию.
