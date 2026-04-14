@@ -183,7 +183,7 @@ async def update_model_stats(
     "/{model_id}/increment-success", response_model=AIModelResponse, summary="Increment success count"
 )
 async def increment_success(
-    model_id: int, response_time: float, db: AsyncSession = Depends(get_db)
+    model_id: int, response_time: float = Query(..., ge=0), db: AsyncSession = Depends(get_db)
 ) -> AIModelResponse:
     """
     Increment success count for a model.
@@ -219,7 +219,7 @@ async def increment_success(
     "/{model_id}/increment-failure", response_model=AIModelResponse, summary="Increment failure count"
 )
 async def increment_failure(
-    model_id: int, response_time: float, db: AsyncSession = Depends(get_db)
+    model_id: int, response_time: float = Query(..., ge=0), db: AsyncSession = Depends(get_db)
 ) -> AIModelResponse:
     """
     Increment failure count for a model.

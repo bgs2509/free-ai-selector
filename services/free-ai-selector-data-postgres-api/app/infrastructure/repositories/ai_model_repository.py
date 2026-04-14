@@ -179,7 +179,7 @@ class AIModelRepository:
 
     async def increment_success(self, model_id: int, response_time: Decimal) -> Optional[AIModel]:
         """
-        Increment success count and update metrics.
+        Atomically increment success count and update metrics.
 
         Args:
             model_id: AI model ID
@@ -188,21 +188,29 @@ class AIModelRepository:
         Returns:
             Updated AIModel if found, None otherwise
         """
-        model = await self.get_by_id(model_id)
-        if model is None:
-            return None
+        response_time = max(response_time, Decimal("0"))
+        now = datetime.utcnow()
 
-        return await self.update_stats(
-            model_id=model_id,
-            success_count=model.success_count + 1,
-            request_count=model.request_count + 1,
-            total_response_time=model.total_response_time + response_time,
-            last_checked=datetime.utcnow(),
+        stmt = (
+            update(AIModelORM)
+            .where(AIModelORM.id == model_id)
+            .values(
+                success_count=AIModelORM.success_count + 1,
+                request_count=AIModelORM.request_count + 1,
+                total_response_time=AIModelORM.total_response_time + response_time,
+                last_checked=now,
+                updated_at=now,
+            )
         )
+        result = await self.session.execute(stmt)
+        if result.rowcount == 0:
+            return None
+        await self.session.flush()
+        return await self.get_by_id(model_id)
 
     async def increment_failure(self, model_id: int, response_time: Decimal) -> Optional[AIModel]:
         """
-        Increment failure count and update metrics.
+        Atomically increment failure count and update metrics.
 
         Args:
             model_id: AI model ID
@@ -211,17 +219,25 @@ class AIModelRepository:
         Returns:
             Updated AIModel if found, None otherwise
         """
-        model = await self.get_by_id(model_id)
-        if model is None:
-            return None
+        response_time = max(response_time, Decimal("0"))
+        now = datetime.utcnow()
 
-        return await self.update_stats(
-            model_id=model_id,
-            failure_count=model.failure_count + 1,
-            request_count=model.request_count + 1,
-            total_response_time=model.total_response_time + response_time,
-            last_checked=datetime.utcnow(),
+        stmt = (
+            update(AIModelORM)
+            .where(AIModelORM.id == model_id)
+            .values(
+                failure_count=AIModelORM.failure_count + 1,
+                request_count=AIModelORM.request_count + 1,
+                total_response_time=AIModelORM.total_response_time + response_time,
+                last_checked=now,
+                updated_at=now,
+            )
         )
+        result = await self.session.execute(stmt)
+        if result.rowcount == 0:
+            return None
+        await self.session.flush()
+        return await self.get_by_id(model_id)
 
     async def set_active(self, model_id: int, is_active: bool) -> Optional[AIModel]:
         """
