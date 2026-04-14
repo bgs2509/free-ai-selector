@@ -29,3 +29,15 @@ class TestSeedModelNames:
         novita = next(m for m in SEED_MODELS if m["provider"] == "Novita")
         assert "8B" in novita["name"], f"Novita name should contain '8B', got: {novita['name']}"
         assert "70B" not in novita["name"]
+
+    def test_ollama_gemma4_e2b_exists(self):
+        """Ollama Gemma4 E2B is in seed models."""
+        from app.infrastructure.database.seed import SEED_MODELS
+
+        ollama = next(
+            (m for m in SEED_MODELS if m["provider"] == "Ollama-Gemma4-E2B"), None
+        )
+        assert ollama is not None, "Ollama-Gemma4-E2B not found in SEED_MODELS"
+        assert ollama["api_format"] == "openai"
+        assert "11434" in ollama["api_endpoint"]
+        assert ollama["is_active"] is True
