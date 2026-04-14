@@ -196,6 +196,7 @@ class ProcessPromptUseCase:
             quality_models = [
                 m for m in sorted_models
                 if m.effective_reliability_score >= MINIMUM_RELIABILITY_THRESHOLD
+                or m.request_count == 0  # new models pass threshold (explore-first)
             ]
             if not quality_models:
                 best = sorted_models[0] if sorted_models else None
