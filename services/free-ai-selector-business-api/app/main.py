@@ -57,7 +57,6 @@ RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
 RATE_LIMIT_PERIOD = int(os.getenv("RATE_LIMIT_PERIOD", "60"))
 
 # Root path for reverse proxy (для работы за nginx-proxy)
-ROOT_PATH = os.getenv("ROOT_PATH", "")
 DEFAULT_RUN_ID = os.getenv("RUN_ID", "").strip() or None
 DEFAULT_RUN_SOURCE = os.getenv("RUN_SOURCE", "").strip() or None
 DEFAULT_RUN_SCENARIO = os.getenv("RUN_SCENARIO", "").strip() or None
@@ -130,20 +129,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 # FastAPI Application
 # =============================================================================
 
-# Динамический OpenAPI URL для работы за reverse proxy (nginx-proxy)
-# При пустом ROOT_PATH используется стандартный путь /openapi.json
-# При ROOT_PATH="/free-ai-selector" путь станет /free-ai-selector/openapi.json
-_openapi_url = f"{ROOT_PATH}/openapi.json" if ROOT_PATH else "/openapi.json"
-
+# root_path and dynamic openapi_url removed: nginx already strips
+# /free-ai-selector/ prefix via rewrite, so the app sees plain paths.
 app = FastAPI(
     title="Free AI Selector - Business API",
     description="Бизнес-логика и интеграция с AI-провайдерами",
     version=SERVICE_VERSION,
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url=_openapi_url,
-    # root_path removed: breaks StaticFiles behind nginx reverse proxy
-    # (nginx already strips /free-ai-selector/ prefix via rewrite)
     lifespan=lifespan,
 )
 
@@ -173,7 +166,6 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 # =============================================================================
 
 # Монтируем статические файлы для веб-интерфейса
-# ROOT_PATH в FastAPI автоматически обрабатывает prefix для nginx reverse proxy
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
