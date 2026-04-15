@@ -142,7 +142,8 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url=_openapi_url,
-    root_path=ROOT_PATH,
+    # root_path removed: breaks StaticFiles behind nginx reverse proxy
+    # (nginx already strips /free-ai-selector/ prefix via rewrite)
     lifespan=lifespan,
 )
 
