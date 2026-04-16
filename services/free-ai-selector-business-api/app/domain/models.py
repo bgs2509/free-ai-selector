@@ -48,7 +48,7 @@ class PromptRequest:
 
     user_id: str
     prompt_text: str
-    model_id: Optional[int] = None
+    model_name: Optional[str] = None
 
     # NEW: F011-B - System Prompts & JSON Response Support
     system_prompt: Optional[str] = None  # System prompt for AI guidance

@@ -165,10 +165,10 @@ class TestProcessPromptUseCase:
 
     @patch.dict(os.environ, {"HIGH_KEY": "high", "LOW_KEY": "low"})
     @patch("app.application.use_cases.process_prompt.ProviderRegistry")
-    async def test_execute_with_requested_model_id_prioritizes_requested(
+    async def test_execute_with_requested_model_name_prioritizes_requested(
         self, mock_registry, mock_data_api_client
     ):
-        """Requested model_id should be tried first even with lower score (F019)."""
+        """Requested model_name should be tried first even with lower score (F019)."""
         high_provider = AsyncMock()
         high_provider.generate.return_value = "high response"
         low_provider = AsyncMock()
@@ -212,7 +212,7 @@ class TestProcessPromptUseCase:
         request = PromptRequest(
             user_id="test_user",
             prompt_text="Test prompt",
-            model_id=2,
+            model_name="Low Model",
         )
 
         response = await use_case.execute(request)
@@ -224,10 +224,10 @@ class TestProcessPromptUseCase:
 
     @patch.dict(os.environ, {"HIGH_KEY": "high", "LOW_KEY": "low"})
     @patch("app.application.use_cases.process_prompt.ProviderRegistry")
-    async def test_execute_with_missing_requested_model_id_falls_back_to_auto_selection(
+    async def test_execute_with_missing_requested_model_name_falls_back_to_auto_selection(
         self, mock_registry, mock_data_api_client
     ):
-        """Missing requested model_id should keep auto-selection behavior (F019)."""
+        """Missing requested model_name should keep auto-selection behavior (F019)."""
         high_provider = AsyncMock()
         high_provider.generate.return_value = "best response"
         low_provider = AsyncMock()
@@ -271,7 +271,7 @@ class TestProcessPromptUseCase:
         request = PromptRequest(
             user_id="test_user",
             prompt_text="Test prompt",
-            model_id=999,
+            model_name="Nonexistent Model",
         )
 
         response = await use_case.execute(request)
@@ -329,7 +329,7 @@ class TestProcessPromptUseCase:
         request = PromptRequest(
             user_id="test_user",
             prompt_text="Test prompt",
-            model_id=2,
+            model_name="Low Model",
         )
 
         response = await use_case.execute(request)

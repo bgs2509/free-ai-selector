@@ -17,10 +17,10 @@ class ProcessPromptRequest(BaseModel):
     """Schema for prompt processing request."""
 
     prompt: str = Field(..., min_length=1, max_length=10000, description="User's prompt text")
-    model_id: Optional[int] = Field(
+    model_name: Optional[str] = Field(
         None,
-        gt=0,
-        description="Optional forced AI model ID. If unavailable or failing, fallback is used",
+        min_length=1,
+        description="Optional forced AI model name. If unavailable or failing, fallback is used",
     )
 
     # NEW: F011-B - System Prompts & JSON Response Support

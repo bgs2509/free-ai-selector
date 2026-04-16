@@ -469,7 +469,7 @@
                 models.forEach(model => {
                     const score = Number(model.reliability_score || 0).toFixed(2);
                     const option = document.createElement('option');
-                    option.value = String(model.id);
+                    option.value = model.name || '';
                     option.textContent = `${model.name || 'Unknown'} (${model.provider || 'Unknown'}) — score: ${score}`;
                     modelSelect.appendChild(option);
                 });
@@ -569,7 +569,7 @@
                 payload.response_format = { type: "json_object" };
             }
 
-            // Добавить model_id в ручном режиме
+            // Добавить model_name в ручном режиме
             let selectedModelMode = Array.from(modelModeRadios).find(r => r.checked)?.value || 'auto';
             if (selectedModelMode === 'manual') {
                 if (!manualModelsLoaded) {
@@ -578,12 +578,12 @@
                 }
 
                 if (selectedModelMode === 'manual') {
-                    const selectedModelId = Number.parseInt(modelSelect.value, 10);
-                    if (Number.isNaN(selectedModelId) || selectedModelId <= 0) {
+                    const selectedModelName = modelSelect.value;
+                    if (!selectedModelName) {
                         showError(errorBox, 'Выберите модель или переключитесь в режим Авто.');
                         return;
                     }
-                    payload.model_id = selectedModelId;
+                    payload.model_name = selectedModelName;
                 }
             }
 

@@ -123,8 +123,8 @@ class ProcessPromptUseCase:
         logger.info(
             "processing_prompt",
             prompt_length=len(request.prompt_text),
-            has_model_id=request.model_id is not None,
-            requested_model_id=request.model_id,
+            has_model_name=request.model_name is not None,
+            requested_model_name=request.model_name,
             has_system_prompt=request.system_prompt is not None,
             has_response_format=request.response_format is not None,
         )
@@ -176,7 +176,7 @@ class ProcessPromptUseCase:
             request = PromptRequest(
                 user_id=request.user_id,
                 prompt_text=request.prompt_text,
-                model_id=request.model_id,
+                model_name=request.model_name,
                 system_prompt=f"{original_system}\n{json_fallback_prompt}".strip(),
                 response_format=None,
             )
@@ -216,15 +216,15 @@ class ProcessPromptUseCase:
 
         candidate_models, requested_model_found = self._build_candidate_models(
             sorted_models=sorted_models,
-            requested_model_id=request.model_id,
+            requested_model_name=request.model_name,
         )
         first_model = candidate_models[0]
         selection_mode = "auto"
         selection_reason = "highest_effective_reliability_score"
-        if request.model_id is not None:
+        if request.model_name is not None:
             if requested_model_found:
                 selection_mode = "forced_first"
-                selection_reason = "requested_model_id"
+                selection_reason = "requested_model_name"
             else:
                 selection_mode = "forced_not_found"
 
@@ -241,7 +241,7 @@ class ProcessPromptUseCase:
                 "long_term_score": float(first_model.reliability_score),
                 "decision_reason": first_model.decision_reason,
                 "recent_request_count": first_model.recent_request_count,
-                "requested_model_id": request.model_id,
+                "requested_model_name": request.model_name,
                 "requested_model_found": requested_model_found,
                 "selection_mode": selection_mode,
             },
@@ -257,7 +257,7 @@ class ProcessPromptUseCase:
             request = PromptRequest(
                 user_id=request.user_id,
                 prompt_text=request.prompt_text[:MAX_PROMPT_CHARS],
-                model_id=request.model_id,
+                model_name=request.model_name,
                 system_prompt=request.system_prompt,
                 response_format=request.response_format,
             )
@@ -295,7 +295,7 @@ class ProcessPromptUseCase:
                 model=model.name,
                 provider=model.provider,
                 prompt_chars=len(request.prompt_text),
-                requested_model_id=request.model_id,
+                requested_model_name=request.model_name,
             )
             audit_event(
                 "model_call_start",
@@ -305,7 +305,7 @@ class ProcessPromptUseCase:
                     "model": model.name,
                     "provider": model.provider,
                     "prompt_chars": len(request.prompt_text),
-                    "requested_model_id": request.model_id,
+                    "requested_model_name": request.model_name,
                 },
             )
             try:
@@ -587,21 +587,21 @@ class ProcessPromptUseCase:
     def _build_candidate_models(
         self,
         sorted_models: list[AIModelInfo],
-        requested_model_id: Optional[int],
+        requested_model_name: Optional[str],
     ) -> tuple[list[AIModelInfo], bool]:
         """
         Build model candidates for execution.
 
-        If requested_model_id is provided and found in sorted_models,
+        If requested_model_name is provided and found in sorted_models,
         that model is tried first and the remaining models keep their score order.
 
         Returns:
             Tuple of (candidate_models, requested_model_found)
         """
-        if requested_model_id is None:
+        if requested_model_name is None:
             return sorted_models, False
 
-        requested_model = next((model for model in sorted_models if model.id == requested_model_id), None)
+        requested_model = next((model for model in sorted_models if model.name == requested_model_name), None)
         if requested_model is None:
             return sorted_models, False
 

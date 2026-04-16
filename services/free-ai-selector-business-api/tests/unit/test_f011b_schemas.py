@@ -39,20 +39,17 @@ class TestProcessPromptRequestSchema:
         assert request.system_prompt is None
         assert request.response_format == {"type": "json_object"}
 
-    def test_request_with_model_id(self):
-        """Test request with model_id field (F019)."""
-        request = ProcessPromptRequest(prompt="Test prompt", model_id=7)
+    def test_request_with_model_name(self):
+        """Test request with model_name field (F019)."""
+        request = ProcessPromptRequest(prompt="Test prompt", model_name="Llama 3.1 8B")
 
         assert request.prompt == "Test prompt"
-        assert request.model_id == 7
+        assert request.model_name == "Llama 3.1 8B"
 
-    def test_model_id_must_be_positive(self):
-        """Test that model_id must be greater than zero (F019)."""
+    def test_model_name_must_be_non_empty(self):
+        """Test that model_name must be non-empty string (F019)."""
         with pytest.raises(ValidationError):
-            ProcessPromptRequest(prompt="Test prompt", model_id=0)
-
-        with pytest.raises(ValidationError):
-            ProcessPromptRequest(prompt="Test prompt", model_id=-1)
+            ProcessPromptRequest(prompt="Test prompt", model_name="")
 
     def test_request_with_both_optional_fields(self):
         """Test request with both system_prompt and response_format (F011-B)."""
@@ -133,17 +130,17 @@ class TestPromptRequestDTO:
         assert dto.system_prompt == "You are helpful."
         assert dto.response_format is None
 
-    def test_dto_with_model_id(self):
-        """Test DTO with model_id field (F019)."""
+    def test_dto_with_model_name(self):
+        """Test DTO with model_name field (F019)."""
         dto = PromptRequest(
             user_id="test_user",
             prompt_text="Test prompt",
-            model_id=12,
+            model_name="Llama 3.1 8B",
         )
 
         assert dto.user_id == "test_user"
         assert dto.prompt_text == "Test prompt"
-        assert dto.model_id == 12
+        assert dto.model_name == "Llama 3.1 8B"
 
     def test_dto_with_response_format(self):
         """Test DTO with response_format field (F011-B)."""

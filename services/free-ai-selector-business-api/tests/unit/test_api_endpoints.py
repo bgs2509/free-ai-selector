@@ -226,8 +226,8 @@ class TestProcessPrompt:
         assert data["attempts"] == 1
         assert data["fallback_used"] is False
 
-    async def test_process_with_model_id(self, async_client):
-        """Обработка промпта с указанием model_id."""
+    async def test_process_with_model_name(self, async_client):
+        """Обработка промпта с указанием model_name."""
         mock_response = MagicMock()
         mock_response.prompt_text = "hello"
         mock_response.response_text = "forced response"
@@ -250,7 +250,7 @@ class TestProcessPrompt:
 
                 response = await async_client.post(
                     "/api/v1/prompts/process",
-                    json={"prompt": "hello", "model_id": 1},
+                    json={"prompt": "hello", "model_name": "Forced Model"},
                 )
 
         assert response.status_code == 200
