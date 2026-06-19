@@ -28,4 +28,6 @@ class GroqProvider(OpenAICompatibleProvider):
     API_KEY_ENV = "GROQ_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
     TAGS: ClassVar[set[str]] = {"fast", "json", "code", "tools"}
-    MAX_OUTPUT_TOKENS: ClassVar[int] = 32768
+    # 8192 is a safe completion budget for Groq's free tier; 32768 triggered
+    # HTTP 413 Payload Too Large on llama-3.3-70b-versatile (xqi).
+    MAX_OUTPUT_TOKENS: ClassVar[int] = 8192

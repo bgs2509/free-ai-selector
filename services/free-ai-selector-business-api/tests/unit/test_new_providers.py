@@ -535,7 +535,7 @@ class TestMaxOutputTokens:
 
     def test_groq_max_output_tokens(self):
         from app.infrastructure.ai_providers.groq import GroqProvider
-        assert GroqProvider.MAX_OUTPUT_TOKENS == 32768
+        assert GroqProvider.MAX_OUTPUT_TOKENS == 8192
 
     def test_cerebras_max_output_tokens(self):
         from app.infrastructure.ai_providers.cerebras import CerebrasProvider
@@ -571,7 +571,7 @@ class TestMaxOutputTokens:
 
         provider = GroqProvider(api_key="test-key")
         payload = provider._build_payload("hello")
-        assert payload["max_tokens"] == 32768
+        assert payload["max_tokens"] == 8192
 
     def test_payload_kwarg_overrides_max_output_tokens(self):
         """Explicit max_tokens kwarg overrides MAX_OUTPUT_TOKENS."""
