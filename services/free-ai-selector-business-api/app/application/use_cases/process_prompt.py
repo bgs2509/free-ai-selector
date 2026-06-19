@@ -186,6 +186,19 @@ class ProcessPromptUseCase:
         # Step 2.6: Filter by tags if requested
         tag_filtered_models = self._filter_by_tags(json_filtered_models, request.tags)
 
+        # Step 2.7 (p7u-1A): drop providers whose circuit breaker is OPEN so a
+        # hard-failing provider is not re-selected request-after-request (it would
+        # otherwise stay ranked #1 by score and only be skipped mid-loop, leaving
+        # selected_model_id pointing at a dead provider). If every provider is
+        # unavailable, keep the full list — the fallback loop + ServiceUnavailable
+        # handle the all-open case.
+        cb_available_models = [
+            m for m in tag_filtered_models
+            if CircuitBreakerManager.is_available(m.provider)
+        ]
+        if cb_available_models:
+            tag_filtered_models = cb_available_models
+
         # Step 3: Sort by effective reliability score (F010) + tiebreaker by speed
         sorted_models = sorted(
             tag_filtered_models,
@@ -519,6 +532,20 @@ class ProcessPromptUseCase:
             else:
                 failure_http_status = 500
 
+            # p7u-2A: never record a silent failure. When every candidate was
+            # circuit-breaker-skipped, no attempt set last_error_message, so make
+            # the journal explain why (instead of a NULL error_message).
+            if last_error_message is None:
+                last_error_message = (
+                    f"All {skipped_by_cb} candidate provider(s) skipped: circuit breaker open"
+                    if skipped_by_cb
+                    else "All providers failed without a captured error"
+                )
+
+            # p7u-2C: floor the recorded time so instant (circuit-breaker-skipped)
+            # failures are visible as 0.001s instead of a misleading 0.000s.
+            recorded_response_time = max(response_time, Decimal("0.001"))
+
             # Record history with failure
             try:
                 await self.data_api_client.create_history(
@@ -526,7 +553,7 @@ class ProcessPromptUseCase:
                     prompt_text=request.prompt_text,
                     selected_model_id=candidate_models[0].id,
                     response_text=None,
-                    response_time=response_time,
+                    response_time=recorded_response_time,
                     success=False,
                     error_message=last_error_message,
                     caller=request.caller,
