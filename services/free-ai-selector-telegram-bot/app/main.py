@@ -77,6 +77,8 @@ async def call_business_api(prompt: str) -> Optional[dict]:
     try:
         # Передаём correlation_id для трассировки через сервисы
         headers = create_tracing_headers()
+        # Идентифицируем вызывающий проект для per-project аналитики (caller)
+        headers["X-Client-Id"] = "telegram-bot"
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 f"{BUSINESS_API_URL}/api/v1/prompts/process",
