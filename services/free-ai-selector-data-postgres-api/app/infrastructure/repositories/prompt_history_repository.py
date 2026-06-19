@@ -45,6 +45,9 @@ class PromptHistoryRepository:
             response_time=history.response_time,
             success=history.success,
             error_message=history.error_message,
+            caller=history.caller,
+            http_status=history.http_status,
+            requested_model=history.requested_model,
         )
 
         self.session.add(orm_history)
@@ -309,6 +312,132 @@ class PromptHistoryRepository:
             "success_rate": success_rate,
         }
 
+    async def get_stats_grouped_by_caller(
+        self, window_days: int = 7
+    ) -> List[Dict[str, Any]]:
+        """
+        Get per-caller (per-project) aggregate statistics within a time window (oxl).
+
+        Mirrors the GROUP BY aggregation style of get_recent_stats_for_all_models,
+        but groups by `caller`. For each caller it also resolves the most-frequently
+        selected model via a second grouped query.
+
+        Args:
+            window_days: Number of days to look back (default: 7)
+
+        Returns:
+            List of per-caller aggregate dicts, ordered by request_count DESC:
+            {
+                "caller": Optional[str],
+                "request_count": int,
+                "success_count": int,
+                "success_rate": float,
+                "avg_response_time": float,
+                "top_model_id": Optional[int],
+            }
+        """
+        cutoff_date = datetime.utcnow() - timedelta(days=window_days)
+
+        # Primary aggregation: counts + success + avg response time grouped by caller.
+        agg_query = (
+            select(
+                PromptHistoryORM.caller,
+                func.count().label("request_count"),
+                func.sum(
+                    case((PromptHistoryORM.success == True, 1), else_=0)  # noqa: E712
+                ).label("success_count"),
+                func.avg(PromptHistoryORM.response_time).label("avg_response_time"),
+            )
+            .where(PromptHistoryORM.created_at > cutoff_date)
+            .group_by(PromptHistoryORM.caller)
+            .order_by(desc(func.count()))
+        )
+
+        agg_result = await self.session.execute(agg_query)
+        agg_rows = agg_result.all()
+
+        # Secondary aggregation: most-frequent selected_model_id per caller.
+        model_query = (
+            select(
+                PromptHistoryORM.caller,
+                PromptHistoryORM.selected_model_id,
+                func.count().label("model_count"),
+            )
+            .where(PromptHistoryORM.created_at > cutoff_date)
+            .group_by(PromptHistoryORM.caller, PromptHistoryORM.selected_model_id)
+            .order_by(PromptHistoryORM.caller, desc(func.count()))
+        )
+
+        model_result = await self.session.execute(model_query)
+
+        # Keep the first (highest-count) model row per caller.
+        top_model_by_caller: Dict[Optional[str], int] = {}
+        for row in model_result.all():
+            if row.caller not in top_model_by_caller:
+                top_model_by_caller[row.caller] = row.selected_model_id
+
+        stats: List[Dict[str, Any]] = []
+        for row in agg_rows:
+            request_count = row.request_count or 0
+            success_count = row.success_count or 0
+            success_rate = success_count / request_count if request_count > 0 else 0.0
+            stats.append(
+                {
+                    "caller": row.caller,
+                    "request_count": request_count,
+                    "success_count": success_count,
+                    "success_rate": success_rate,
+                    "avg_response_time": float(row.avg_response_time or 0.0),
+                    "top_model_id": top_model_by_caller.get(row.caller),
+                }
+            )
+
+        return stats
+
+    async def get_filtered(
+        self,
+        caller: Optional[str] = None,
+        success: Optional[bool] = None,
+        date_from: Optional[datetime] = None,
+        date_to: Optional[datetime] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> List[PromptHistory]:
+        """
+        Filtered journal listing of prompt history records (oxl).
+
+        All filters are optional and combined with AND. Results are ordered by
+        created_at DESC for journal-style display.
+
+        Args:
+            caller: Optional filter by external project name
+            success: Optional filter by success flag
+            date_from: Optional inclusive lower bound on created_at
+            date_to: Optional inclusive upper bound on created_at
+            limit: Maximum number of records to return (default: 100)
+            offset: Number of records to skip (default: 0)
+
+        Returns:
+            List of PromptHistory domain entities, ordered by created_at DESC
+        """
+        query = select(PromptHistoryORM)
+
+        if caller is not None:
+            query = query.where(PromptHistoryORM.caller == caller)
+        if success is not None:
+            query = query.where(PromptHistoryORM.success == success)
+        if date_from is not None:
+            query = query.where(PromptHistoryORM.created_at >= date_from)
+        if date_to is not None:
+            query = query.where(PromptHistoryORM.created_at <= date_to)
+
+        query = query.order_by(desc(PromptHistoryORM.created_at)).limit(limit).offset(offset)
+
+        result = await self.session.execute(query)
+        orm_histories = result.scalars().all()
+
+        return [self._to_domain(orm_history) for orm_history in orm_histories]
+
     async def _cleanup_old_records(self, keep_count: int = 1000) -> None:
         """
         Удаляет старые записи, оставляя только keep_count последних.
@@ -351,4 +480,7 @@ class PromptHistoryRepository:
             success=orm_history.success,
             error_message=orm_history.error_message,
             created_at=orm_history.created_at,
+            caller=orm_history.caller,
+            http_status=orm_history.http_status,
+            requested_model=orm_history.requested_model,
         )
