@@ -66,3 +66,17 @@ async def test_api_info_endpoint(client: AsyncClient):
     assert "version" in data
     assert "docs" in data
     assert "health" in data
+
+
+@pytest.mark.asyncio
+async def test_index_has_analytics_and_journal_tabs(client: AsyncClient):
+    """bjg: the served UI exposes the Analytics + Journal tabs and their data sources."""
+    response = await client.get("/static/index.html")
+
+    assert response.status_code == 200
+    html = response.text
+    assert 'data-tab="analytics"' in html
+    assert 'data-tab="journal"' in html
+    # The journal/analytics tabs consume the business-api proxy endpoints.
+    assert "/api/v1/analytics/by-project" in html
+    assert "/api/v1/history" in html
