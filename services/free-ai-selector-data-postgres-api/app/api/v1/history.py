@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.params import Query as _QueryParam
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.schemas import (
@@ -21,6 +22,20 @@ from app.infrastructure.database.connection import get_db
 from app.infrastructure.repositories.prompt_history_repository import PromptHistoryRepository
 
 router = APIRouter(prefix="/history", tags=["Prompt History"])
+
+
+def _unwrap_query(value, fallback=None):
+    """Resolve a FastAPI ``Query(...)`` default to its scalar value.
+
+    Route handlers in this service are unit-tested by direct invocation, where
+    FastAPI does not resolve ``Query(...)`` defaults — un-passed params keep
+    their ``fastapi.params.Query`` object. Over HTTP the values are already
+    scalars, so this is a no-op there.
+    """
+    if isinstance(value, _QueryParam):
+        default = value.default
+        return fallback if default is ... else default
+    return value
 
 
 @router.post(
@@ -186,6 +201,15 @@ async def get_recent_history(
     Returns:
         List of prompt history records, ordered by created_at DESC
     """
+    # Resolve Query() defaults for direct (non-HTTP) invocation; no-op over HTTP.
+    limit = _unwrap_query(limit, 100)
+    offset = _unwrap_query(offset, 0)
+    success_only = _unwrap_query(success_only, False)
+    caller = _unwrap_query(caller, None)
+    success = _unwrap_query(success, None)
+    date_from = _unwrap_query(date_from, None)
+    date_to = _unwrap_query(date_to, None)
+
     repository = PromptHistoryRepository(db)
 
     # Resolve success filter: explicit `success` wins; else legacy success_only.
@@ -235,6 +259,8 @@ async def get_caller_statistics(
     Returns:
         List of per-caller aggregate objects, ordered by request_count DESC
     """
+    window_days = _unwrap_query(window_days, 7)
+
     repository = PromptHistoryRepository(db)
     stats = await repository.get_stats_grouped_by_caller(window_days=window_days)
 

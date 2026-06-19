@@ -433,8 +433,35 @@ class TestGetFiltered:
         repository = PromptHistoryRepository(test_db)
 
         now = datetime.utcnow()
-        await repository.create(_make_history(caller="old", created_at=now - timedelta(days=10)))
-        await repository.create(_make_history(caller="new", created_at=now - timedelta(hours=1)))
+        # Insert via ORM directly to control created_at: repository.create() lets the
+        # server_default now() fill created_at, so two rows would share a timestamp
+        # and the date-range filter could not separate them.
+        test_db.add(
+            PromptHistoryORM(
+                user_id="test_user",
+                prompt_text="old prompt",
+                selected_model_id=1,
+                response_text="response",
+                response_time=Decimal("1.0"),
+                success=True,
+                error_message=None,
+                caller="old",
+                created_at=now - timedelta(days=10),
+            )
+        )
+        test_db.add(
+            PromptHistoryORM(
+                user_id="test_user",
+                prompt_text="new prompt",
+                selected_model_id=1,
+                response_text="response",
+                response_time=Decimal("1.0"),
+                success=True,
+                error_message=None,
+                caller="new",
+                created_at=now - timedelta(hours=1),
+            )
+        )
         await test_db.commit()
 
         result = await repository.get_filtered(
