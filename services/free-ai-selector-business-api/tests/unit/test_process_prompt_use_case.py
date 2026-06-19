@@ -1435,3 +1435,73 @@ class TestCallerTelemetryRecording:
         assert kwargs["caller"] == "sensedar"
         assert kwargs["http_status"] == 200
         assert kwargs["requested_model"] == "HuggingFace Test Model"
+
+
+@pytest.mark.unit
+class TestP7uFailoverObservability:
+    """p7u: CB-open providers excluded from selection (1A) + no silent failures (2A)."""
+
+    @patch.dict(os.environ, {"KEY1": "key1", "KEY2": "key2"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_cb_open_provider_excluded_from_selection(
+        self, mock_registry, mock_data_api_client
+    ):
+        """1A: a CB-OPEN provider is dropped from candidates even with the higher score."""
+        mock_provider = AsyncMock()
+        mock_provider.generate.return_value = "ok"
+        mock_registry.get_provider.return_value = mock_provider
+        mock_registry.get_api_key_env.side_effect = lambda p: {
+            "Dead": "KEY1", "Healthy": "KEY2"
+        }.get(p, "")
+
+        # Dead has the higher score but its circuit is OPEN.
+        for _ in range(CB_FAILURE_THRESHOLD):
+            CircuitBreakerManager.record_failure("Dead")
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(id=1, name="DeadModel", provider="Dead", api_endpoint="x",
+                        reliability_score=0.99, is_active=True, effective_reliability_score=0.99),
+            AIModelInfo(id=2, name="HealthyModel", provider="Healthy", api_endpoint="y",
+                        reliability_score=0.7, is_active=True, effective_reliability_score=0.7),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        response = await use_case.execute(PromptRequest(user_id="u", prompt_text="p"))
+
+        assert response.success is True
+        assert response.selected_model_name == "HealthyModel"
+        called = [c.args[0] for c in mock_registry.get_provider.call_args_list]
+        assert "Dead" not in called
+
+    @patch.dict(os.environ, {"KEY1": "key1", "KEY2": "key2"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_all_cb_open_records_non_null_error(
+        self, mock_registry, mock_data_api_client
+    ):
+        """2A/2C: all-CB-skipped failure persists a meaningful error + floored time, not silent."""
+        from app.domain.exceptions import ServiceUnavailable
+
+        mock_registry.get_api_key_env.side_effect = lambda p: {
+            "P1": "KEY1", "P2": "KEY2"
+        }.get(p, "")
+        for _ in range(CB_FAILURE_THRESHOLD):
+            CircuitBreakerManager.record_failure("P1")
+            CircuitBreakerManager.record_failure("P2")
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(id=1, name="M1", provider="P1", api_endpoint="x",
+                        reliability_score=0.9, is_active=True, effective_reliability_score=0.9),
+            AIModelInfo(id=2, name="M2", provider="P2", api_endpoint="y",
+                        reliability_score=0.8, is_active=True, effective_reliability_score=0.8),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        with pytest.raises(ServiceUnavailable):
+            await use_case.execute(PromptRequest(user_id="u", prompt_text="p"))
+
+        mock_data_api_client.create_history.assert_called_once()
+        kwargs = mock_data_api_client.create_history.call_args.kwargs
+        assert kwargs["error_message"] is not None
+        assert "circuit breaker" in kwargs["error_message"].lower()
+        assert kwargs["http_status"] == 503
+        assert float(kwargs["response_time"]) >= 0.001
