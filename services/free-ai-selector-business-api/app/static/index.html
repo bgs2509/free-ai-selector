@@ -231,6 +231,25 @@
             .provider-item { flex-direction: column; align-items: flex-start; gap: 8px; }
             .model-select-row { flex-direction: column; align-items: stretch; }
         }
+        /* Analytics (per-project) */
+        .proj-row { padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .proj-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+        .proj-name { font-weight: 600; }
+        .proj-meta { font-size: 12px; color: var(--text-light); }
+        .bar-track { background: #eef2f7; border-radius: 6px; height: 10px; overflow: hidden; margin-top: 6px; }
+        .bar-fill { height: 100%; background: var(--success); border-radius: 6px; }
+        /* Journal */
+        .filter-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+        .filter-row input, .filter-row select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+        .status-badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .status-2xx { background: #dcfce7; color: #166534; }
+        .status-429 { background: #fef9c3; color: #854d0e; }
+        .status-5xx { background: #fee2e2; color: #991b1b; }
+        .journal-row { cursor: pointer; }
+        .journal-row:hover { background: #f8fafc; }
+        .detail-box { margin-top: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: #fafbfc; }
+        .detail-box h4 { margin: 10px 0 4px; font-size: 12px; text-transform: uppercase; color: var(--text-light); }
+        .detail-box pre { white-space: pre-wrap; word-break: break-word; background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-size: 13px; max-height: 220px; overflow: auto; }
     </style>
 </head>
 <body>
@@ -243,6 +262,8 @@
                 <button class="tab active" data-tab="chat">Чат</button>
                 <button class="tab" data-tab="stats">Рейтинг</button>
                 <button class="tab" data-tab="test">Тест</button>
+                <button class="tab" data-tab="analytics">Аналитика</button>
+                <button class="tab" data-tab="journal">Журнал</button>
             </div>
 
             <div class="tab-content">
@@ -352,6 +373,59 @@
                         <div id="providers-list" class="providers-list"></div>
                     </div>
                     <div id="providers-error" class="error-box hidden"></div>
+                </div>
+
+                <div id="analytics" class="tab-pane hidden">
+                    <div class="section-header">
+                        <span class="section-title">Аналитика по проектам</span>
+                        <span>
+                            <select id="analytics-window" aria-label="Окно в днях">
+                                <option value="1">1 день</option>
+                                <option value="7" selected>7 дней</option>
+                                <option value="30">30 дней</option>
+                            </select>
+                            <button id="refresh-analytics-btn" class="btn-icon" onclick="loadAnalytics()" title="Обновить">↻</button>
+                        </span>
+                    </div>
+                    <p class="hint">Кто из сервисов пользуется free-ai-selector, сколько запросов и насколько успешно.</p>
+                    <div id="analytics-loader" class="loader-box hidden"><span class="loader loader-dark"></span><span>Загрузка...</span></div>
+                    <div id="analytics-list"></div>
+                    <div id="analytics-error" class="error-box hidden"></div>
+                </div>
+
+                <div id="journal" class="tab-pane hidden">
+                    <div class="section-header">
+                        <span class="section-title">Журнал обращений</span>
+                        <button id="refresh-journal-btn" class="btn-icon" onclick="loadJournal()" title="Обновить">↻</button>
+                    </div>
+                    <p class="hint">Что сервис прислал и что получил в ответ — для разбора ошибок (503/429).</p>
+                    <div class="filter-row">
+                        <input id="journal-caller" type="text" placeholder="Проект (caller)">
+                        <select id="journal-success" aria-label="Статус">
+                            <option value="">Все</option>
+                            <option value="true">Успех</option>
+                            <option value="false">Ошибки</option>
+                        </select>
+                        <input id="journal-limit" type="number" min="1" max="500" value="50" style="width:80px;" aria-label="Лимит">
+                        <button class="btn-icon" onclick="loadJournal()" title="Применить фильтр">Фильтр</button>
+                    </div>
+                    <div id="journal-loader" class="loader-box hidden"><span class="loader loader-dark"></span><span>Загрузка...</span></div>
+                    <div id="journal-table-container">
+                        <table class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>Время</th>
+                                    <th>Проект</th>
+                                    <th>Статус</th>
+                                    <th>Модель</th>
+                                    <th>Время</th>
+                                </tr>
+                            </thead>
+                            <tbody id="journal-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div id="journal-detail" class="detail-box hidden"></div>
+                    <div id="journal-error" class="error-box hidden"></div>
                 </div>
             </div>
 
@@ -525,6 +599,8 @@
                     const targetPane = document.getElementById(targetId);
                     if (targetPane) { targetPane.classList.add('active'); targetPane.classList.remove('hidden'); }
                     if (targetId === 'stats') loadStats();
+                    if (targetId === 'analytics') loadAnalytics();
+                    if (targetId === 'journal') loadJournal();
                 });
             });
         }
@@ -658,6 +734,126 @@
                 show(resultsContainer);
             } catch (e) { showError(errorBox, e.message); }
             finally { testBtn.disabled = false; show(testBtnText); hide(testBtnLoader); }
+        }
+
+        function formatDateTime(s) { if (!s) return '—'; const d = new Date(s); return isNaN(d) ? s : d.toLocaleString('ru-RU'); }
+
+        let modelNameCache = null;
+        async function getModelNameMap() {
+            if (modelNameCache) return modelNameCache;
+            modelNameCache = {};
+            try {
+                const data = await apiCall('/api/v1/models/stats');
+                (data.models || []).forEach(m => { modelNameCache[m.id] = m.name; });
+            } catch (e) { /* names are best-effort; fall back to ids */ }
+            return modelNameCache;
+        }
+
+        function statusBadge(httpStatus, success) {
+            if (httpStatus == null) {
+                return success
+                    ? '<span class="status-badge status-2xx">OK</span>'
+                    : '<span class="status-badge status-5xx">ERR</span>';
+            }
+            let cls = 'status-5xx';
+            if (httpStatus < 300) cls = 'status-2xx';
+            else if (httpStatus === 429) cls = 'status-429';
+            return `<span class="status-badge ${cls}">${httpStatus}</span>`;
+        }
+
+        async function loadAnalytics() {
+            const list = document.getElementById('analytics-list');
+            const loader = document.getElementById('analytics-loader');
+            const errorBox = document.getElementById('analytics-error');
+            const windowDays = document.getElementById('analytics-window').value || '7';
+            const refreshBtn = document.getElementById('refresh-analytics-btn');
+            show(loader); hide(errorBox); list.innerHTML = '';
+            if (refreshBtn) refreshBtn.style.animation = 'spin 0.8s linear infinite';
+            try {
+                const [rows, modelMap] = await Promise.all([
+                    apiCall(`/api/v1/analytics/by-project?window_days=${encodeURIComponent(windowDays)}`),
+                    getModelNameMap(),
+                ]);
+                if (!rows || rows.length === 0) { list.innerHTML = '<p class="hint">Нет данных за период.</p>'; return; }
+                const maxCount = Math.max(...rows.map(r => r.request_count || 0), 1);
+                rows.forEach(r => {
+                    const caller = r.caller || '(без caller)';
+                    const rate = r.success_rate == null ? 0 : Number(r.success_rate);
+                    const topModel = r.top_model_id != null ? (modelMap[r.top_model_id] || `#${r.top_model_id}`) : '—';
+                    const widthPct = ((r.request_count || 0) / maxCount * 100).toFixed(1);
+                    const barColor = rate >= 0.8 ? 'var(--success)' : rate >= 0.5 ? '#eab308' : 'var(--error)';
+                    const div = document.createElement('div');
+                    div.className = 'proj-row';
+                    div.innerHTML = `
+                        <div class="proj-head">
+                            <span class="proj-name">${escapeHtml(caller)}</span>
+                            <span class="proj-meta">${r.request_count || 0} запросов · успех ${formatPercent(rate)} · ${formatTime(r.avg_response_time)} · топ: ${escapeHtml(topModel)}</span>
+                        </div>
+                        <div class="bar-track"><div class="bar-fill" style="width:${widthPct}%; background:${barColor};"></div></div>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (e) { showError(errorBox, e.message); }
+            finally { hide(loader); if (refreshBtn) refreshBtn.style.animation = ''; }
+        }
+
+        async function loadJournal() {
+            const tbody = document.getElementById('journal-tbody');
+            const loader = document.getElementById('journal-loader');
+            const errorBox = document.getElementById('journal-error');
+            const detail = document.getElementById('journal-detail');
+            const refreshBtn = document.getElementById('refresh-journal-btn');
+            const caller = document.getElementById('journal-caller').value.trim();
+            const success = document.getElementById('journal-success').value;
+            const limit = document.getElementById('journal-limit').value || '50';
+            show(loader); hide(errorBox); hide(detail); tbody.innerHTML = '';
+            if (refreshBtn) refreshBtn.style.animation = 'spin 0.8s linear infinite';
+            const params = new URLSearchParams({ limit });
+            if (caller) params.set('caller', caller);
+            if (success) params.set('success', success);
+            try {
+                const [rows, modelMap] = await Promise.all([
+                    apiCall(`/api/v1/history?${params.toString()}`),
+                    getModelNameMap(),
+                ]);
+                if (!rows || rows.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#666;">Нет записей</td></tr>'; return; }
+                rows.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'journal-row';
+                    const model = r.selected_model_id != null ? (modelMap[r.selected_model_id] || `#${r.selected_model_id}`) : '—';
+                    tr.innerHTML = `
+                        <td>${escapeHtml(formatDateTime(r.created_at))}</td>
+                        <td>${escapeHtml(r.caller || '—')}</td>
+                        <td>${statusBadge(r.http_status, r.success)}</td>
+                        <td>${escapeHtml(model)}</td>
+                        <td>${formatTime(r.response_time)}</td>
+                    `;
+                    tr.addEventListener('click', () => openJournalDetail(r.id));
+                    tbody.appendChild(tr);
+                });
+            } catch (e) { showError(errorBox, e.message); }
+            finally { hide(loader); if (refreshBtn) refreshBtn.style.animation = ''; }
+        }
+
+        async function openJournalDetail(id) {
+            const detail = document.getElementById('journal-detail');
+            detail.innerHTML = 'Загрузка...';
+            show(detail);
+            try {
+                const r = await apiCall(`/api/v1/history/${id}`);
+                const modelMap = await getModelNameMap();
+                const model = r.selected_model_id != null ? (modelMap[r.selected_model_id] || `#${r.selected_model_id}`) : '—';
+                detail.innerHTML = `
+                    <div class="proj-head">
+                        <span class="proj-name">Запрос #${r.id} · ${escapeHtml(r.caller || '—')}</span>
+                        <span class="proj-meta">${statusBadge(r.http_status, r.success)} · ${escapeHtml(formatDateTime(r.created_at))} · ${formatTime(r.response_time)}</span>
+                    </div>
+                    <div class="proj-meta">Модель: ${escapeHtml(model)} · запрошена: ${escapeHtml(r.requested_model || 'авто')}</div>
+                    <h4>Промпт</h4><pre>${escapeHtml(r.prompt_text || '')}</pre>
+                    <h4>Ответ</h4><pre>${escapeHtml(r.response_text || '—')}</pre>
+                    ${r.error_message ? `<h4>Ошибка</h4><pre>${escapeHtml(r.error_message)}</pre>` : ''}
+                `;
+            } catch (e) { detail.innerHTML = `<span style="color:var(--error);">${escapeHtml(e.message)}</span>`; }
         }
 
         async function checkHealth() {
