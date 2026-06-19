@@ -354,3 +354,8 @@ docs/api-tests/results/audit/*.jsonl
 .sass-cache/
 .bundle/
 vendor/bundle/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+.beads-credential-key
+.beads/proxieddb/
