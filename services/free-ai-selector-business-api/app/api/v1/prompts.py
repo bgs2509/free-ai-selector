@@ -64,9 +64,13 @@ async def process_prompt(
         # Create use case
         use_case = ProcessPromptUseCase(data_api_client)
 
+        # Identify the calling project via the X-Client-Id header (e.g. "sensedar",
+        # "taro"). Falls back to "api_user" when absent. user_id stays "api_user"
+        # for REST (the Telegram bot supplies real user IDs); caller is the
+        # per-project analytics dimension.
+        caller = request.headers.get("X-Client-Id") or "api_user"
+
         # Execute prompt processing
-        # Use "api_user" as default user_id for REST API requests
-        # Telegram bot will provide actual user IDs
         prompt_request = PromptRequest(
             user_id="api_user",
             prompt_text=prompt_data.prompt,
@@ -74,6 +78,7 @@ async def process_prompt(
             system_prompt=prompt_data.system_prompt,
             response_format=prompt_data.response_format,
             tags=prompt_data.tags,
+            caller=caller,
         )
 
         response = await use_case.execute(prompt_request)

@@ -1390,3 +1390,48 @@ class TestTagFiltering:
         ]
         result = uc._filter_by_tags(models, ["nonexistent_tag"])
         assert len(result) == 1  # fallback to all
+
+
+@pytest.mark.unit
+class TestCallerTelemetryRecording:
+    """fm6: caller / http_status / requested_model are recorded in history."""
+
+    @patch.dict(os.environ, {"HUGGINGFACE_API_KEY": "test_key"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_success_records_caller_status_and_requested_model(
+        self, mock_registry, mock_data_api_client
+    ):
+        mock_provider = AsyncMock()
+        mock_provider.generate.return_value = "Generated response"
+        mock_registry.get_provider.return_value = mock_provider
+        mock_registry.get_api_key_env.return_value = "HUGGINGFACE_API_KEY"
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="HuggingFace Test Model",
+                provider="HuggingFace",
+                api_endpoint="https://api.test.com",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+                recent_request_count=0,
+                decision_reason="fallback",
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        request = PromptRequest(
+            user_id="api_user",
+            prompt_text="Test prompt",
+            model_name="HuggingFace Test Model",
+            caller="sensedar",
+        )
+
+        response = await use_case.execute(request)
+
+        assert response.success is True
+        kwargs = mock_data_api_client.create_history.await_args.kwargs
+        assert kwargs["caller"] == "sensedar"
+        assert kwargs["http_status"] == 200
+        assert kwargs["requested_model"] == "HuggingFace Test Model"

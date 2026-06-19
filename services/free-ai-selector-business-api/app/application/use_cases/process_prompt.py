@@ -179,6 +179,8 @@ class ProcessPromptUseCase:
                 model_name=request.model_name,
                 system_prompt=f"{original_system}\n{json_fallback_prompt}".strip(),
                 response_format=None,
+                tags=request.tags,
+                caller=request.caller,
             )
 
         # Step 2.6: Filter by tags if requested
@@ -260,6 +262,8 @@ class ProcessPromptUseCase:
                 model_name=request.model_name,
                 system_prompt=request.system_prompt,
                 response_format=request.response_format,
+                tags=request.tags,
+                caller=request.caller,
             )
 
         # Step 4: Full fallback loop (F012: FR-9)
@@ -506,6 +510,15 @@ class ProcessPromptUseCase:
                 circuit_breaker_statuses=cb_statuses,
             )
 
+            # Determine the HTTP status the route is about to return to the caller,
+            # so the journal records the real outcome (503 / 429 / 500).
+            if attempts == 0:
+                failure_http_status = 503
+            elif error_types and all(t == RateLimitError for t in error_types):
+                failure_http_status = 429
+            else:
+                failure_http_status = 500
+
             # Record history with failure
             try:
                 await self.data_api_client.create_history(
@@ -516,6 +529,9 @@ class ProcessPromptUseCase:
                     response_time=response_time,
                     success=False,
                     error_message=last_error_message,
+                    caller=request.caller,
+                    http_status=failure_http_status,
+                    requested_model=request.model_name,
                 )
             except Exception as history_error:
                 logger.error(
@@ -564,6 +580,9 @@ class ProcessPromptUseCase:
                 response_time=response_time,
                 success=True,
                 error_message=None,
+                caller=request.caller,
+                http_status=200,
+                requested_model=request.model_name,
             )
         except Exception as history_error:
             logger.error(
