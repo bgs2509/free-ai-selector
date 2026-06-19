@@ -782,12 +782,17 @@
                     const topModel = r.top_model_id != null ? (modelMap[r.top_model_id] || `#${r.top_model_id}`) : '—';
                     const widthPct = ((r.request_count || 0) / maxCount * 100).toFixed(1);
                     const barColor = rate >= 0.8 ? 'var(--success)' : rate >= 0.5 ? '#eab308' : 'var(--error)';
+                    // vop: requested-model breakdown — auto (no model_name) vs pinned
+                    const auto = r.auto_count || 0, pinned = r.pinned_count || 0;
+                    const modelTotal = auto + pinned;
+                    const autoPct = modelTotal > 0 ? Math.round(100 * auto / modelTotal) : 0;
+                    const reqMeta = modelTotal > 0 ? ` · модель: авто ${autoPct}% / закреплено ${100 - autoPct}%` : '';
                     const div = document.createElement('div');
                     div.className = 'proj-row';
                     div.innerHTML = `
                         <div class="proj-head">
                             <span class="proj-name">${escapeHtml(caller)}</span>
-                            <span class="proj-meta">${r.request_count || 0} запросов · успех ${formatPercent(rate)} · ${formatTime(r.avg_response_time)} · топ: ${escapeHtml(topModel)}</span>
+                            <span class="proj-meta">${r.request_count || 0} запросов · успех ${formatPercent(rate)} · ${formatTime(r.avg_response_time)} · топ: ${escapeHtml(topModel)}${reqMeta}</span>
                         </div>
                         <div class="bar-track"><div class="bar-fill" style="width:${widthPct}%; background:${barColor};"></div></div>
                     `;

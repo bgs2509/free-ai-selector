@@ -8,7 +8,7 @@ Uses SQLAlchemy 2.0 async patterns.
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import case, desc, func, literal, select, text
+from sqlalchemy import case, desc, func, literal, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.models import PromptHistory
@@ -347,6 +347,12 @@ class PromptHistoryRepository:
                     case((PromptHistoryORM.success == True, 1), else_=0)  # noqa: E712
                 ).label("success_count"),
                 func.avg(PromptHistoryORM.response_time).label("avg_response_time"),
+                func.sum(
+                    case((PromptHistoryORM.requested_model.is_(None), 1), else_=0)
+                ).label("auto_count"),
+                func.sum(
+                    case((PromptHistoryORM.requested_model.is_not(None), 1), else_=0)
+                ).label("pinned_count"),
             )
             .where(PromptHistoryORM.created_at > cutoff_date)
             .group_by(PromptHistoryORM.caller)
@@ -389,6 +395,8 @@ class PromptHistoryRepository:
                     "success_rate": success_rate,
                     "avg_response_time": float(row.avg_response_time or 0.0),
                     "top_model_id": top_model_by_caller.get(row.caller),
+                    "auto_count": row.auto_count or 0,
+                    "pinned_count": row.pinned_count or 0,
                 }
             )
 

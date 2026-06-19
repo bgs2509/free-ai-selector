@@ -180,6 +180,12 @@ class CallerStatisticsResponse(BaseModel):
     top_model_id: Optional[int] = Field(
         None, description="Most frequently selected model ID for this caller"
     )
+    auto_count: int = Field(
+        0, ge=0, description="Requests with no requested_model (auto-selection)"
+    )
+    pinned_count: int = Field(
+        0, ge=0, description="Requests that pinned a specific requested_model"
+    )
 
 
 # =============================================================================
