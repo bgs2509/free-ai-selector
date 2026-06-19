@@ -245,3 +245,213 @@ class TestF017GetStatisticsForPeriod:
         assert stats["successful_requests"] == 1
         assert stats["failed_requests"] == 0
         assert stats["success_rate"] == 1.0
+
+
+def _make_history(
+    *,
+    caller=None,
+    success=True,
+    model_id=1,
+    http_status=None,
+    requested_model=None,
+    created_at=None,
+):
+    """Helper building a PromptHistory domain entity for caller tests (oxl)."""
+    return PromptHistory(
+        id=None,
+        user_id="test_user",
+        prompt_text="test prompt",
+        selected_model_id=model_id,
+        response_text="response" if success else None,
+        response_time=Decimal("1.5"),
+        success=success,
+        error_message=None if success else "error",
+        created_at=created_at or datetime.utcnow(),
+        caller=caller,
+        http_status=http_status,
+        requested_model=requested_model,
+    )
+
+
+@pytest.mark.unit
+class TestCallerPersistence:
+    """create() persists the new caller/http_status/requested_model fields (oxl)."""
+
+    async def test_create_persists_caller_fields(self, test_db: AsyncSession):
+        repository = PromptHistoryRepository(test_db)
+
+        created = await repository.create(
+            _make_history(caller="health-worker", http_status=200, requested_model="qwen")
+        )
+        await test_db.commit()
+
+        fetched = await repository.get_by_id(created.id)
+        assert fetched is not None
+        assert fetched.caller == "health-worker"
+        assert fetched.http_status == 200
+        assert fetched.requested_model == "qwen"
+
+    async def test_create_caller_fields_default_null(self, test_db: AsyncSession):
+        repository = PromptHistoryRepository(test_db)
+
+        created = await repository.create(_make_history())
+        await test_db.commit()
+
+        fetched = await repository.get_by_id(created.id)
+        assert fetched is not None
+        assert fetched.caller is None
+        assert fetched.http_status is None
+        assert fetched.requested_model is None
+
+
+@pytest.mark.unit
+class TestGetStatsGroupedByCaller:
+    """get_stats_grouped_by_caller() per-project aggregation (oxl)."""
+
+    async def test_empty_returns_empty_list(self, test_db: AsyncSession):
+        repository = PromptHistoryRepository(test_db)
+        result = await repository.get_stats_grouped_by_caller(window_days=7)
+        assert result == []
+
+    async def test_groups_by_caller_with_success_rate(self, test_db: AsyncSession):
+        repository = PromptHistoryRepository(test_db)
+
+        # caller A: 3 success, 1 failure (model 1 dominant)
+        for i in range(4):
+            await repository.create(
+                _make_history(caller="A", success=(i < 3), model_id=1)
+            )
+        # caller B: 1 success (model 2)
+        await repository.create(_make_history(caller="B", success=True, model_id=2))
+
+        await test_db.commit()
+
+        result = await repository.get_stats_grouped_by_caller(window_days=7)
+        by_caller = {row["caller"]: row for row in result}
+
+        assert by_caller["A"]["request_count"] == 4
+        assert by_caller["A"]["success_count"] == 3
+        assert by_caller["A"]["success_rate"] == 0.75
+        assert by_caller["A"]["top_model_id"] == 1
+        assert by_caller["A"]["avg_response_time"] == pytest.approx(1.5)
+
+        assert by_caller["B"]["request_count"] == 1
+        assert by_caller["B"]["success_rate"] == 1.0
+        assert by_caller["B"]["top_model_id"] == 2
+
+    async def test_ordered_by_request_count_desc(self, test_db: AsyncSession):
+        repository = PromptHistoryRepository(test_db)
+
+        for _ in range(1):
+            await repository.create(_make_history(caller="small"))
+        for _ in range(3):
+            await repository.create(_make_history(caller="big"))
+
+        await test_db.commit()
+
+        result = await repository.get_stats_grouped_by_caller(window_days=7)
+        assert result[0]["caller"] == "big"
+        assert result[0]["request_count"] == 3
+
+    async def test_excludes_records_outside_window(self, test_db: AsyncSession):
+        repository = PromptHistoryRepository(test_db)
+
+        now = datetime.utcnow()
+        # Inside window
+        await repository.create(
+            _make_history(caller="A", created_at=now - timedelta(days=1))
+        )
+        # Outside window (created via ORM to keep custom timestamp)
+        old = PromptHistoryORM(
+            user_id="test_user",
+            prompt_text="old",
+            selected_model_id=1,
+            response_text="r",
+            response_time=Decimal("1.0"),
+            success=True,
+            error_message=None,
+            created_at=now - timedelta(days=30),
+            caller="A",
+        )
+        test_db.add(old)
+        await test_db.commit()
+
+        result = await repository.get_stats_grouped_by_caller(window_days=7)
+        by_caller = {row["caller"]: row for row in result}
+        assert by_caller["A"]["request_count"] == 1
+
+    async def test_null_caller_bucket(self, test_db: AsyncSession):
+        repository = PromptHistoryRepository(test_db)
+
+        await repository.create(_make_history(caller=None))
+        await test_db.commit()
+
+        result = await repository.get_stats_grouped_by_caller(window_days=7)
+        assert any(row["caller"] is None for row in result)
+
+
+@pytest.mark.unit
+class TestGetFiltered:
+    """get_filtered() journal listing (oxl)."""
+
+    async def test_no_filters_returns_all_desc(self, test_db: AsyncSession):
+        repository = PromptHistoryRepository(test_db)
+
+        now = datetime.utcnow()
+        await repository.create(_make_history(caller="A", created_at=now - timedelta(hours=2)))
+        await repository.create(_make_history(caller="B", created_at=now - timedelta(hours=1)))
+        await test_db.commit()
+
+        result = await repository.get_filtered()
+        assert len(result) == 2
+        # ordered created_at DESC -> most recent (B) first
+        assert result[0].caller == "B"
+
+    async def test_filter_by_caller(self, test_db: AsyncSession):
+        repository = PromptHistoryRepository(test_db)
+
+        await repository.create(_make_history(caller="A"))
+        await repository.create(_make_history(caller="B"))
+        await test_db.commit()
+
+        result = await repository.get_filtered(caller="A")
+        assert len(result) == 1
+        assert result[0].caller == "A"
+
+    async def test_filter_by_success(self, test_db: AsyncSession):
+        repository = PromptHistoryRepository(test_db)
+
+        await repository.create(_make_history(caller="A", success=True))
+        await repository.create(_make_history(caller="A", success=False))
+        await test_db.commit()
+
+        only_failed = await repository.get_filtered(success=False)
+        assert len(only_failed) == 1
+        assert only_failed[0].success is False
+
+    async def test_filter_by_date_range(self, test_db: AsyncSession):
+        repository = PromptHistoryRepository(test_db)
+
+        now = datetime.utcnow()
+        await repository.create(_make_history(caller="old", created_at=now - timedelta(days=10)))
+        await repository.create(_make_history(caller="new", created_at=now - timedelta(hours=1)))
+        await test_db.commit()
+
+        result = await repository.get_filtered(
+            date_from=now - timedelta(days=1), date_to=now + timedelta(hours=1)
+        )
+        assert len(result) == 1
+        assert result[0].caller == "new"
+
+    async def test_limit_and_offset(self, test_db: AsyncSession):
+        repository = PromptHistoryRepository(test_db)
+
+        now = datetime.utcnow()
+        for i in range(5):
+            await repository.create(
+                _make_history(caller="A", created_at=now - timedelta(minutes=i))
+            )
+        await test_db.commit()
+
+        page = await repository.get_filtered(limit=2, offset=2)
+        assert len(page) == 2

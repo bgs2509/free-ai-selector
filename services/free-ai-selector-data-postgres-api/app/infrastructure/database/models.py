@@ -91,6 +91,11 @@ class PromptHistoryORM(Base):
     success: Mapped[bool] = mapped_column(Boolean, nullable=False, index=True)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+    # Per-project ("caller") dimension + precise status (oxl)
+    caller: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
+    http_status: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    requested_model: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
     # Timestamp
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), index=True

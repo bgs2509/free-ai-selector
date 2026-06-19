@@ -117,6 +117,16 @@ class PromptHistoryCreate(BaseModel):
     response_time: Decimal = Field(..., ge=0, description="Response time in seconds")
     success: bool = Field(..., description="Whether request was successful")
     error_message: Optional[str] = Field(None, description="Error message if failed")
+    # Per-project ("caller") dimension + precise status (oxl)
+    caller: Optional[str] = Field(
+        None, max_length=255, description="External project that called the API"
+    )
+    http_status: Optional[int] = Field(
+        None, description="HTTP status returned to the caller (200/429/503/500)"
+    )
+    requested_model: Optional[str] = Field(
+        None, max_length=255, description="Model name caller requested (null = auto-select)"
+    )
 
 
 class PromptHistoryResponse(BaseModel):
@@ -131,6 +141,14 @@ class PromptHistoryResponse(BaseModel):
     success: bool = Field(..., description="Whether request was successful")
     error_message: Optional[str] = Field(None, description="Error message if failed")
     created_at: datetime = Field(..., description="Creation timestamp")
+    # Per-project ("caller") dimension + precise status (oxl)
+    caller: Optional[str] = Field(None, description="External project that called the API")
+    http_status: Optional[int] = Field(
+        None, description="HTTP status returned to the caller (200/429/503/500)"
+    )
+    requested_model: Optional[str] = Field(
+        None, description="Model name caller requested (null = auto-select)"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -147,6 +165,21 @@ class ModelStatisticsResponse(BaseModel):
     successful_requests: int = Field(..., ge=0, description="Successful request count")
     failed_requests: int = Field(..., ge=0, description="Failed request count")
     success_rate: float = Field(..., ge=0.0, le=1.0, description="Success rate (0.0 - 1.0)")
+
+
+class CallerStatisticsResponse(BaseModel):
+    """Schema for per-project ("caller") aggregate statistics (oxl)."""
+
+    caller: Optional[str] = Field(
+        None, description="External project name (null bucket = unattributed requests)"
+    )
+    request_count: int = Field(..., ge=0, description="Total requests from this caller")
+    success_count: int = Field(..., ge=0, description="Successful requests from this caller")
+    success_rate: float = Field(..., ge=0.0, le=1.0, description="Success rate (0.0 - 1.0)")
+    avg_response_time: float = Field(..., ge=0.0, description="Average response time in seconds")
+    top_model_id: Optional[int] = Field(
+        None, description="Most frequently selected model ID for this caller"
+    )
 
 
 # =============================================================================

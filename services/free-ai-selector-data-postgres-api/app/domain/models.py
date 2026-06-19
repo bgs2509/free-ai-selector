@@ -99,3 +99,7 @@ class PromptHistory:
     success: bool
     error_message: Optional[str]
     created_at: datetime
+    # Per-project ("caller") dimension + precise status (oxl)
+    caller: Optional[str] = None  # External project that called the API
+    http_status: Optional[int] = None  # HTTP status returned to caller (200/429/503/500)
+    requested_model: Optional[str] = None  # Model name caller requested (None = auto-select)
