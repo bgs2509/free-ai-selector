@@ -777,17 +777,22 @@
                 if (!rows || rows.length === 0) { list.innerHTML = '<p class="hint">Нет данных за период.</p>'; return; }
                 const maxCount = Math.max(...rows.map(r => r.request_count || 0), 1);
                 rows.forEach(r => {
-                    const caller = r.caller || '(без caller)';
+                    const caller = r.caller || 'не идентифицирован';
                     const rate = r.success_rate == null ? 0 : Number(r.success_rate);
                     const topModel = r.top_model_id != null ? (modelMap[r.top_model_id] || `#${r.top_model_id}`) : '—';
                     const widthPct = ((r.request_count || 0) / maxCount * 100).toFixed(1);
                     const barColor = rate >= 0.8 ? 'var(--success)' : rate >= 0.5 ? '#eab308' : 'var(--error)';
+                    // vop: requested-model breakdown — auto (no model_name) vs pinned
+                    const auto = r.auto_count || 0, pinned = r.pinned_count || 0;
+                    const modelTotal = auto + pinned;
+                    const autoPct = modelTotal > 0 ? Math.round(100 * auto / modelTotal) : 0;
+                    const reqMeta = modelTotal > 0 ? ` · модель: авто ${autoPct}% / закреплено ${100 - autoPct}%` : '';
                     const div = document.createElement('div');
                     div.className = 'proj-row';
                     div.innerHTML = `
                         <div class="proj-head">
                             <span class="proj-name">${escapeHtml(caller)}</span>
-                            <span class="proj-meta">${r.request_count || 0} запросов · успех ${formatPercent(rate)} · ${formatTime(r.avg_response_time)} · топ: ${escapeHtml(topModel)}</span>
+                            <span class="proj-meta">${r.request_count || 0} запросов · успех ${formatPercent(rate)} · ${formatTime(r.avg_response_time)} · топ: ${escapeHtml(topModel)}${reqMeta}</span>
                         </div>
                         <div class="bar-track"><div class="bar-fill" style="width:${widthPct}%; background:${barColor};"></div></div>
                     `;
@@ -823,7 +828,7 @@
                     const model = r.selected_model_id != null ? (modelMap[r.selected_model_id] || `#${r.selected_model_id}`) : '—';
                     tr.innerHTML = `
                         <td>${escapeHtml(formatDateTime(r.created_at))}</td>
-                        <td>${escapeHtml(r.caller || '—')}</td>
+                        <td>${escapeHtml(r.caller || 'не идентифицирован')}</td>
                         <td>${statusBadge(r.http_status, r.success)}</td>
                         <td>${escapeHtml(model)}</td>
                         <td>${formatTime(r.response_time)}</td>
@@ -845,7 +850,7 @@
                 const model = r.selected_model_id != null ? (modelMap[r.selected_model_id] || `#${r.selected_model_id}`) : '—';
                 detail.innerHTML = `
                     <div class="proj-head">
-                        <span class="proj-name">Запрос #${r.id} · ${escapeHtml(r.caller || '—')}</span>
+                        <span class="proj-name">Запрос #${r.id} · ${escapeHtml(r.caller || 'не идентифицирован')}</span>
                         <span class="proj-meta">${statusBadge(r.http_status, r.success)} · ${escapeHtml(formatDateTime(r.created_at))} · ${formatTime(r.response_time)}</span>
                     </div>
                     <div class="proj-meta">Модель: ${escapeHtml(model)} · запрошена: ${escapeHtml(r.requested_model || 'авто')}</div>

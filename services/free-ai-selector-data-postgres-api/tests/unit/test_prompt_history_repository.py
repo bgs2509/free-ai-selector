@@ -353,6 +353,22 @@ class TestGetStatsGroupedByCaller:
         assert result[0]["caller"] == "big"
         assert result[0]["request_count"] == 3
 
+    async def test_auto_vs_pinned_requested_model_breakdown(self, test_db: AsyncSession):
+        """vop: auto_count (requested_model NULL) vs pinned_count (NOT NULL)."""
+        repository = PromptHistoryRepository(test_db)
+
+        # caller P: 2 auto (no requested_model) + 3 pinned (requested_model set)
+        for _ in range(2):
+            await repository.create(_make_history(caller="P", requested_model=None))
+        for _ in range(3):
+            await repository.create(_make_history(caller="P", requested_model="gpt-x"))
+        await test_db.commit()
+
+        row = next(r for r in await repository.get_stats_grouped_by_caller(window_days=7) if r["caller"] == "P")
+        assert row["request_count"] == 5
+        assert row["auto_count"] == 2
+        assert row["pinned_count"] == 3
+
     async def test_excludes_records_outside_window(self, test_db: AsyncSession):
         repository = PromptHistoryRepository(test_db)
 
