@@ -54,6 +54,7 @@ class PromptRequest:
     system_prompt: Optional[str] = None  # System prompt for AI guidance
     response_format: Optional[dict] = None  # Structured output specification
     tags: Optional[list[str]] = None  # Filter models by provider tags
+    caller: Optional[str] = None  # External project identity (X-Client-Id header)
 
 
 @dataclass

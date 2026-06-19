@@ -1,6 +1,6 @@
 """Тесты для DataAPIClient."""
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from decimal import Decimal
 
 from app.infrastructure.http_clients.data_api_client import DataAPIClient
@@ -230,3 +230,79 @@ class TestDataAPIClient:
         """Trailing slash в base_url обрезается."""
         c = DataAPIClient(base_url="http://test-data:8001/")
         assert c.base_url == "http://test-data:8001"
+
+
+class TestDataAPIClientCallerAnalytics:
+    """fm6: caller fields in create_history + journal/analytics GET helpers."""
+
+    @pytest.fixture
+    def client(self):
+        return DataAPIClient(base_url="http://test-data:8001")
+
+    async def test_create_history_sends_caller_fields(self, client):
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = {"id": 50}
+        client.client.post = AsyncMock(return_value=mock_response)
+
+        result = await client.create_history(
+            user_id="api_user",
+            prompt_text="hello",
+            selected_model_id=1,
+            response_text=None,
+            response_time=Decimal("2.0"),
+            success=False,
+            error_message="503",
+            caller="sensedar",
+            http_status=503,
+            requested_model="gpt-x",
+        )
+
+        assert result == 50
+        payload = client.client.post.call_args.kwargs["json"]
+        assert payload["caller"] == "sensedar"
+        assert payload["http_status"] == 503
+        assert payload["requested_model"] == "gpt-x"
+
+    async def test_get_caller_statistics(self, client):
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = [{"caller": "taro", "request_count": 3}]
+        client.client.get = AsyncMock(return_value=mock_response)
+
+        result = await client.get_caller_statistics(window_days=30)
+
+        assert result[0]["caller"] == "taro"
+        assert client.client.get.call_args.kwargs["params"]["window_days"] == 30
+
+    async def test_get_history_builds_filter_params(self, client):
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = [{"id": 1}]
+        client.client.get = AsyncMock(return_value=mock_response)
+
+        await client.get_history(caller="sensedar", success=True, limit=5, offset=2)
+
+        params = client.client.get.call_args.kwargs["params"]
+        assert params["caller"] == "sensedar"
+        assert params["success"] is True
+        assert params["limit"] == 5
+        assert params["offset"] == 2
+
+    async def test_get_history_by_id_found(self, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = {"id": 7, "caller": "taro"}
+        client.client.get = AsyncMock(return_value=mock_response)
+
+        result = await client.get_history_by_id(7)
+        assert result["caller"] == "taro"
+
+    async def test_get_history_by_id_returns_none_on_404(self, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        client.client.get = AsyncMock(return_value=mock_response)
+
+        result = await client.get_history_by_id(999)
+        assert result is None

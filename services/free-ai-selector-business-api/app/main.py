@@ -33,7 +33,7 @@ from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from app.api.v1 import models, prompts, providers
+from app.api.v1 import analytics, models, prompts, providers
 from app.api.v1.schemas import HealthCheckResponse
 
 # =============================================================================
@@ -323,6 +323,7 @@ async def health_check() -> HealthCheckResponse:
 app.include_router(prompts.router, prefix="/api/v1")
 app.include_router(models.router, prefix="/api/v1")
 app.include_router(providers.router, prefix="/api/v1")
+app.include_router(analytics.router, prefix="/api/v1")
 
 
 # =============================================================================

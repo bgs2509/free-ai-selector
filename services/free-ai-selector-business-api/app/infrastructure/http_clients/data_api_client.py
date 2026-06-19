@@ -271,6 +271,9 @@ class DataAPIClient:
         response_time: Decimal,
         success: bool,
         error_message: Optional[str] = None,
+        caller: Optional[str] = None,
+        http_status: Optional[int] = None,
+        requested_model: Optional[str] = None,
     ) -> int:
         """
         Create a prompt history record.
@@ -283,6 +286,9 @@ class DataAPIClient:
             response_time: Response time in seconds
             success: Whether request was successful
             error_message: Optional error message
+            caller: External project identity (X-Client-Id)
+            http_status: HTTP status returned to the caller (200/429/503/500)
+            requested_model: Model name the caller requested (None = auto-select)
 
         Returns:
             Created history record ID
@@ -299,6 +305,9 @@ class DataAPIClient:
                 "response_time": str(response_time),
                 "success": success,
                 "error_message": error_message,
+                "caller": caller,
+                "http_status": http_status,
+                "requested_model": requested_model,
             }
 
             response = await self.client.post(
@@ -311,4 +320,106 @@ class DataAPIClient:
 
         except httpx.HTTPError as e:
             logger.error("data_api_create_history_failed", error=sanitize_error_message(e))
+            raise
+
+    async def get_caller_statistics(self, window_days: int = 7) -> List[dict]:
+        """
+        Get per-project ("caller") aggregate statistics from Data API.
+
+        Args:
+            window_days: Look-back window in days (default: 7)
+
+        Returns:
+            List of per-caller aggregate dicts.
+
+        Raises:
+            httpx.HTTPError: If request fails
+        """
+        try:
+            response = await self.client.get(
+                f"{self.base_url}/api/v1/history/statistics/by-caller",
+                params={"window_days": window_days},
+                headers=self._get_headers(),
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPError as e:
+            logger.error("data_api_caller_statistics_failed", error=sanitize_error_message(e))
+            raise
+
+    async def get_history(
+        self,
+        caller: Optional[str] = None,
+        success: Optional[bool] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> List[dict]:
+        """
+        Get prompt history (journal) records from Data API with optional filters.
+
+        Args:
+            caller: Filter by external project (caller)
+            success: Filter by success flag
+            date_from: Inclusive lower bound on created_at (ISO 8601)
+            date_to: Inclusive upper bound on created_at (ISO 8601)
+            limit: Maximum number of records (default: 100)
+            offset: Number of records to skip (default: 0)
+
+        Returns:
+            List of prompt history record dicts.
+
+        Raises:
+            httpx.HTTPError: If request fails
+        """
+        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        if caller is not None:
+            params["caller"] = caller
+        if success is not None:
+            params["success"] = success
+        if date_from is not None:
+            params["date_from"] = date_from
+        if date_to is not None:
+            params["date_to"] = date_to
+        try:
+            response = await self.client.get(
+                f"{self.base_url}/api/v1/history",
+                params=params,
+                headers=self._get_headers(),
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPError as e:
+            logger.error("data_api_get_history_failed", error=sanitize_error_message(e))
+            raise
+
+    async def get_history_by_id(self, history_id: int) -> Optional[dict]:
+        """
+        Get a single prompt history record by ID from Data API.
+
+        Args:
+            history_id: History record ID
+
+        Returns:
+            History record dict if found, None on 404.
+
+        Raises:
+            httpx.HTTPError: If request fails
+        """
+        try:
+            response = await self.client.get(
+                f"{self.base_url}/api/v1/history/{history_id}",
+                headers=self._get_headers(),
+            )
+            if response.status_code == 404:
+                return None
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPError as e:
+            logger.error(
+                "data_api_get_history_by_id_failed",
+                history_id=history_id,
+                error=sanitize_error_message(e),
+            )
             raise
