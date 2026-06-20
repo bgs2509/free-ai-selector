@@ -484,19 +484,26 @@ class TestFireworksMaxTokensCap:
 
 @pytest.mark.unit
 class TestProviderTags:
-    """Tests for TAGS ClassVar on providers."""
+    """Tests for TAGS ClassVar on providers.
+
+    NOTE: the 'russian' tag was deliberately removed from Llama-based providers
+    (Groq/Cerebras/HuggingFace/Fireworks/Novita) in commit 9cf87e8 because those
+    models cause language contamination. These assertions track the current code
+    SSoT. Re-adding 'russian' is deferred until empirical Russian verification
+    (see bd free-ai-selector-xh3 / xqi).
+    """
 
     def test_groq_tags(self):
         from app.infrastructure.ai_providers.groq import GroqProvider
-        assert GroqProvider.TAGS == {"fast", "json", "code", "russian", "tools"}
+        assert GroqProvider.TAGS == {"fast", "json", "code", "tools"}
 
     def test_cerebras_tags(self):
         from app.infrastructure.ai_providers.cerebras import CerebrasProvider
-        assert CerebrasProvider.TAGS == {"fast", "json", "russian", "lightweight"}
+        assert CerebrasProvider.TAGS == {"fast", "json", "lightweight"}
 
     def test_huggingface_tags(self):
         from app.infrastructure.ai_providers.huggingface import HuggingFaceProvider
-        assert HuggingFaceProvider.TAGS == {"russian", "lightweight"}
+        assert HuggingFaceProvider.TAGS == {"lightweight"}
 
     def test_openrouter_tags(self):
         from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
@@ -508,11 +515,11 @@ class TestProviderTags:
 
     def test_fireworks_tags(self):
         from app.infrastructure.ai_providers.fireworks import FireworksProvider
-        assert FireworksProvider.TAGS == {"json", "code", "russian"}
+        assert FireworksProvider.TAGS == {"json", "code"}
 
     def test_novita_tags(self):
         from app.infrastructure.ai_providers.novita import NovitaProvider
-        assert NovitaProvider.TAGS == {"json", "russian", "lightweight"}
+        assert NovitaProvider.TAGS == {"json", "lightweight"}
 
     def test_base_tags_empty(self):
         from app.infrastructure.ai_providers.base import OpenAICompatibleProvider
@@ -521,7 +528,7 @@ class TestProviderTags:
     def test_registry_get_tags(self):
         from app.infrastructure.ai_providers.registry import ProviderRegistry
         tags = ProviderRegistry.get_tags("Groq")
-        assert tags == {"fast", "json", "code", "russian", "tools"}
+        assert tags == {"fast", "json", "code", "tools"}
 
     def test_registry_get_tags_unknown(self):
         from app.infrastructure.ai_providers.registry import ProviderRegistry
