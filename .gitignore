@@ -359,3 +359,6 @@ vendor/bundle/
 .dolt/
 .beads-credential-key
 .beads/proxieddb/
+
+# provider_benchmark.py output artifact
+benchmark_results.json
