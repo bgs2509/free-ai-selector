@@ -236,36 +236,6 @@ class TestNovitaProvider:
             NovitaProvider()
 
 
-@pytest.mark.unit
-class TestScalewayProvider:
-    """Тесты для Scaleway провайдера."""
-
-    def test_init_defaults(self):
-        """Тест инициализации с параметрами по умолчанию."""
-        from app.infrastructure.ai_providers.scaleway import ScalewayProvider
-
-        # F013: API key обязателен в __init__
-        provider = ScalewayProvider(api_key="test-key")
-        assert "llama" in provider.model.lower()
-        assert provider.api_url == "https://api.scaleway.ai/v1/chat/completions"
-
-    def test_get_provider_name(self):
-        """Тест получения имени провайдера."""
-        from app.infrastructure.ai_providers.scaleway import ScalewayProvider
-
-        provider = ScalewayProvider(api_key="test-key")
-        assert provider.get_provider_name() == "Scaleway"
-
-    def test_init_without_api_key_raises(self, monkeypatch):
-        """Тест: создание провайдера без API ключа вызывает ValueError."""
-        from app.infrastructure.ai_providers.scaleway import ScalewayProvider
-
-        # F013: Валидация в __init__, нужно очистить env
-        monkeypatch.delenv("SCALEWAY_API_KEY", raising=False)
-        with pytest.raises(ValueError, match="SCALEWAY_API_KEY is required"):
-            ScalewayProvider()
-
-
 # ═══════════════════════════════════════════════════════════════════════════
 # Интеграционные тесты (проверка наследования от AIProviderBase)
 # ═══════════════════════════════════════════════════════════════════════════
@@ -284,7 +254,6 @@ class TestProvidersInheritance:
         from app.infrastructure.ai_providers.fireworks import FireworksProvider
         from app.infrastructure.ai_providers.hyperbolic import HyperbolicProvider
         from app.infrastructure.ai_providers.novita import NovitaProvider
-        from app.infrastructure.ai_providers.scaleway import ScalewayProvider
 
         providers = [
             DeepSeekProvider,
@@ -293,7 +262,6 @@ class TestProvidersInheritance:
             FireworksProvider,
             HyperbolicProvider,
             NovitaProvider,
-            ScalewayProvider,
         ]
 
         for provider_class in providers:
@@ -309,7 +277,6 @@ class TestProvidersInheritance:
         from app.infrastructure.ai_providers.fireworks import FireworksProvider
         from app.infrastructure.ai_providers.hyperbolic import HyperbolicProvider
         from app.infrastructure.ai_providers.novita import NovitaProvider
-        from app.infrastructure.ai_providers.scaleway import ScalewayProvider
 
         # F013: Теперь все провайдеры требуют API key в __init__
         providers = [
@@ -319,7 +286,6 @@ class TestProvidersInheritance:
             FireworksProvider(api_key="test-key"),
             HyperbolicProvider(api_key="test-key"),
             NovitaProvider(api_key="test-key"),
-            ScalewayProvider(api_key="test-key"),
         ]
 
         required_methods = ["generate", "health_check", "get_provider_name"]
@@ -486,16 +452,15 @@ class TestFireworksMaxTokensCap:
 class TestProviderTags:
     """Tests for TAGS ClassVar on providers.
 
-    NOTE: the 'russian' tag was deliberately removed from Llama-based providers
-    (Groq/Cerebras/HuggingFace/Fireworks/Novita) in commit 9cf87e8 because those
-    models cause language contamination. These assertions track the current code
-    SSoT. Re-adding 'russian' is deferred until empirical Russian verification
-    (see bd free-ai-selector-xh3 / xqi).
+    'russian' was re-added to Groq/HuggingFace/Fireworks and Cloudflare (native)
+    after the 2026-06-20 diagnostic confirmed strong Russian on live APIs
+    (cyrillic_ratio 0.96-0.98). OpenRouter and CloudflareQwen3 already had it.
+    Cerebras stays without 'russian' — untestable while its slug 404s (bd xqi).
     """
 
     def test_groq_tags(self):
         from app.infrastructure.ai_providers.groq import GroqProvider
-        assert GroqProvider.TAGS == {"fast", "json", "code", "tools"}
+        assert GroqProvider.TAGS == {"fast", "json", "code", "tools", "russian"}
 
     def test_cerebras_tags(self):
         from app.infrastructure.ai_providers.cerebras import CerebrasProvider
@@ -503,7 +468,7 @@ class TestProviderTags:
 
     def test_huggingface_tags(self):
         from app.infrastructure.ai_providers.huggingface import HuggingFaceProvider
-        assert HuggingFaceProvider.TAGS == {"lightweight"}
+        assert HuggingFaceProvider.TAGS == {"lightweight", "russian"}
 
     def test_openrouter_tags(self):
         from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
@@ -515,7 +480,7 @@ class TestProviderTags:
 
     def test_fireworks_tags(self):
         from app.infrastructure.ai_providers.fireworks import FireworksProvider
-        assert FireworksProvider.TAGS == {"json", "code"}
+        assert FireworksProvider.TAGS == {"json", "code", "russian"}
 
     def test_novita_tags(self):
         from app.infrastructure.ai_providers.novita import NovitaProvider
@@ -528,7 +493,7 @@ class TestProviderTags:
     def test_registry_get_tags(self):
         from app.infrastructure.ai_providers.registry import ProviderRegistry
         tags = ProviderRegistry.get_tags("Groq")
-        assert tags == {"fast", "json", "code", "tools"}
+        assert tags == {"fast", "json", "code", "tools", "russian"}
 
     def test_registry_get_tags_unknown(self):
         from app.infrastructure.ai_providers.registry import ProviderRegistry

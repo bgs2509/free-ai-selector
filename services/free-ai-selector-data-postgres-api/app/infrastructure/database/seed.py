@@ -66,13 +66,6 @@ SEED_MODELS = [
         "api_format": "cloudflare",
     },
     {
-        "name": "Gemma 3 12B IT (Cloudflare)",
-        "provider": "CloudflareGemma3",
-        "api_endpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/google/gemma-3-12b-it",
-        "is_active": True,
-        "api_format": "cloudflare",
-    },
-    {
         "name": "Qwen3 30B A3B FP8 (Cloudflare)",
         "provider": "CloudflareQwen3",
         "api_endpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/qwen/qwen3-30b-a3b-fp8",
@@ -104,7 +97,7 @@ SEED_MODELS = [
         "api_format": "openai",
     },
     # ═══════════════════════════════════════════════════════════════════════════
-    # Новые провайдеры F003 — Фаза 2: Дополнительные (4 шт.)
+    # Новые провайдеры F003 — Фаза 2: Дополнительные (3 шт.)
     # ═══════════════════════════════════════════════════════════════════════════
     {
         "name": "GPT-OSS-20B (Fireworks)",
@@ -124,13 +117,6 @@ SEED_MODELS = [
         "name": "Llama 3.1 8B Instruct (Novita)",
         "provider": "Novita",
         "api_endpoint": "https://api.novita.ai/v3/openai/chat/completions",
-        "is_active": True,
-        "api_format": "openai",
-    },
-    {
-        "name": "Llama 3.1 70B (Scaleway)",
-        "provider": "Scaleway",
-        "api_endpoint": "https://api.scaleway.ai/v1/chat/completions",
         "is_active": True,
         "api_format": "openai",
     },

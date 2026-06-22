@@ -22,7 +22,6 @@ from app.infrastructure.ai_providers.base import AIProviderBase
 from app.infrastructure.ai_providers.cerebras import CerebrasProvider
 from app.infrastructure.ai_providers.cloudflare import (
     CloudflareProvider,
-    CloudflareGemma3Provider,
     CloudflareQwen3Provider,
 )
 from app.infrastructure.ai_providers.deepseek import DeepSeekProvider
@@ -34,7 +33,6 @@ from app.infrastructure.ai_providers.hyperbolic import HyperbolicProvider
 from app.infrastructure.ai_providers.novita import NovitaProvider
 from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
 from app.infrastructure.ai_providers.sambanova import SambanovaProvider
-from app.infrastructure.ai_providers.scaleway import ScalewayProvider
 from app.infrastructure.ai_providers.ollama import OLLAMA_PROVIDERS
 
 
@@ -46,17 +44,15 @@ PROVIDER_CLASSES: dict[str, type[AIProviderBase]] = {
     "SambaNova": SambanovaProvider,
     "HuggingFace": HuggingFaceProvider,
     "Cloudflare": CloudflareProvider,
-    "CloudflareGemma3": CloudflareGemma3Provider,
     "CloudflareQwen3": CloudflareQwen3Provider,
     # Новые провайдеры F003 — Фаза 1: Приоритетные (2 шт.)
     "DeepSeek": DeepSeekProvider,
     "OpenRouter": OpenRouterProvider,
     "GitHubModels": GitHubModelsProvider,
-    # Новые провайдеры F003 — Фаза 2: Дополнительные (4 шт.)
+    # Новые провайдеры F003 — Фаза 2: Дополнительные (3 шт.)
     "Fireworks": FireworksProvider,
     "Hyperbolic": HyperbolicProvider,
     "Novita": NovitaProvider,
-    "Scaleway": ScalewayProvider,
     # Новые провайдеры F003 — Фаза 3: Резервные (0 шт.)
     # Локальные провайдеры (Ollama)
     **OLLAMA_PROVIDERS,

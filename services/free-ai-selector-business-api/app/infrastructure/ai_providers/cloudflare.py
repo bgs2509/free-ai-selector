@@ -28,7 +28,7 @@ class CloudflareProvider(AIProviderBase):
 
     API_KEY_ENV = "CLOUDFLARE_API_TOKEN"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
-    TAGS: ClassVar[set[str]] = {"json", "code"}
+    TAGS: ClassVar[set[str]] = {"json", "code", "russian"}
 
     def __init__(
         self,
@@ -181,18 +181,6 @@ class CloudflareProvider(AIProviderBase):
         F011-B: Cloudflare supports both json_object and json_schema formats.
         """
         return True
-
-
-class CloudflareGemma3Provider(CloudflareProvider):
-    """Cloudflare Workers AI — Google Gemma 3 12B (140+ languages, strong Russian)."""
-
-    TAGS: ClassVar[set[str]] = {"fast", "json", "code", "russian"}
-
-    def __init__(self):
-        super().__init__(model="@cf/google/gemma-3-12b-it")
-
-    def get_provider_name(self) -> str:
-        return "CloudflareGemma3"
 
 
 class CloudflareQwen3Provider(CloudflareProvider):
