@@ -455,7 +455,8 @@ class TestProviderTags:
     'russian' was re-added to Groq/HuggingFace/Fireworks and Cloudflare (native)
     after the 2026-06-20 diagnostic confirmed strong Russian on live APIs
     (cyrillic_ratio 0.96-0.98). OpenRouter and CloudflareQwen3 already had it.
-    Cerebras stays without 'russian' — untestable while its slug 404s (bd xqi).
+    Cerebras switched to zai-glm-4.7 (slug fix, bd xqi) and now also carries
+    'russian' (verified clean RU + valid JSON on the new model).
     """
 
     def test_groq_tags(self):
@@ -464,7 +465,7 @@ class TestProviderTags:
 
     def test_cerebras_tags(self):
         from app.infrastructure.ai_providers.cerebras import CerebrasProvider
-        assert CerebrasProvider.TAGS == {"fast", "json", "lightweight"}
+        assert CerebrasProvider.TAGS == {"fast", "json", "reasoning", "russian"}
 
     def test_huggingface_tags(self):
         from app.infrastructure.ai_providers.huggingface import HuggingFaceProvider

@@ -38,7 +38,7 @@ SEED_MODELS = [
         "api_format": "openai",
     },
     {
-        "name": "Llama 3.1 8B",
+        "name": "GLM-4.7 (Cerebras)",
         "provider": "Cerebras",
         "api_endpoint": "https://api.cerebras.ai/v1/chat/completions",
         "is_active": True,

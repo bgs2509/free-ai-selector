@@ -7,13 +7,13 @@ import pytest
 class TestSeedModelNames:
     """Verify seed model names match actual API model IDs."""
 
-    def test_cerebras_model_name_is_8b(self):
-        """Cerebras uses llama3.1-8b, not 70B."""
+    def test_cerebras_model_name_is_glm(self):
+        """Cerebras switched to zai-glm-4.7 (Llama models removed 2026-06-20)."""
         from app.infrastructure.database.seed import SEED_MODELS
 
         cerebras = next(m for m in SEED_MODELS if m["provider"] == "Cerebras")
-        assert "8B" in cerebras["name"], f"Cerebras name should contain '8B', got: {cerebras['name']}"
-        assert "70B" not in cerebras["name"]
+        assert "GLM" in cerebras["name"], f"Cerebras name should contain 'GLM', got: {cerebras['name']}"
+        assert "Llama" not in cerebras["name"]
 
     def test_fireworks_model_name_is_gpt_oss(self):
         """Fireworks uses gpt-oss-20b, not Llama 70B."""

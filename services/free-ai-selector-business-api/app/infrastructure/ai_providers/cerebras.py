@@ -24,8 +24,12 @@ class CerebrasProvider(OpenAICompatibleProvider):
     PROVIDER_NAME = "Cerebras"
     BASE_URL = "https://api.cerebras.ai/v1/chat/completions"
     MODELS_URL = "https://api.cerebras.ai/v1/models"
-    DEFAULT_MODEL = "llama3.1-8b"
+    # 2026-06-20: Cerebras dropped all Llama models; only reasoning models remain
+    # (gpt-oss-120b, zai-glm-4.7). zai-glm-4.7 chosen — fast reasoning, strong RU,
+    # valid JSON (empirically verified). Reasoning lives in message.reasoning, so
+    # MAX_OUTPUT_TOKENS must leave room for reasoning + answer.
+    DEFAULT_MODEL = "zai-glm-4.7"
     API_KEY_ENV = "CEREBRAS_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
-    TAGS: ClassVar[set[str]] = {"fast", "json", "lightweight"}
+    TAGS: ClassVar[set[str]] = {"fast", "json", "reasoning", "russian"}
     MAX_OUTPUT_TOKENS: ClassVar[int] = 8192
