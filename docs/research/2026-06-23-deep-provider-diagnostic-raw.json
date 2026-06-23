@@ -1,0 +1,1584 @@
+{
+  "gates": [
+    {
+      "provider": "Groq",
+      "admitted": true,
+      "reason": "ok"
+    },
+    {
+      "provider": "Cerebras",
+      "admitted": true,
+      "reason": "ok"
+    },
+    {
+      "provider": "SambaNova",
+      "admitted": true,
+      "reason": "ok"
+    },
+    {
+      "provider": "HuggingFace",
+      "admitted": true,
+      "reason": "ok"
+    },
+    {
+      "provider": "Cloudflare",
+      "admitted": true,
+      "reason": "ok"
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "admitted": true,
+      "reason": "ok"
+    },
+    {
+      "provider": "DeepSeek",
+      "admitted": true,
+      "reason": "ok"
+    },
+    {
+      "provider": "OpenRouter",
+      "admitted": true,
+      "reason": "ok"
+    },
+    {
+      "provider": "GitHubModels",
+      "admitted": true,
+      "reason": "ok"
+    },
+    {
+      "provider": "Fireworks",
+      "admitted": false,
+      "reason": "unhealthy"
+    },
+    {
+      "provider": "Hyperbolic",
+      "admitted": true,
+      "reason": "ok"
+    },
+    {
+      "provider": "Novita",
+      "admitted": true,
+      "reason": "ok"
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "admitted": true,
+      "reason": "ok"
+    }
+  ],
+  "results": [
+    {
+      "provider": "Groq",
+      "dimension": "speed#1",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.613,
+      "chars": 13,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Groq",
+      "dimension": "speed#2",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.714,
+      "chars": 13,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Groq",
+      "dimension": "speed#3",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.676,
+      "chars": 13,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Groq",
+      "dimension": "speed#4",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.908,
+      "chars": 13,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Groq",
+      "dimension": "speed#5",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.711,
+      "chars": 13,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Groq",
+      "dimension": "speed_stats",
+      "status": "info",
+      "failure_class": "",
+      "detail": "warm min/avg/max = 1.61/1.72/1.91s",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "min": 1.613,
+        "avg": 1.724,
+        "max": 1.908,
+        "n": 5
+      }
+    },
+    {
+      "provider": "Groq",
+      "dimension": "plen_short",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.704,
+      "chars": 13,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Groq",
+      "dimension": "plen_medium",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.02,
+      "chars": 755,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Groq",
+      "dimension": "plen_long",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.383,
+      "chars": 1359,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Groq",
+      "dimension": "system_prompt",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.711,
+      "chars": 137,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Groq",
+      "dimension": "json_simple",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.597,
+      "chars": 217,
+      "json_valid": true,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Groq",
+      "dimension": "json_complex",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.977,
+      "chars": 694,
+      "json_valid": true,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Groq",
+      "dimension": "ru_short",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.878,
+      "chars": 199,
+      "json_valid": null,
+      "cyrillic_ratio": 0.96,
+      "extra": {}
+    },
+    {
+      "provider": "Groq",
+      "dimension": "ru_medium",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.181,
+      "chars": 526,
+      "json_valid": null,
+      "cyrillic_ratio": 1.0,
+      "extra": {}
+    },
+    {
+      "provider": "Groq",
+      "dimension": "maxtok_min",
+      "status": "success",
+      "failure_class": "",
+      "detail": "1 chars at max_tokens=1",
+      "time_s": 1.639,
+      "chars": 1,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Groq",
+      "dimension": "maxtok_high",
+      "status": "info",
+      "failure_class": "",
+      "detail": "HTTP 400: {\"error\": {\"message\": \"`max_tokens` must be less than or equal to `32768`, the maximum value for `max_tokens` is less than the `context_window` for this model\",",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "http": 400
+      }
+    },
+    {
+      "provider": "Groq",
+      "dimension": "tools",
+      "status": "success",
+      "failure_class": "",
+      "detail": "tool_call -> get_weather (finish=tool_calls)",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "tool_calls": true,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "provider": "Groq",
+      "dimension": "raw_fields",
+      "status": "info",
+      "failure_class": "",
+      "detail": "msg=['content', 'role'] finish=stop reasoning=False/False",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "message_keys": [
+          "content",
+          "role"
+        ],
+        "finish_reason": "stop",
+        "has_reasoning": false,
+        "has_reasoning_content": false,
+        "usage_keys": [
+          "completion_time",
+          "completion_tokens",
+          "prompt_time",
+          "prompt_tokens",
+          "queue_time",
+          "total_time",
+          "total_tokens"
+        ]
+      }
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "speed#1",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.8,
+      "chars": 188,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "speed#2",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.901,
+      "chars": 254,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "speed#3",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.052,
+      "chars": 182,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "speed_stats",
+      "status": "info",
+      "failure_class": "",
+      "detail": "warm min/avg/max = 1.80/1.92/2.05s",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "min": 1.8,
+        "avg": 1.918,
+        "max": 2.052,
+        "n": 3
+      }
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "plen_short",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.942,
+      "chars": 244,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "plen_medium",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.325,
+      "chars": 1114,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "plen_long",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.517,
+      "chars": 1099,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "system_prompt",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.888,
+      "chars": 518,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "json_simple",
+      "status": "failure",
+      "failure_class": "capability",
+      "detail": "invalid JSON",
+      "time_s": 5.443,
+      "chars": 1136,
+      "json_valid": false,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "json_complex",
+      "status": "failure",
+      "failure_class": "capability",
+      "detail": "invalid JSON",
+      "time_s": 2.443,
+      "chars": 2,
+      "json_valid": false,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "ru_short",
+      "status": "failure",
+      "failure_class": "capability",
+      "detail": "not russian (cyr=0.49)",
+      "time_s": 3.427,
+      "chars": 1020,
+      "json_valid": null,
+      "cyrillic_ratio": 0.49,
+      "extra": {}
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "ru_medium",
+      "status": "failure",
+      "failure_class": "capability",
+      "detail": "not russian (cyr=0.4)",
+      "time_s": 3.27,
+      "chars": 1872,
+      "json_valid": null,
+      "cyrillic_ratio": 0.4,
+      "extra": {}
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "maxtok_min",
+      "status": "success",
+      "failure_class": "",
+      "detail": "1 chars at max_tokens=1",
+      "time_s": 1.739,
+      "chars": 1,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "maxtok_high",
+      "status": "info",
+      "failure_class": "",
+      "detail": "accepted max_tokens=200000 (silent cap)",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "http": 200
+      }
+    },
+    {
+      "provider": "Cerebras",
+      "dimension": "raw_fields",
+      "status": "info",
+      "failure_class": "",
+      "detail": "msg=['reasoning', 'role'] finish=length reasoning=True/False",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "message_keys": [
+          "reasoning",
+          "role"
+        ],
+        "finish_reason": "length",
+        "has_reasoning": true,
+        "has_reasoning_content": false,
+        "usage_keys": [
+          "completion_tokens",
+          "completion_tokens_details",
+          "prompt_tokens",
+          "prompt_tokens_details",
+          "total_tokens"
+        ]
+      }
+    },
+    {
+      "provider": "SambaNova",
+      "dimension": "confirm",
+      "status": "failure",
+      "failure_class": "quota",
+      "detail": "PaymentRequired HTTP 402",
+      "time_s": 2.064,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "HuggingFace",
+      "dimension": "speed#1",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.748,
+      "chars": 16,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "HuggingFace",
+      "dimension": "speed_stats",
+      "status": "info",
+      "failure_class": "",
+      "detail": "warm min/avg/max = 2.75/2.75/2.75s",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "min": 2.748,
+        "avg": 2.748,
+        "max": 2.748,
+        "n": 1
+      }
+    },
+    {
+      "provider": "HuggingFace",
+      "dimension": "json_simple",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.267,
+      "chars": 138,
+      "json_valid": true,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "HuggingFace",
+      "dimension": "ru_short",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.289,
+      "chars": 244,
+      "json_valid": null,
+      "cyrillic_ratio": 0.92,
+      "extra": {}
+    },
+    {
+      "provider": "HuggingFace",
+      "dimension": "maxtok_min",
+      "status": "success",
+      "failure_class": "",
+      "detail": "3 chars at max_tokens=1",
+      "time_s": 1.935,
+      "chars": 3,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "speed#1",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.988,
+      "chars": 13,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "speed#2",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.054,
+      "chars": 13,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "speed#3",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.77,
+      "chars": 13,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "speed_stats",
+      "status": "info",
+      "failure_class": "",
+      "detail": "warm min/avg/max = 1.77/1.94/2.05s",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "min": 1.77,
+        "avg": 1.937,
+        "max": 2.054,
+        "n": 3
+      }
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "plen_short",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.029,
+      "chars": 13,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "plen_medium",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 4.072,
+      "chars": 826,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "plen_long",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 5.684,
+      "chars": 1355,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "system_prompt",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.307,
+      "chars": 169,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "json_simple",
+      "status": "failure",
+      "failure_class": "transient",
+      "detail": "TimeoutError (timeout/conn)",
+      "time_s": 31.541,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "json_complex",
+      "status": "failure",
+      "failure_class": "transient",
+      "detail": "TimeoutError (timeout/conn)",
+      "time_s": 31.562,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "ru_short",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.661,
+      "chars": 196,
+      "json_valid": null,
+      "cyrillic_ratio": 0.96,
+      "extra": {}
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "ru_medium",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 4.593,
+      "chars": 540,
+      "json_valid": null,
+      "cyrillic_ratio": 1.0,
+      "extra": {}
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "maxtok_min",
+      "status": "success",
+      "failure_class": "",
+      "detail": "1 chars at max_tokens=1",
+      "time_s": 1.986,
+      "chars": 1,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "maxtok_high",
+      "status": "skipped",
+      "failure_class": "",
+      "detail": "native API (non-OpenAI), skipped",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Cloudflare",
+      "dimension": "raw_fields",
+      "status": "skipped",
+      "failure_class": "",
+      "detail": "native API, skipped",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "speed#1",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.516,
+      "chars": 4,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "speed#2",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.465,
+      "chars": 4,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "speed#3",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.77,
+      "chars": 4,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "speed#4",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.318,
+      "chars": 4,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "speed#5",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.553,
+      "chars": 4,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "speed_stats",
+      "status": "info",
+      "failure_class": "",
+      "detail": "warm min/avg/max = 2.32/2.52/2.77s",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "min": 2.318,
+        "avg": 2.524,
+        "max": 2.77,
+        "n": 5
+      }
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "plen_short",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.216,
+      "chars": 4,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "plen_medium",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 3.496,
+      "chars": 4,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "plen_long",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 5.58,
+      "chars": 4,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "system_prompt",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.862,
+      "chars": 4,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "json_simple",
+      "status": "failure",
+      "failure_class": "capability",
+      "detail": "invalid JSON",
+      "time_s": 4.169,
+      "chars": 136,
+      "json_valid": false,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "json_complex",
+      "status": "failure",
+      "failure_class": "capability",
+      "detail": "invalid JSON",
+      "time_s": 6.006,
+      "chars": 420,
+      "json_valid": false,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "ru_short",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 3.785,
+      "chars": 203,
+      "json_valid": null,
+      "cyrillic_ratio": 0.97,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "ru_medium",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 4.4,
+      "chars": 328,
+      "json_valid": null,
+      "cyrillic_ratio": 1.0,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "maxtok_min",
+      "status": "success",
+      "failure_class": "",
+      "detail": "4 chars at max_tokens=1",
+      "time_s": 1.673,
+      "chars": 4,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "maxtok_high",
+      "status": "skipped",
+      "failure_class": "",
+      "detail": "native API (non-OpenAI), skipped",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "CloudflareQwen3",
+      "dimension": "raw_fields",
+      "status": "skipped",
+      "failure_class": "",
+      "detail": "native API, skipped",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "DeepSeek",
+      "dimension": "confirm",
+      "status": "failure",
+      "failure_class": "quota",
+      "detail": "PaymentRequired HTTP 402",
+      "time_s": 2.127,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "OpenRouter",
+      "dimension": "speed#1",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 22.399,
+      "chars": 271,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "OpenRouter",
+      "dimension": "speed#2",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 24.034,
+      "chars": 266,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "OpenRouter",
+      "dimension": "speed#3",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 22.415,
+      "chars": 281,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "OpenRouter",
+      "dimension": "speed_stats",
+      "status": "info",
+      "failure_class": "",
+      "detail": "warm min/avg/max = 22.40/22.95/24.03s",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "min": 22.399,
+        "avg": 22.949,
+        "max": 24.034,
+        "n": 3
+      }
+    },
+    {
+      "provider": "OpenRouter",
+      "dimension": "plen_short",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 27.547,
+      "chars": 286,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "OpenRouter",
+      "dimension": "plen_medium",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 32.818,
+      "chars": 1015,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "OpenRouter",
+      "dimension": "json_simple",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 22.68,
+      "chars": 160,
+      "json_valid": true,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "OpenRouter",
+      "dimension": "ru_short",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 9.6,
+      "chars": 207,
+      "json_valid": null,
+      "cyrillic_ratio": 0.97,
+      "extra": {}
+    },
+    {
+      "provider": "OpenRouter",
+      "dimension": "maxtok_min",
+      "status": "success",
+      "failure_class": "",
+      "detail": "0 chars at max_tokens=1",
+      "time_s": 24.999,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "OpenRouter",
+      "dimension": "tools",
+      "status": "success",
+      "failure_class": "",
+      "detail": "tool_call -> get_weather (finish=tool_calls)",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "tool_calls": true,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "provider": "OpenRouter",
+      "dimension": "raw_fields",
+      "status": "info",
+      "failure_class": "",
+      "detail": "msg=['content', 'reasoning', 'reasoning_details', 'refusal', 'role'] finish=length reasoning=True/False",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "message_keys": [
+          "content",
+          "reasoning",
+          "reasoning_details",
+          "refusal",
+          "role"
+        ],
+        "finish_reason": "length",
+        "has_reasoning": true,
+        "has_reasoning_content": false,
+        "usage_keys": [
+          "completion_tokens",
+          "completion_tokens_details",
+          "cost",
+          "cost_details",
+          "is_byok",
+          "prompt_tokens",
+          "prompt_tokens_details",
+          "total_tokens"
+        ]
+      }
+    },
+    {
+      "provider": "GitHubModels",
+      "dimension": "speed#1",
+      "status": "failure",
+      "failure_class": "quota",
+      "detail": "RateLimitError HTTP 429",
+      "time_s": 1.89,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "GitHubModels",
+      "dimension": "speed#2",
+      "status": "failure",
+      "failure_class": "quota",
+      "detail": "RateLimitError HTTP 429",
+      "time_s": 1.801,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "GitHubModels",
+      "dimension": "plen_short",
+      "status": "failure",
+      "failure_class": "quota",
+      "detail": "RateLimitError HTTP 429",
+      "time_s": 3.994,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "GitHubModels",
+      "dimension": "plen_medium",
+      "status": "failure",
+      "failure_class": "quota",
+      "detail": "RateLimitError HTTP 429",
+      "time_s": 1.846,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "GitHubModels",
+      "dimension": "json_simple",
+      "status": "failure",
+      "failure_class": "quota",
+      "detail": "RateLimitError HTTP 429",
+      "time_s": 1.837,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "GitHubModels",
+      "dimension": "ru_short",
+      "status": "failure",
+      "failure_class": "quota",
+      "detail": "RateLimitError HTTP 429",
+      "time_s": 1.767,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "GitHubModels",
+      "dimension": "maxtok_min",
+      "status": "failure",
+      "failure_class": "quota",
+      "detail": "RateLimitError HTTP 429",
+      "time_s": 1.914,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "GitHubModels",
+      "dimension": "tools",
+      "status": "info",
+      "failure_class": "",
+      "detail": "HTTP 429: {\"error\": {\"code\": \"RateLimitReached\", \"message\": \"Rate limit of 150 per 86400s exceeded for UserByModelByDay. Please wait 82986 seconds bef",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "http": 429
+      }
+    },
+    {
+      "provider": "GitHubModels",
+      "dimension": "raw_fields",
+      "status": "info",
+      "failure_class": "",
+      "detail": "HTTP 429",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Hyperbolic",
+      "dimension": "confirm",
+      "status": "failure",
+      "failure_class": "quota",
+      "detail": "PaymentRequired HTTP 402",
+      "time_s": 2.477,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Novita",
+      "dimension": "speed#1",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.288,
+      "chars": 15,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Novita",
+      "dimension": "speed#2",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.298,
+      "chars": 15,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Novita",
+      "dimension": "speed_stats",
+      "status": "info",
+      "failure_class": "",
+      "detail": "warm min/avg/max = 2.29/2.29/2.30s",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "min": 2.288,
+        "avg": 2.293,
+        "max": 2.298,
+        "n": 2
+      }
+    },
+    {
+      "provider": "Novita",
+      "dimension": "json_simple",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.738,
+      "chars": 234,
+      "json_valid": true,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Novita",
+      "dimension": "ru_short",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.661,
+      "chars": 239,
+      "json_valid": null,
+      "cyrillic_ratio": 0.97,
+      "extra": {}
+    },
+    {
+      "provider": "Novita",
+      "dimension": "maxtok_min",
+      "status": "success",
+      "failure_class": "",
+      "detail": "1 chars at max_tokens=1",
+      "time_s": 2.324,
+      "chars": 1,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "speed#1",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.54,
+      "chars": 223,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "speed#2",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.512,
+      "chars": 212,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "speed#3",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.555,
+      "chars": 215,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "speed#4",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.52,
+      "chars": 207,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "speed#5",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.604,
+      "chars": 212,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "speed_stats",
+      "status": "info",
+      "failure_class": "",
+      "detail": "warm min/avg/max = 1.51/1.55/1.60s",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "min": 1.512,
+        "avg": 1.546,
+        "max": 1.604,
+        "n": 5
+      }
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "plen_short",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 1.52,
+      "chars": 219,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "plen_medium",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 5.422,
+      "chars": 1025,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "plen_long",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 5.581,
+      "chars": 1118,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "system_prompt",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 2.892,
+      "chars": 550,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "json_simple",
+      "status": "failure",
+      "failure_class": "capability",
+      "detail": "invalid JSON",
+      "time_s": 5.684,
+      "chars": 844,
+      "json_valid": false,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "json_complex",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 15.831,
+      "chars": 491,
+      "json_valid": true,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "ru_short",
+      "status": "failure",
+      "failure_class": "capability",
+      "detail": "not russian (cyr=0.27)",
+      "time_s": 5.675,
+      "chars": 1071,
+      "json_valid": null,
+      "cyrillic_ratio": 0.27,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "ru_medium",
+      "status": "success",
+      "failure_class": "",
+      "detail": "",
+      "time_s": 10.262,
+      "chars": 533,
+      "json_valid": null,
+      "cyrillic_ratio": 1.0,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "maxtok_min",
+      "status": "success",
+      "failure_class": "",
+      "detail": "0 chars at max_tokens=1",
+      "time_s": 0.196,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {}
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "maxtok_high",
+      "status": "info",
+      "failure_class": "",
+      "detail": "accepted max_tokens=200000 (silent cap)",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "http": 200
+      }
+    },
+    {
+      "provider": "Ollama-Gemma4-E2B",
+      "dimension": "raw_fields",
+      "status": "info",
+      "failure_class": "",
+      "detail": "msg=['content', 'reasoning', 'role'] finish=length reasoning=True/False",
+      "time_s": 0.0,
+      "chars": 0,
+      "json_valid": null,
+      "cyrillic_ratio": null,
+      "extra": {
+        "message_keys": [
+          "content",
+          "reasoning",
+          "role"
+        ],
+        "finish_reason": "length",
+        "has_reasoning": true,
+        "has_reasoning_content": false,
+        "usage_keys": [
+          "completion_tokens",
+          "prompt_tokens",
+          "total_tokens"
+        ]
+      }
+    }
+  ]
+}
