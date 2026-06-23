@@ -92,6 +92,10 @@ class OpenAICompatibleProvider(AIProviderBase):
     TIMEOUT: ClassVar[float] = 30.0
     TAGS: ClassVar[set[str]] = set()
     MAX_OUTPUT_TOKENS: ClassVar[int] = 2048
+    # cw9: reasoning models put output in message.reasoning; a small max_tokens
+    # lets reasoning consume the whole budget, leaving content empty. Floor the
+    # output budget for providers tagged "reasoning".
+    REASONING_MIN_OUTPUT_TOKENS: ClassVar[int] = 4096
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         """
@@ -137,10 +141,16 @@ class OpenAICompatibleProvider(AIProviderBase):
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
+        # cw9: floor output budget for reasoning-tagged providers so the reasoning
+        # chain does not starve the actual answer at small max_tokens.
+        max_tokens = kwargs.get("max_tokens", self.MAX_OUTPUT_TOKENS)
+        if "reasoning" in self.TAGS and max_tokens < self.REASONING_MIN_OUTPUT_TOKENS:
+            max_tokens = self.REASONING_MIN_OUTPUT_TOKENS
+
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
-            "max_tokens": kwargs.get("max_tokens", self.MAX_OUTPUT_TOKENS),
+            "max_tokens": max_tokens,
             "temperature": kwargs.get("temperature", 0.7),
             "top_p": kwargs.get("top_p", 0.9),
         }
@@ -165,13 +175,19 @@ class OpenAICompatibleProvider(AIProviderBase):
         into reasoning_content while leaving content empty.
         """
         if "choices" in result and len(result["choices"]) > 0:
-            message = result["choices"][0].get("message", {})
+            choice = result["choices"][0]
+            message = choice.get("message", {})
+            finish_reason = choice.get("finish_reason")
             content = message.get("content", "")
             if isinstance(content, list):
                 content = " ".join(str(item) for item in content)
             content = str(content).strip() if content is not None else ""
-            # Fallback to reasoning_content / reasoning for reasoning models
-            if not content:
+            # cw9: fall back to reasoning ONLY when the model actually finished
+            # (finish_reason != "length"). On a length-truncated empty content the
+            # reasoning is the unfinished chain-of-thought, not the answer — return
+            # empty so process_prompt treats it as a failure and falls back to the
+            # next provider instead of leaking raw reasoning to the user.
+            if not content and finish_reason != "length":
                 reasoning = (
                     message.get("reasoning_content", "")
                     or message.get("reasoning", "")

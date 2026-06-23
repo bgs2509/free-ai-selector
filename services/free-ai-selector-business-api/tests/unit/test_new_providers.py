@@ -571,3 +571,111 @@ class TestOpenRouterTimeout:
 
         provider = GroqProvider(api_key="test-key")
         assert provider.timeout == 30.0
+
+
+@pytest.mark.unit
+class TestReasoningParseGate:
+    """cw9: _parse_response must not leak reasoning when finish_reason=length."""
+
+    def _provider(self):
+        from app.infrastructure.ai_providers.groq import GroqProvider
+
+        return GroqProvider(api_key="test-key")
+
+    def test_length_empty_content_returns_empty(self):
+        """finish_reason=length + empty content + reasoning present -> '' (no leak)."""
+        provider = self._provider()
+        result = {
+            "choices": [
+                {
+                    "finish_reason": "length",
+                    "message": {"role": "assistant", "content": "", "reasoning": "thinking..."},
+                }
+            ]
+        }
+        assert provider._parse_response(result) == ""
+
+    def test_stop_empty_content_falls_back_to_reasoning(self):
+        """finish_reason=stop + empty content + reasoning -> reasoning (model finished)."""
+        provider = self._provider()
+        result = {
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {"content": "", "reasoning": "the final answer"},
+                }
+            ]
+        }
+        assert provider._parse_response(result) == "the final answer"
+
+    def test_stop_empty_content_falls_back_to_reasoning_content(self):
+        """reasoning_content variant also honoured when finish_reason != length."""
+        provider = self._provider()
+        result = {
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {"content": "", "reasoning_content": "rc answer"},
+                }
+            ]
+        }
+        assert provider._parse_response(result) == "rc answer"
+
+    def test_normal_content_returned(self):
+        """Real content is always returned regardless of finish_reason."""
+        provider = self._provider()
+        result = {"choices": [{"finish_reason": "stop", "message": {"content": "hello"}}]}
+        assert provider._parse_response(result) == "hello"
+
+    def test_length_with_content_returns_content(self):
+        """Truncated (length) but non-empty content is still returned as-is."""
+        provider = self._provider()
+        result = {
+            "choices": [
+                {"finish_reason": "length", "message": {"content": "partial answer"}}
+            ]
+        }
+        assert provider._parse_response(result) == "partial answer"
+
+
+@pytest.mark.unit
+class TestReasoningMaxTokensFloor:
+    """cw9: reasoning-tagged providers floor small max_tokens to avoid starving the answer."""
+
+    def test_base_reasoning_floor_constant(self):
+        from app.infrastructure.ai_providers.base import OpenAICompatibleProvider
+
+        assert OpenAICompatibleProvider.REASONING_MIN_OUTPUT_TOKENS == 4096
+
+    def test_reasoning_provider_bumps_small_max_tokens(self):
+        from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
+
+        provider = OpenRouterProvider(api_key="test-key")
+        assert "reasoning" in provider.TAGS
+        payload = provider._build_payload("hi", max_tokens=256)
+        assert payload["max_tokens"] == 4096
+
+    def test_reasoning_provider_preserves_large_max_tokens(self):
+        from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
+
+        provider = OpenRouterProvider(api_key="test-key")
+        payload = provider._build_payload("hi", max_tokens=8000)
+        assert payload["max_tokens"] == 8000
+
+    def test_non_reasoning_provider_preserves_small_max_tokens(self):
+        """Groq (no 'reasoning' tag) is unaffected by the floor."""
+        from app.infrastructure.ai_providers.groq import GroqProvider
+
+        provider = GroqProvider(api_key="test-key")
+        assert "reasoning" not in provider.TAGS
+        payload = provider._build_payload("hi", max_tokens=256)
+        assert payload["max_tokens"] == 256
+
+    def test_cerebras_reasoning_floor(self):
+        """Cerebras (zai-glm-4.7, reasoning-tagged) also floors small budgets."""
+        from app.infrastructure.ai_providers.cerebras import CerebrasProvider
+
+        provider = CerebrasProvider(api_key="test-key")
+        assert "reasoning" in provider.TAGS
+        payload = provider._build_payload("hi", max_tokens=100)
+        assert payload["max_tokens"] == 4096
