@@ -80,7 +80,7 @@ from app.infrastructure.http_clients.data_api_client import DataAPIClient
 from app.infrastructure.ai_providers.base import AIProviderBase
 from app.infrastructure.ai_providers.groq import GroqProvider
 from app.infrastructure.ai_providers.deepseek import DeepSeekProvider
-# ... other imports (14 total providers)
+# ... other imports (13 total providers)
 
 logger = logging.getLogger(__name__)
 
@@ -104,10 +104,11 @@ class ProcessPromptUseCase:
             data_api_client: HTTP клиент для Data API
         """
         self.data_api_client = data_api_client
-        # 14 verified free-tier providers (F003 + F008 SSOT)
+        # 13 verified providers (F003 + F008 SSOT)
         # Providers loaded from registry (see registry.py)
-        # Existing: Groq, Cerebras, SambaNova, HuggingFace, Cloudflare
-        # New F003: DeepSeek, OpenRouter, GitHubModels, Fireworks,
+        # Existing: Groq, Cerebras, SambaNova, HuggingFace, Cloudflare, CloudflareQwen3
+        # New F003: DeepSeek, OpenRouter, GitHubModels, Fireworks, Hyperbolic, Novita
+        # Local: Ollama-Gemma4-E2B
         self.providers: dict[str, AIProviderBase] = ProviderRegistry.get_all_providers()
 
     async def execute(self, request: PromptRequest) -> PromptResponse:

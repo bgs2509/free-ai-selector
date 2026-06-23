@@ -130,11 +130,12 @@ class ProcessPromptUseCase:
 
     def __init__(self, data_api_client: DataAPIClient):
         self.data_api_client = data_api_client
-        # 14 providers loaded from ProviderRegistry (F008 SSOT)
+        # 13 providers loaded from ProviderRegistry (F008 SSOT)
         # Existing: Groq, Cerebras, SambaNova, HuggingFace,
-        #           Cloudflare, CloudflareGemma3, CloudflareQwen3
+        #           Cloudflare, CloudflareQwen3
         # F003: DeepSeek, OpenRouter, GitHubModels, Fireworks,
-        #       Hyperbolic, Novita, Scaleway
+        #       Hyperbolic, Novita
+        # Local: Ollama-Gemma4-E2B
 
     async def execute(self, request: PromptRequest) -> PromptResponse:
         """Execute prompt processing.
@@ -186,7 +187,6 @@ class ProcessPromptUseCase:
 | `FIREWORKS_API_KEY` | Business API | Fireworks API key (F003) |
 | `HYPERBOLIC_API_KEY` | Business API | Hyperbolic API key (F003) |
 | `NOVITA_API_KEY` | Business API | Novita API key (F003) |
-| `SCALEWAY_API_KEY` | Business API | Scaleway API key (F003) |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot | Bot token from @BotFather |
 
 ---

@@ -21,7 +21,7 @@ Free AI Selector is a **reliability-based AI routing platform** that automatical
 ✅ **Dual-Channel Access**: REST API + Telegram Bot
 ✅ **Smart Selection**: Automatic model selection based on reliability metrics
 ✅ **Dual Monitoring**: Real-time metrics from actual requests + hourly synthetic checks
-✅ **6 Free AI Providers**: No credit card required - Google Gemini, Groq, Cerebras, SambaNova, HuggingFace, Cloudflare
+✅ **13 Free AI Providers**: No credit card required - Groq, Cerebras, SambaNova, HuggingFace, Cloudflare, CloudflareQwen3, DeepSeek, OpenRouter, GitHubModels, Fireworks, Hyperbolic, Novita, Ollama
 ✅ **Production-Ready**: Level 2 maturity with health checks, JSON logging, and integration tests
 
 ---
@@ -240,13 +240,13 @@ Where:
 
 ## 🔌 Free AI Providers
 
-All 6 providers are **100% free with NO credit card required**:
+All 13 providers are **100% free with NO credit card required**:
 
 | Provider | Model | Free Tier Limits | Speed | Credit Card |
 |----------|-------|------------------|-------|-------------|
 | **Google Gemini** | Gemini 2.5 Flash | 10 RPM, 250 RPD | Fast | ❌ Not Required |
 | **Groq** | Llama 3.3 70B Versatile | 20 RPM, 14,400 RPD | 1,800 tokens/sec | ❌ Not Required |
-| **Cerebras** | Llama 3.3 70B | 1M tokens/day, 30 RPM | 2,500+ tokens/sec | ❌ Not Required |
+| **Cerebras** | GLM-4.7 (zai-glm-4.7) | 1M tokens/day, 30 RPM | 2,500+ tokens/sec | ❌ Not Required |
 | **SambaNova** | Meta-Llama-3.3-70B-Instruct | 20 RPM | 430 tokens/sec | ❌ Not Required |
 | **HuggingFace** | Meta-Llama-3-8B-Instruct | Rate limited | Moderate | ❌ Not Required |
 | **Cloudflare** | Llama 3.3 70B FP8 Fast | 10,000 Neurons/day | Fast | ❌ Not Required |

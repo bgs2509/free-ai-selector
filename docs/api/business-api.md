@@ -295,7 +295,7 @@ curl http://localhost:8000/api/v1/models/stats
       "is_active": true
     }
   ],
-  "total_models": 14
+  "total_models": 13
 }
 ```
 
@@ -348,13 +348,13 @@ curl -X POST http://localhost:8000/api/v1/providers/test
 
 ```json
 {
-  "total_providers": 14,
+  "total_providers": 13,
   "successful": 12,
-  "failed": 2,
+  "failed": 1,
   "results": [
     {
       "provider": "Cerebras",
-      "model": "Llama 3.3 70B",
+      "model": "zai-glm-4.7",
       "status": "success",
       "response_time": 0.87,
       "error": null

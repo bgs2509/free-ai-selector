@@ -33,7 +33,7 @@ reliability_score = (success_rate × 0.6) + (speed_score × 0.4)
 
 Health Worker каждый час проверяет все провайдеры и обновляет статистику.
 
-### 4. 6 бесплатных провайдеров
+### 4. 13 бесплатных провайдеров
 
 Все провайдеры работают без кредитной карты:
 
@@ -41,11 +41,11 @@ Health Worker каждый час проверяет все провайдеры
 |-----------|--------|-------------|
 | DeepSeek | DeepSeek Chat | 60 RPM, высокое качество |
 | Groq | Llama 3.3 70B | До 1800 tokens/sec |
-| Cerebras | Llama 3.3 70B | 1M tokens/day |
+| Cerebras | GLM-4.7 (`zai-glm-4.7`) | 1M tokens/day, fast reasoning |
 | SambaNova | Llama 3.3 70B | 20 RPM |
 | HuggingFace | Llama 3 8B | 300+ моделей |
 | Cloudflare | Llama 3.3 70B | 10K neurons/day |
-| + 8 других F003 | Различные | См. документацию |
+| + 7 других | Различные | См. документацию |
 
 ## Архитектура
 
@@ -69,7 +69,7 @@ graph TB
         S[SambaNova]
         H[HuggingFace]
         CF[Cloudflare]
-        Others[+ 8 других F003]
+        Others[+ 7 других]
     end
 
     subgraph Storage

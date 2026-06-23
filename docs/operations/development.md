@@ -235,8 +235,9 @@ from app.infrastructure.ai_providers.newprovider import NewProvider
 class ProcessPromptUseCase:
     def __init__(self, data_api_client: DataAPIClient):
         # F008 SSOT: Providers loaded from registry
-        # 14 total providers: Groq, Cerebras, SambaNova, HuggingFace, Cloudflare,
-        # DeepSeek, OpenRouter, GitHubModels, Fireworks, Hyperbolic,
+        # 13 total providers: Groq, Cerebras, SambaNova, HuggingFace, Cloudflare,
+        # CloudflareQwen3, DeepSeek, OpenRouter, GitHubModels, Fireworks,
+        # Hyperbolic, Novita, Ollama
         self.providers: dict[str, AIProviderBase] = ProviderRegistry.get_all_providers()
 
         # To add a new provider:
