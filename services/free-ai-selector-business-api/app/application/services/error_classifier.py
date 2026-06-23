@@ -10,7 +10,7 @@ Classification rules:
 - 5xx → ServerError
 - Timeout → TimeoutError
 - 401, 402, 403 → AuthenticationError
-- 400, 404, 422 → ValidationError
+- 400, 404, 410, 422 → ValidationError
 """
 
 from email.utils import parsedate_to_datetime
@@ -95,6 +95,15 @@ def classify_error(exception: Exception) -> ProviderError:
         if status_code == 404:
             return ValidationError(
                 message=f"Endpoint or model not found: {str(exception)}",
+                original_exception=exception,
+            )
+
+        # v88: Gone (410) — resource permanently removed, must NOT be retried.
+        # Classified as permanent (ValidationError) so the model gets a cooldown
+        # instead of falling through to generic ProviderError (treated as transient).
+        if status_code == 410:
+            return ValidationError(
+                message=f"Resource permanently gone: {str(exception)}",
                 original_exception=exception,
             )
 

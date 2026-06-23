@@ -164,6 +164,21 @@ class TestClassifyError:
         assert isinstance(result, ValidationError)
         assert "not found" in result.message.lower()
 
+    def test_classify_410_as_validation_error(self):
+        """v88: HTTP 410 Gone → ValidationError (permanent, NOT retried)."""
+        request = Request("POST", "https://api.test.com")
+        response = Response(410, request=request)
+        exception = httpx.HTTPStatusError(
+            "Gone", request=request, response=response
+        )
+
+        result = classify_error(exception)
+
+        assert isinstance(result, ValidationError)
+        assert "gone" in result.message.lower()
+        # Must be treated as permanent, not retried
+        assert is_retryable(result) is False
+
     def test_classify_unknown_exception_as_provider_error(self):
         """Test that unknown exceptions are classified as generic ProviderError."""
         exception = RuntimeError("Some unknown error")
