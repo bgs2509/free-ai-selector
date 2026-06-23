@@ -183,7 +183,6 @@ ai_providers/
 ├── fireworks.py         # FireworksProvider (F003)
 ├── hyperbolic.py        # HyperbolicProvider (F003)
 ├── novita.py            # NovitaProvider (F003)
-├── kluster.py           # KlusterProvider (F003)
 ```
 
 ### Добавление нового провайдера
@@ -218,6 +217,7 @@ curl -X POST http://localhost:8000/api/v1/providers/test
 - **Scaleway удалён** — провайдер признан unhealthy, файл `scaleway.py` удалён.
 - **CloudflareGemma3 удалён** — модель `@cf/google/gemma-3-12b-it` отдаёт `410 Gone`.
 - **Cerebras переведён на `zai-glm-4.7`** (fast reasoning) — Cerebras прекратил поддержку Llama-моделей 2026-06-20.
+- **Kluster и Nebius удалены ранее** (v2.9.0) — файлы `kluster.py`/`nebius.py` исключены из текущего дерева провайдеров.
 
 На 2026-06-23 активны 13 провайдеров: Groq, Cerebras, SambaNova, HuggingFace, Cloudflare, CloudflareQwen3, DeepSeek, OpenRouter, GitHubModels, Fireworks, Hyperbolic, Novita, Ollama-Gemma4-E2B.
 

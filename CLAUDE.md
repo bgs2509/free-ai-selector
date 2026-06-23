@@ -89,7 +89,7 @@ docker compose exec free-ai-selector-data-postgres-api pytest tests/unit/test_do
 
 Все OpenAI-совместимые провайдеры наследуют от `base.py:OpenAICompatibleProvider`. Cloudflare имеет собственную реализацию.
 
-**Reasoning модели** (e.g. Fireworks `gpt-oss-20b`): ответ может быть в `reasoning_content` вместо `content`. `_parse_response()` автоматически использует `reasoning_content` как fallback. Дефолт `max_tokens=2048` обеспечивает достаточно токенов для reasoning + content.
+**Reasoning модели** (тег `reasoning`: Cerebras `zai-glm-4.7`, OpenRouter `deepseek-r1`): ответ кладётся в `message.reasoning` / `reasoning_content`. `_parse_response()` использует reasoning как fallback ТОЛЬКО при `finish_reason != "length"` — при обрыве по длине с пустым `content` возвращается пустая строка, `process_prompt` поднимает `ProviderError` и роутер уходит на следующий провайдер (защита от утечки сырой chain-of-thought). `_build_payload()` поднимает `max_tokens` до `REASONING_MIN_OUTPUT_TOKENS = 4096` для провайдеров с тегом `reasoning`, чтобы цепочка рассуждений не съедала бюджет ответа при малом `max_tokens`.
 
 ### Добавление нового провайдера
 

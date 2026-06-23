@@ -95,10 +95,7 @@ Edit `.env` and set your API keys:
 
 ```bash
 # Required: AI Provider API Keys (all 100% free, no credit card required)
-
-# Google AI Studio - https://aistudio.google.com/apikey
-# Free tier: 10 RPM, 250 RPD
-GOOGLE_AI_STUDIO_API_KEY=your_google_ai_studio_key_here
+# See .env.example for the full set of provider keys.
 
 # Groq - https://console.groq.com/keys
 # Free tier: 20 RPM, 14,400 RPD, 1,800 tokens/sec
@@ -244,23 +241,36 @@ All 13 providers are **100% free with NO credit card required**:
 
 | Provider | Model | Free Tier Limits | Speed | Credit Card |
 |----------|-------|------------------|-------|-------------|
-| **Google Gemini** | Gemini 2.5 Flash | 10 RPM, 250 RPD | Fast | ❌ Not Required |
 | **Groq** | Llama 3.3 70B Versatile | 20 RPM, 14,400 RPD | 1,800 tokens/sec | ❌ Not Required |
 | **Cerebras** | GLM-4.7 (zai-glm-4.7) | 1M tokens/day, 30 RPM | 2,500+ tokens/sec | ❌ Not Required |
 | **SambaNova** | Meta-Llama-3.3-70B-Instruct | 20 RPM | 430 tokens/sec | ❌ Not Required |
 | **HuggingFace** | Meta-Llama-3-8B-Instruct | Rate limited | Moderate | ❌ Not Required |
 | **Cloudflare** | Llama 3.3 70B FP8 Fast | 10,000 Neurons/day | Fast | ❌ Not Required |
+| **CloudflareQwen3** | Qwen3 (Workers AI) | 10,000 Neurons/day | Fast | ❌ Not Required |
+| **DeepSeek** | DeepSeek Chat | See provider docs | Moderate | ❌ Not Required |
+| **OpenRouter** | Free-tier routed models | See provider docs | Varies | ❌ Not Required |
+| **GitHubModels** | GitHub Models catalog | See provider docs | Varies | ❌ Not Required |
+| **Fireworks** | gpt-oss-20b (reasoning) | See provider docs | Fast | ❌ Not Required |
+| **Hyperbolic** | Open-source models | See provider docs | Fast | ❌ Not Required |
+| **Novita** | Open-source models | See provider docs | Moderate | ❌ Not Required |
+| **Ollama** | Gemma4 E2B (local) | Local — unlimited | Depends on host | ❌ Not Required |
 
 ### Getting API Keys
 
-1. **Google AI Studio**: Visit https://aistudio.google.com/apikey - instant API key generation
-2. **Groq**: Sign up at https://console.groq.com/keys - instant access to ultra-fast LPU
-3. **Cerebras**: Register at https://cloud.cerebras.ai/ - world's fastest AI inference
-4. **SambaNova**: Create account at https://cloud.sambanova.ai/ - access to Llama 405B
-5. **HuggingFace**: Get token at https://huggingface.co/settings/tokens - free inference API
-6. **Cloudflare**: Dashboard at https://dash.cloudflare.com/ - need Account ID + API Token
+1. **Groq**: Sign up at https://console.groq.com/keys - instant access to ultra-fast LPU
+2. **Cerebras**: Register at https://cloud.cerebras.ai/ - world's fastest AI inference
+3. **SambaNova**: Create account at https://cloud.sambanova.ai/ - access to large Llama models
+4. **HuggingFace**: Get token at https://huggingface.co/settings/tokens - free inference API
+5. **Cloudflare** (Cloudflare + CloudflareQwen3): Dashboard at https://dash.cloudflare.com/ - need Account ID + API Token
+6. **DeepSeek**: Get key at https://platform.deepseek.com/ - free tier available
+7. **OpenRouter**: Sign up at https://openrouter.ai/keys - access free-tier routed models
+8. **GitHub Models**: Use a GitHub PAT at https://github.com/marketplace/models
+9. **Fireworks**: Register at https://fireworks.ai/ - serverless inference
+10. **Hyperbolic**: Sign up at https://app.hyperbolic.xyz/ - open-source model inference
+11. **Novita**: Create account at https://novita.ai/ - open-source model inference
+12. **Ollama**: Local provider — run [Ollama](https://ollama.com/) on the host, no API key needed
 
-**Note**: All providers offer instant API key generation without payment information. Simply sign up with email and start using immediately.
+**Note**: All hosted providers offer instant API key generation without payment information. Ollama runs locally and needs no key.
 
 ---
 
@@ -437,12 +447,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Built with [AIDD-MVP Generator](.aidd/) - AI-Driven Development framework for microservices
 - Free AI providers (no credit card required):
-  - [Google AI Studio](https://aistudio.google.com/) - Gemini models
   - [Groq](https://groq.com/) - Ultra-fast LPU inference
   - [Cerebras](https://cerebras.ai/) - Wafer-Scale Engine, world's fastest AI
-  - [SambaNova](https://sambanova.ai/) - Llama 405B access
+  - [SambaNova](https://sambanova.ai/) - large Llama model access
   - [HuggingFace](https://huggingface.co/) - Free inference API
-  - [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) - Serverless GPU inference
+  - [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) - Serverless GPU inference (Cloudflare + CloudflareQwen3)
+  - [DeepSeek](https://platform.deepseek.com/) - DeepSeek Chat
+  - [OpenRouter](https://openrouter.ai/) - free-tier model routing
+  - [GitHub Models](https://github.com/marketplace/models) - GitHub Models catalog
+  - [Fireworks AI](https://fireworks.ai/) - serverless inference
+  - [Hyperbolic](https://hyperbolic.xyz/) - open-source model inference
+  - [Novita AI](https://novita.ai/) - open-source model inference
+  - [Ollama](https://ollama.com/) - local model inference (Gemma4 E2B)
 
 ---
 

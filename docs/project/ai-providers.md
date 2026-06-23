@@ -161,10 +161,11 @@ Free AI Selector интегрирован с 13 бесплатными AI-про
 Ключевые `ClassVar` атрибуты:
 - `API_KEY_ENV` — имя env переменной для API ключа
 - `MAX_OUTPUT_TOKENS` — максимум токенов вывода (per-provider, по умолчанию 2048)
+- `REASONING_MIN_OUTPUT_TOKENS` — нижний порог `max_tokens` для провайдеров с тегом `reasoning` (4096)
 - `TAGS` — набор тегов для фильтрации (`set[str]`)
 - `SUPPORTS_RESPONSE_FORMAT` — поддержка JSON response_format
 
-**Reasoning модели**: ответ может быть в `reasoning_content` вместо `content`. Метод `_parse_response()` автоматически использует `reasoning_content` как fallback.
+**Reasoning модели** (тег `reasoning`): ответ кладётся в `message.reasoning` / `reasoning_content`. `_parse_response()` использует reasoning как fallback ТОЛЬКО при `finish_reason != "length"`; при обрыве по длине с пустым `content` возвращается пустая строка, и роутер уходит на следующий провайдер (защита от утечки сырой chain-of-thought). `_build_payload()` поднимает `max_tokens` до `REASONING_MIN_OUTPUT_TOKENS = 4096`, чтобы рассуждения не съедали бюджет ответа при малом `max_tokens`.
 
 ---
 

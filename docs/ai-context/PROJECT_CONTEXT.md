@@ -118,7 +118,7 @@ class NewProvider(OpenAICompatibleProvider):
 
 **Доступные теги:** `fast`, `json`, `code`, `reasoning`, `russian`, `tools`, `lightweight`
 
-**Reasoning модели:** ответ может быть в `reasoning_content` вместо `content`. `_parse_response()` автоматически использует `reasoning_content` как fallback.
+**Reasoning модели** (тег `reasoning`): ответ кладётся в `message.reasoning` / `reasoning_content`. `_parse_response()` использует reasoning как fallback ТОЛЬКО при `finish_reason != "length"`; при обрыве по длине с пустым `content` возвращается пустая строка → роутер уходит на следующий провайдер (защита от утечки сырой chain-of-thought). `_build_payload()` поднимает `max_tokens` до `REASONING_MIN_OUTPUT_TOKENS = 4096` для таких провайдеров.
 
 ### 4. Use Case Pattern
 
