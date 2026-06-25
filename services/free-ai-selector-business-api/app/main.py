@@ -57,6 +57,12 @@ RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
 RATE_LIMIT_PERIOD = int(os.getenv("RATE_LIMIT_PERIOD", "60"))
 
 # Root path for reverse proxy (для работы за nginx-proxy)
+# За nginx Swagger UI читает openapi_url с публичной стороны (до срезания
+# префикса проксёй), поэтому он обязан содержать префикс. Локально без
+# ROOT_PATH остаётся стандартный "/openapi.json".
+ROOT_PATH = os.getenv("ROOT_PATH", "")
+_openapi_url = f"{ROOT_PATH}/openapi.json" if ROOT_PATH else "/openapi.json"
+
 DEFAULT_RUN_ID = os.getenv("RUN_ID", "").strip() or None
 DEFAULT_RUN_SOURCE = os.getenv("RUN_SOURCE", "").strip() or None
 DEFAULT_RUN_SCENARIO = os.getenv("RUN_SCENARIO", "").strip() or None
@@ -129,14 +135,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 # FastAPI Application
 # =============================================================================
 
-# root_path and dynamic openapi_url removed: nginx already strips
-# /free-ai-selector/ prefix via rewrite, so the app sees plain paths.
+# За nginx ROOT_PATH (например /free-ai-selector) нужен, чтобы Swagger UI
+# тянул спецификацию по /free-ai-selector/openapi.json, а не по корневому
+# /openapi.json (который прокси не маршрутизирует -> 404). Симметрично Data API.
 app = FastAPI(
     title="Free AI Selector - Business API",
     description="Бизнес-логика и интеграция с AI-провайдерами",
     version=SERVICE_VERSION,
     docs_url="/docs",
     redoc_url="/redoc",
+    openapi_url=_openapi_url,
+    root_path=ROOT_PATH,
     lifespan=lifespan,
 )
 
