@@ -1,10 +1,36 @@
 # ADR-0003: Reliability Rating Formula v2 (capability-gated, smoothed, multiplicative)
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-06-25)
 - **Date:** 2026-06-25
 - **Deciders:** bgs2509
 - **Related issues:** `free-ai-selector-ex9` (Fireworks → all_models_failed without fallback), `free-ai-selector-bmm` (implementation)
 - **Supersedes:** ADR-0001 (`reliability_score = success_rate·0.6 + speed_score·0.4`); also replaces the `effective_reliability_score` explore-first scheme built on top of it
+
+---
+
+## Ratified parameters & decisions (bmm Brainstorming gate, 2026-06-25)
+
+Pinned defaults (all env-overridable):
+
+| Tunable | Value | Rationale |
+|---|---|---|
+| Laplace α / β | 1 / 1 | symmetric prior → no-data quality exactly 0.5 |
+| `HALF_LIFE_HOURS` | 34 | matches current `decay_per_hour=0.98` (0.98³⁴≈0.5) — inherits today's decay |
+| `FAST_FLOOR` | 0.5s | speed saturates to 1.0 at/below |
+| `SLOW_CEIL` | 20s | speed → 0 at/above (ADR §2 worked example) |
+| UCB `C` | 0.2 | bounded, decaying benefit-of-doubt |
+| `UCB_BONUS_CAP` | 0.15 | hard cap on the UCB term (added during impl — see note) so a no-data model is explored but never DOMINATES a healthy one |
+| `NO_DATA_SPEED` | 0.5 | neutral speed for a model with no recent data (avoids a free 1.0 speed credit) |
+| `MINIMUM_RELIABILITY_THRESHOLD` | 0.3 | applied to the v2 `base` score; the `request_count==0` bypass is **removed** (UCB already covers exploration) |
+
+Decisions:
+1. **Capability gate:** caller `tags` are a **HARD** filter (fail-fast "no capable model" when zero match). `response_format` JSON stays **SOFT** (keep the existing system-prompt degradation path).
+2. **Hard/soft failure split:** `fail_hard = success=false AND http_status != 429` (429 excluded from quality). No new column — `http_status` already exists (migration 0005).
+3. **`decision_reason`** new values: `laplace_ucb` (has recent data) / `explore_ucb` (sparse data). Computed-on-read, no migration.
+4. **TAGS backfill (in scope):** SambaNova `{json, russian, code}`, DeepSeek `{json, code, russian}`, Hyperbolic `{code, russian}` (no `json` — `SUPPORTS_RESPONSE_FORMAT=False`).
+5. **Backward-compat:** `/models` field names/types unchanged; only `effective_reliability_score` semantics change. No DB migration.
+
+**Impl-time deviation (bmm Phase-A, approved 2026-06-25):** a TDD ranking test revealed that the raw UCB term (`C·√(ln(total)/(n+1))`) reaches ≈0.6 for a no-data model on a large request pool — enough to outrank a proven-healthy model, i.e. a softer recurrence of the explore-first bug. Two guards were added: `UCB_BONUS_CAP=0.15` and `NO_DATA_SPEED=0.5` (a no-data model no longer gets a free 1.0 speed credit from a 0/unknown median latency). Net effect: a no-data model ranks mid-pack (~0.52) — explored, but below healthy providers.
 
 ---
 

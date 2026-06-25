@@ -58,13 +58,15 @@ class TestUnifiedModelToResponse:
         assert response.decision_reason is None
 
     def test_model_to_response_with_recent_stats(self):
-        """Test _model_to_response with decay-weighted recent_stats populates recent fields."""
+        """bmm/ADR-0003: _model_to_response populates v2 recent fields (laplace_ucb)."""
         model = self._create_test_model()
         recent_stats: Dict[int, Dict[str, Any]] = {
             1: {
                 "request_count": 10,
                 "weighted_success_rate": 0.8,
-                "weighted_avg_response_time": 1.5,
+                "w_success": 8.0,
+                "w_fail_hard": 2.0,
+                "median_response_time": 1.5,
             }
         }
 
@@ -74,25 +76,26 @@ class TestUnifiedModelToResponse:
         assert response.id == 1
         assert response.name == "Test Model"
 
-        # Recent fields should be calculated from decay-weighted stats
+        # Recent fields calculated from v2 (Laplace + multiplicative + UCB)
         assert response.recent_success_rate == 0.8
         assert response.recent_request_count == 10
         assert response.recent_reliability_score is not None
         assert response.effective_reliability_score is not None
-        assert response.decision_reason == "decay_weighted_score"
+        assert response.decision_reason == "laplace_ucb"
 
     def test_model_to_response_with_empty_recent_stats(self):
-        """Test _model_to_response with empty recent_stats uses explore default."""
+        """bmm/ADR-0003: no recent data → ~0.5 (NOT 1.0), decision_reason explore_ucb."""
         model = self._create_test_model()
         recent_stats: Dict[int, Dict[str, Any]] = {}  # No stats for model id=1
 
         response = _model_to_response(model, recent_stats)
 
-        # Нет данных — explore: score=1.0
+        # No data → quality 0.5, neutral speed 0.5 → base 0.375 (NOT the old 1.0)
         assert response.recent_success_rate is None
         assert response.recent_request_count == 0
-        assert response.decision_reason == "no_data_explore"
-        assert response.effective_reliability_score == 1.0
+        assert response.decision_reason == "explore_ucb"
+        assert response.effective_reliability_score == pytest.approx(0.375, abs=1e-3)
+        assert response.effective_reliability_score < 1.0
 
 
 class TestCalculateRecentMetrics:
@@ -116,13 +119,15 @@ class TestCalculateRecentMetrics:
         )
 
     def test_calculate_recent_metrics_with_data(self):
-        """Test decay-weighted metrics calculation with data."""
+        """bmm/ADR-0003: v2 metrics with data → decision_reason laplace_ucb."""
         model = self._create_test_model()
         recent_stats = {
             1: {
                 "request_count": 5,
                 "weighted_success_rate": 0.8,
-                "weighted_avg_response_time": 2.0,
+                "w_success": 4.0,
+                "w_fail_hard": 1.0,
+                "median_response_time": 2.0,
             }
         }
 
@@ -132,10 +137,10 @@ class TestCalculateRecentMetrics:
         assert metrics["recent_request_count"] == 5
         assert metrics["recent_reliability_score"] is not None
         assert metrics["effective_reliability_score"] is not None
-        assert metrics["decision_reason"] == "decay_weighted_score"
+        assert metrics["decision_reason"] == "laplace_ucb"
 
     def test_calculate_recent_metrics_no_data_explore(self):
-        """Test no data returns explore default (score=1.0)."""
+        """bmm/ADR-0003: no data → 0.375 base (NOT 1.0), explore_ucb."""
         model = self._create_test_model()
         recent_stats: Dict[int, Dict[str, Any]] = {}  # Нет данных для model.id=1
 
@@ -143,27 +148,32 @@ class TestCalculateRecentMetrics:
 
         assert metrics["recent_success_rate"] is None
         assert metrics["recent_request_count"] == 0
-        assert metrics["recent_reliability_score"] is None
-        assert metrics["effective_reliability_score"] == 1.0
-        assert metrics["decision_reason"] == "no_data_explore"
+        # No data → Laplace quality 0.5, neutral speed 0.5 → base 0.375, no UCB (total=0)
+        assert metrics["recent_reliability_score"] == pytest.approx(0.375, abs=1e-3)
+        assert metrics["effective_reliability_score"] == pytest.approx(0.375, abs=1e-3)
+        assert metrics["effective_reliability_score"] < 1.0
+        assert metrics["decision_reason"] == "explore_ucb"
 
-    def test_calculate_recent_metrics_zero_success_rate(self):
-        """Test F011: Zero success rate results in zero reliability."""
+    def test_calculate_recent_metrics_all_hard_failures_low_not_zero(self):
+        """bmm/ADR-0003: Laplace replaces the hard zero — all-hard-fail → low, not 0.0."""
         model = self._create_test_model()
         recent_stats = {
             1: {
-                "request_count": 5,
+                "request_count": 50,
                 "weighted_success_rate": 0.0,
-                "weighted_avg_response_time": 2.0,
+                "w_success": 0.0,
+                "w_fail_hard": 50.0,
+                "median_response_time": 2.0,
             }
         }
 
         metrics = _calculate_recent_metrics(model, recent_stats)
 
         assert metrics["recent_success_rate"] == 0.0
-        assert metrics["recent_reliability_score"] == 0.0
-        assert metrics["effective_reliability_score"] == 0.0
-        assert metrics["decision_reason"] == "decay_weighted_score"
+        # Quality ≈ (0+1)/(0+50+2) ≈ 0.019 → effective stays well below the 0.3 gate
+        assert metrics["effective_reliability_score"] < 0.2
+        assert metrics["effective_reliability_score"] > 0.0
+        assert metrics["decision_reason"] == "laplace_ucb"
 
 
 class TestGetModelOr404:
@@ -179,9 +189,7 @@ class TestGetModelOr404:
         mock_model.id = 1
         mock_model.name = "Test Model"
 
-        with patch(
-            "app.api.deps.AIModelRepository"
-        ) as MockRepository:
+        with patch("app.api.deps.AIModelRepository") as MockRepository:
             mock_repo_instance = MockRepository.return_value
             mock_repo_instance.get_by_id = AsyncMock(return_value=mock_model)
 
@@ -197,9 +205,7 @@ class TestGetModelOr404:
 
         mock_db = AsyncMock()
 
-        with patch(
-            "app.api.deps.AIModelRepository"
-        ) as MockRepository:
+        with patch("app.api.deps.AIModelRepository") as MockRepository:
             mock_repo_instance = MockRepository.return_value
             mock_repo_instance.get_by_id = AsyncMock(return_value=None)
 

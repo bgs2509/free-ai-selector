@@ -146,7 +146,11 @@ class PromptHistoryRepository:
         Returns:
             List of PromptHistory domain entities, ordered by created_at DESC
         """
-        query = select(PromptHistoryORM).order_by(desc(PromptHistoryORM.created_at)).limit(limit)
+        query = (
+            select(PromptHistoryORM)
+            .order_by(desc(PromptHistoryORM.created_at))
+            .limit(limit)
+        )
 
         if success_only:
             query = query.where(PromptHistoryORM.success)
@@ -206,21 +210,31 @@ class PromptHistoryRepository:
         }
 
     async def get_recent_weighted_stats_for_all_models(
-        self, window_days: int = 7, decay_per_hour: float = 0.98
+        self, window_days: int = 7, decay_per_hour: Optional[float] = None
     ) -> Dict[int, Dict[str, Any]]:
         """
-        Decay-взвешенная агрегация статистики моделей за окно.
+        Decay-взвешенная агрегация статистики моделей за окно (bmm v2 / ADR-0003).
 
         Свежие записи весят больше: weight = decay_per_hour ^ hours_ago.
-        При decay=0.98: 1ч=98%, 1д=61%, 3д=23%, 7д=3%.
+        decay_per_hour по умолчанию выводится из RATING_HALF_LIFE_HOURS (~0.98 при 34ч).
+
+        Возвращает decay-взвешенные суммы успехов и ЖЁСТКИХ сбоев
+        (success=false AND http_status != 429; NULL http_status трактуется как hard),
+        чтобы 429-rate-limit не топили quality. Плюс медиану латентности.
 
         Args:
             window_days: Размер окна в днях (default: 7)
-            decay_per_hour: Коэффициент затухания за 1 час (default: 0.98)
+            decay_per_hour: Коэффициент затухания за 1 час (default: из half-life)
 
         Returns:
-            Dict {model_id: {weighted_success_rate, weighted_avg_response_time, request_count}}
+            Dict {model_id: {request_count, weighted_success_rate,
+            weighted_avg_response_time, w_success, w_fail_hard, median_response_time}}
         """
+        from app.domain.services import rating_params
+
+        if decay_per_hour is None:
+            decay_per_hour = rating_params.decay_per_hour()
+
         cutoff_date = datetime.utcnow() - timedelta(days=window_days)
 
         # hours_ago = EXTRACT(EPOCH FROM (NOW() - created_at)) / 3600
@@ -231,6 +245,13 @@ class PromptHistoryRepository:
         # weight = POW(decay_per_hour, hours_ago)
         weight = func.pow(literal(decay_per_hour), hours_ago)
 
+        # bmm: a row is a HARD failure when it failed AND was not a 429 rate-limit.
+        # NULL http_status (rows before migration 0005) is treated as hard (conservative).
+        hard_fail = (PromptHistoryORM.success == False) & (  # noqa: E712
+            PromptHistoryORM.http_status.is_(None)
+            | (PromptHistoryORM.http_status != literal(429))
+        )
+
         query = (
             select(
                 PromptHistoryORM.selected_model_id,
@@ -239,9 +260,19 @@ class PromptHistoryRepository:
                 func.sum(
                     case((PromptHistoryORM.success == True, weight), else_=literal(0.0))  # noqa: E712
                 ).label("weighted_successes"),
+                # bmm: weighted HARD failures only (429 excluded) for Laplace quality
+                func.sum(case((hard_fail, weight), else_=literal(0.0))).label(
+                    "weighted_hard_failures"
+                ),
                 func.sum(weight).label("total_weight"),
                 # weighted average response time
-                func.sum(PromptHistoryORM.response_time * weight).label("weighted_time_sum"),
+                func.sum(PromptHistoryORM.response_time * weight).label(
+                    "weighted_time_sum"
+                ),
+                # bmm: median latency (robust vs mean for speed scoring)
+                func.percentile_cont(0.5)
+                .within_group(PromptHistoryORM.response_time.asc())
+                .label("median_response_time"),
             )
             .where(PromptHistoryORM.created_at > cutoff_date)
             .group_by(PromptHistoryORM.selected_model_id)
@@ -264,6 +295,12 @@ class PromptHistoryRepository:
                 "request_count": row.request_count,
                 "weighted_success_rate": round(w_success_rate, 4),
                 "weighted_avg_response_time": round(w_avg_time, 4),
+                # bmm v2 (ADR-0003) fields
+                "w_success": round(float(row.weighted_successes or 0.0), 6),
+                "w_fail_hard": round(float(row.weighted_hard_failures or 0.0), 6),
+                "median_response_time": round(
+                    float(row.median_response_time or 0.0), 4
+                ),
             }
 
         return stats
@@ -291,8 +328,13 @@ class PromptHistoryRepository:
         # Используем SQL aggregation вместо загрузки всех записей (F017)
         query = select(
             func.count().label("total"),
-            func.sum(case((PromptHistoryORM.success == True, 1), else_=0)).label("success"),  # noqa: E712
-        ).where(PromptHistoryORM.created_at >= start_date, PromptHistoryORM.created_at <= end_date)
+            func.sum(case((PromptHistoryORM.success == True, 1), else_=0)).label(
+                "success"
+            ),  # noqa: E712
+        ).where(
+            PromptHistoryORM.created_at >= start_date,
+            PromptHistoryORM.created_at <= end_date,
+        )
 
         if model_id is not None:
             query = query.where(PromptHistoryORM.selected_model_id == model_id)
@@ -303,7 +345,9 @@ class PromptHistoryRepository:
         total_requests = row.total or 0
         successful_requests = row.success or 0
         failed_requests = total_requests - successful_requests
-        success_rate = successful_requests / total_requests if total_requests > 0 else 0.0
+        success_rate = (
+            successful_requests / total_requests if total_requests > 0 else 0.0
+        )
 
         return {
             "total_requests": total_requests,
@@ -439,7 +483,11 @@ class PromptHistoryRepository:
         if date_to is not None:
             query = query.where(PromptHistoryORM.created_at <= date_to)
 
-        query = query.order_by(desc(PromptHistoryORM.created_at)).limit(limit).offset(offset)
+        query = (
+            query.order_by(desc(PromptHistoryORM.created_at))
+            .limit(limit)
+            .offset(offset)
+        )
 
         result = await self.session.execute(query)
         orm_histories = result.scalars().all()
@@ -464,7 +512,9 @@ class PromptHistoryRepository:
         # Удалить все записи, которые не входят в топ keep_count
         from sqlalchemy import delete
 
-        delete_query = delete(PromptHistoryORM).where(PromptHistoryORM.id.notin_(subquery))
+        delete_query = delete(PromptHistoryORM).where(
+            PromptHistoryORM.id.notin_(subquery)
+        )
 
         await self.session.execute(delete_query)
 

@@ -16,13 +16,12 @@ from app.api.v1.schemas import AIModelCreate, AIModelResponse, AIModelStatsUpdat
 from app.domain.models import AIModel
 from app.infrastructure.database.connection import get_db
 from app.infrastructure.repositories.ai_model_repository import AIModelRepository
-from app.infrastructure.repositories.prompt_history_repository import PromptHistoryRepository
+from app.infrastructure.repositories.prompt_history_repository import (
+    PromptHistoryRepository,
+)
 from app.utils.audit import audit_event
 
 router = APIRouter(prefix="/models", tags=["AI Models"])
-
-# Default score для моделей без данных в prompt_history (explore новые первыми)
-DEFAULT_SCORE_NO_DATA = 1.0
 
 
 @router.get("", response_model=List[AIModelResponse], summary="Get all AI models")
@@ -32,7 +31,8 @@ async def get_all_models(
         False, description="Exclude models with available_at > now() (F012)"
     ),
     include_recent: bool = Query(
-        False, description="Include recent metrics calculated from prompt_history (F010)"
+        False,
+        description="Include recent metrics calculated from prompt_history (F010)",
     ),
     window_days: int = Query(
         7, ge=1, le=30, description="Window size in days for recent metrics"
@@ -53,19 +53,20 @@ async def get_all_models(
         List of AI models with statistics (and optional recent metrics)
     """
     repository = AIModelRepository(db)
-    models = await repository.get_all(active_only=active_only, available_only=available_only)
+    models = await repository.get_all(
+        active_only=active_only, available_only=available_only
+    )
 
     if not include_recent:
         return [_model_to_response(model) for model in models]
 
     # Fix C+D2: Decay-взвешенная статистика вместо плоского подсчёта
     history_repository = PromptHistoryRepository(db)
-    recent_stats = await history_repository.get_recent_weighted_stats_for_all_models(window_days)
+    recent_stats = await history_repository.get_recent_weighted_stats_for_all_models(
+        window_days
+    )
 
-    return [
-        _model_to_response(model, recent_stats)
-        for model in models
-    ]
+    return [_model_to_response(model, recent_stats) for model in models]
 
 
 @router.get("/{model_id}", response_model=AIModelResponse, summary="Get AI model by ID")
@@ -141,7 +142,11 @@ async def create_model(
     return _model_to_response(created_model)
 
 
-@router.put("/{model_id}/stats", response_model=AIModelResponse, summary="Update model statistics")
+@router.put(
+    "/{model_id}/stats",
+    response_model=AIModelResponse,
+    summary="Update model statistics",
+)
 async def update_model_stats(
     model_id: int, stats_update: AIModelStatsUpdate, db: AsyncSession = Depends(get_db)
 ) -> AIModelResponse:
@@ -171,7 +176,8 @@ async def update_model_stats(
 
     if updated_model is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"AI model with ID {model_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"AI model with ID {model_id} not found",
         )
 
     await db.commit()
@@ -180,10 +186,14 @@ async def update_model_stats(
 
 
 @router.post(
-    "/{model_id}/increment-success", response_model=AIModelResponse, summary="Increment success count"
+    "/{model_id}/increment-success",
+    response_model=AIModelResponse,
+    summary="Increment success count",
 )
 async def increment_success(
-    model_id: int, response_time: float = Query(..., ge=0), db: AsyncSession = Depends(get_db)
+    model_id: int,
+    response_time: float = Query(..., ge=0),
+    db: AsyncSession = Depends(get_db),
 ) -> AIModelResponse:
     """
     Increment success count for a model.
@@ -207,7 +217,8 @@ async def increment_success(
 
     if updated_model is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"AI model with ID {model_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"AI model with ID {model_id} not found",
         )
 
     await db.commit()
@@ -216,10 +227,14 @@ async def increment_success(
 
 
 @router.post(
-    "/{model_id}/increment-failure", response_model=AIModelResponse, summary="Increment failure count"
+    "/{model_id}/increment-failure",
+    response_model=AIModelResponse,
+    summary="Increment failure count",
 )
 async def increment_failure(
-    model_id: int, response_time: float = Query(..., ge=0), db: AsyncSession = Depends(get_db)
+    model_id: int,
+    response_time: float = Query(..., ge=0),
+    db: AsyncSession = Depends(get_db),
 ) -> AIModelResponse:
     """
     Increment failure count for a model.
@@ -243,7 +258,8 @@ async def increment_failure(
 
     if updated_model is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"AI model with ID {model_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"AI model with ID {model_id} not found",
         )
 
     await db.commit()
@@ -251,7 +267,11 @@ async def increment_failure(
     return _model_to_response(updated_model)
 
 
-@router.patch("/{model_id}/active", response_model=AIModelResponse, summary="Set model active status")
+@router.patch(
+    "/{model_id}/active",
+    response_model=AIModelResponse,
+    summary="Set model active status",
+)
 async def set_model_active(
     model_id: int, is_active: bool, db: AsyncSession = Depends(get_db)
 ) -> AIModelResponse:
@@ -275,7 +295,8 @@ async def set_model_active(
 
     if updated_model is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"AI model with ID {model_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"AI model with ID {model_id} not found",
         )
 
     await db.commit()
@@ -284,21 +305,29 @@ async def set_model_active(
 
 
 @router.patch(
-    "/{model_id}/availability", response_model=AIModelResponse, summary="Set model availability cooldown"
+    "/{model_id}/availability",
+    response_model=AIModelResponse,
+    summary="Set model availability cooldown",
 )
 async def set_model_availability(
     model_id: int,
     retry_after_seconds: int = Query(
-        ..., ge=0, description="Seconds until model becomes available (0 = clear cooldown)"
+        ...,
+        ge=0,
+        description="Seconds until model becomes available (0 = clear cooldown)",
     ),
     reason: str | None = Query(
-        None, max_length=64, description="Machine-readable reason for availability change"
+        None,
+        max_length=64,
+        description="Machine-readable reason for availability change",
     ),
     error_type: str | None = Query(
         None, max_length=64, description="Error type that triggered cooldown"
     ),
     source: str | None = Query(
-        None, max_length=64, description="Source component that requested availability update"
+        None,
+        max_length=64,
+        description="Source component that requested availability update",
     ),
     db: AsyncSession = Depends(get_db),
 ) -> AIModelResponse:
@@ -324,7 +353,8 @@ async def set_model_availability(
 
     if current_model is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"AI model with ID {model_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"AI model with ID {model_id} not found",
         )
 
     updated_model = await repository.set_availability(
@@ -333,7 +363,8 @@ async def set_model_availability(
 
     if updated_model is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"AI model with ID {model_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"AI model with ID {model_id} not found",
         )
 
     await db.commit()
@@ -349,10 +380,14 @@ async def set_model_availability(
             "error_type": error_type,
             "source": source,
             "available_at_before": (
-                current_model.available_at.isoformat() if current_model.available_at else None
+                current_model.available_at.isoformat()
+                if current_model.available_at
+                else None
             ),
             "available_at_after": (
-                updated_model.available_at.isoformat() if updated_model.available_at else None
+                updated_model.available_at.isoformat()
+                if updated_model.available_at
+                else None
             ),
         },
     )
@@ -418,11 +453,15 @@ def _calculate_recent_metrics(
     model: AIModel, recent_stats: Dict[int, Dict[str, Any]]
 ) -> Dict[str, Any]:
     """
-    Расчёт effective_reliability_score на основе decay-взвешенных метрик.
+    Расчёт effective_reliability_score v2 (bmm / ADR-0003).
 
-    Простой алгоритм:
-    - Есть данные → score из decay-взвешенных success_rate и avg_time
-    - Нет данных → DEFAULT_SCORE_NO_DATA (1.0, explore новые модели первыми)
+    - quality = Laplace-сглаженная доля успехов по ЖЁСТКИМ сбоям (429 исключён);
+      нет данных → 0.5 (НЕ 1.0 — это и был баг explore-first).
+    - speed = нормализованная медиана латентности.
+    - base = quality * (0.5 + 0.5 * speed) (мультипликативно).
+    - effective = base + ограниченный затухающий UCB-бонус.
+
+    decision_reason: "explore_ucb" (нет свежих данных) | "laplace_ucb" (есть данные).
 
     Args:
         model: AIModel domain entity
@@ -431,34 +470,35 @@ def _calculate_recent_metrics(
     Returns:
         Dict with recent_*, effective_*, and decision_reason fields
     """
+    from app.domain.services import rating_v2
+
     stats = recent_stats.get(model.id, {})
-    request_count = stats.get("request_count", 0)
-
-    if request_count == 0:
-        # Нет данных — дать модели максимальный приоритет (explore)
-        return {
-            "recent_success_rate": None,
-            "recent_request_count": 0,
-            "recent_reliability_score": None,
-            "effective_reliability_score": DEFAULT_SCORE_NO_DATA,
-            "decision_reason": "no_data_explore",
-        }
-
-    # Decay-взвешенные метрики
-    weighted_success_rate = stats.get("weighted_success_rate", 0.0)
-    weighted_avg_time = stats.get("weighted_avg_response_time", 0.0)
-
-    from app.domain.services.reliability_service import ReliabilityService
-
-    recent_reliability = ReliabilityService.calculate(
-        success_rate=weighted_success_rate, avg_response_time=weighted_avg_time
+    request_count = int(stats.get("request_count", 0) or 0)
+    total_requests = sum(
+        int(s.get("request_count", 0) or 0) for s in recent_stats.values()
     )
 
-    return {
-        "recent_success_rate": round(weighted_success_rate, 4),
-        "recent_request_count": request_count,
-        "recent_reliability_score": round(recent_reliability, 4),
-        "effective_reliability_score": round(recent_reliability, 4),
-        "decision_reason": "decay_weighted_score",
-    }
+    w_success = float(stats.get("w_success", 0.0) or 0.0)
+    w_fail_hard = float(stats.get("w_fail_hard", 0.0) or 0.0)
+    median_latency = float(stats.get("median_response_time", 0.0) or 0.0)
 
+    effective, base, _quality = rating_v2.effective_score(
+        w_success=w_success,
+        w_fail_hard=w_fail_hard,
+        median_latency_seconds=median_latency,
+        recent_n=request_count,
+        total_requests=total_requests,
+    )
+
+    recent_success_rate = (
+        stats.get("weighted_success_rate") if request_count > 0 else None
+    )
+    decision_reason = "explore_ucb" if request_count == 0 else "laplace_ucb"
+
+    return {
+        "recent_success_rate": recent_success_rate,
+        "recent_request_count": request_count,
+        "recent_reliability_score": round(base, 4),
+        "effective_reliability_score": round(effective, 4),
+        "decision_reason": decision_reason,
+    }
