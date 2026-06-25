@@ -1,10 +1,10 @@
-# ADR-001: Reliability Rating Formula v2 (capability-gated, smoothed, multiplicative)
+# ADR-0003: Reliability Rating Formula v2 (capability-gated, smoothed, multiplicative)
 
 - **Status:** Proposed
 - **Date:** 2026-06-25
 - **Deciders:** bgs2509
-- **Related issues:** `free-ai-selector-ex9` (Fireworks → all_models_failed without fallback)
-- **Supersedes:** the implicit `reliability_score = success_rate·0.6 + speed_score·0.4` + `effective_reliability_score` explore-first scheme
+- **Related issues:** `free-ai-selector-ex9` (Fireworks → all_models_failed without fallback), `free-ai-selector-bmm` (implementation)
+- **Supersedes:** ADR-0001 (`reliability_score = success_rate·0.6 + speed_score·0.4`); also replaces the `effective_reliability_score` explore-first scheme built on top of it
 
 ---
 
