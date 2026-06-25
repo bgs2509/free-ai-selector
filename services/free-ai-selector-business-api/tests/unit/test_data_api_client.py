@@ -1,4 +1,5 @@
 """Тесты для DataAPIClient."""
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from decimal import Decimal
@@ -158,7 +159,8 @@ class TestDataAPIClient:
 
         client.client.patch = AsyncMock(return_value=mock_response)
         await client.set_availability(
-            1, 3600,
+            1,
+            3600,
             reason="rate_limit",
             error_type="RateLimitError",
             source="process_prompt",
@@ -225,6 +227,63 @@ class TestDataAPIClient:
         c = DataAPIClient(base_url="http://test", request_id="req-123")
         headers = c._get_headers()
         assert "X-Request-ID" in headers
+
+
+@pytest.mark.unit
+class TestV2RankingContract:
+    """bmm/ADR-0003: business-api consumes v2 effective scores + new decision_reason
+    via the unchanged /models contract, and the sort ranks healthy > broken."""
+
+    async def test_v2_effective_scores_rank_healthy_above_broken(self, client):
+        # Representative v2 effective scores produced by data-api rating_v2 for the
+        # live model set (Ollama/OpenRouter healthy, SambaNova broken-but-fast).
+        rows = [
+            ("SambaNova", 0.020, 0.39),
+            ("Groq", 0.195, 0.5),
+            ("Fireworks", 0.584, 9.9),
+            ("OpenRouter", 0.702, 12.1),
+            ("Ollama", 0.828, 7.6),
+        ]
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = [
+            {
+                "id": i,
+                "name": name,
+                "provider": name,
+                "api_endpoint": "https://test.api",
+                "reliability_score": 0.5,
+                "is_active": True,
+                "api_format": "openai",
+                "effective_reliability_score": eff,
+                "recent_request_count": 100,
+                "decision_reason": "laplace_ucb",  # new v2 value flows through unchanged
+                "success_rate": 0.5,
+                "average_response_time": lat,
+                "request_count": 100,
+                "available_at": None,
+            }
+            for i, (name, eff, lat) in enumerate(rows, start=1)
+        ]
+        client.client.get = AsyncMock(return_value=mock_response)
+
+        models = await client.get_all_models()
+        # Apply the business-api selection sort key (process_prompt.py Step 3).
+        ranked = sorted(
+            models,
+            key=lambda m: (m.effective_reliability_score, -m.average_response_time),
+            reverse=True,
+        )
+        assert [m.name for m in ranked] == [
+            "Ollama",
+            "OpenRouter",
+            "Fireworks",
+            "Groq",
+            "SambaNova",
+        ]
+        # New decision_reason mapped through the unchanged contract (not "fallback").
+        assert all(m.decision_reason == "laplace_ucb" for m in models)
 
     def test_base_url_trailing_slash_stripped(self):
         """Trailing slash в base_url обрезается."""
