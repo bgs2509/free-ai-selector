@@ -51,7 +51,9 @@ class TestProcessPromptUseCase:
         ]
 
         # F010: Sort by effective_reliability_score descending
-        sorted_models = sorted(models, key=lambda m: m.effective_reliability_score, reverse=True)
+        sorted_models = sorted(
+            models, key=lambda m: m.effective_reliability_score, reverse=True
+        )
 
         # Model B (id=2) should be first because of higher effective score
         assert sorted_models[0].id == 2
@@ -84,7 +86,9 @@ class TestProcessPromptUseCase:
             ),
         ]
 
-        sorted_models = sorted(models, key=lambda m: m.effective_reliability_score, reverse=True)
+        sorted_models = sorted(
+            models, key=lambda m: m.effective_reliability_score, reverse=True
+        )
 
         # Model B has higher effective_reliability_score (fallback to long-term)
         assert sorted_models[0].id == 2
@@ -160,7 +164,9 @@ class TestProcessPromptUseCase:
         use_case = ProcessPromptUseCase(mock_data_api_client)
         request = PromptRequest(user_id="test_user", prompt_text="Test prompt")
 
-        with pytest.raises(ServiceUnavailable, match="No configured AI models available"):
+        with pytest.raises(
+            ServiceUnavailable, match="No configured AI models available"
+        ):
             await use_case.execute(request)
 
     @patch.dict(os.environ, {"HIGH_KEY": "high", "LOW_KEY": "low"})
@@ -414,7 +420,9 @@ class TestF011BSystemPromptsAndResponseFormat:
 
     @patch.dict(os.environ, {"GROQ_API_KEY": "test_key"})
     @patch("app.application.use_cases.process_prompt.ProviderRegistry")
-    async def test_system_prompt_passed_to_provider(self, mock_registry, mock_data_api_client):
+    async def test_system_prompt_passed_to_provider(
+        self, mock_registry, mock_data_api_client
+    ):
         """Test that system_prompt is correctly passed to AI provider (F011-B)."""
         # Mock AI provider from registry
         mock_provider = AsyncMock()
@@ -451,11 +459,15 @@ class TestF011BSystemPromptsAndResponseFormat:
         mock_provider.generate.assert_called_once()
         call_args = mock_provider.generate.call_args
         assert call_args[0][0] == "Test prompt"  # First positional arg is prompt
-        assert call_args[1]["system_prompt"] == "You are a helpful assistant."  # F011-B kwarg
+        assert (
+            call_args[1]["system_prompt"] == "You are a helpful assistant."
+        )  # F011-B kwarg
 
     @patch.dict(os.environ, {"SAMBANOVA_API_KEY": "test_key"})
     @patch("app.application.use_cases.process_prompt.ProviderRegistry")
-    async def test_response_format_passed_to_provider(self, mock_registry, mock_data_api_client):
+    async def test_response_format_passed_to_provider(
+        self, mock_registry, mock_data_api_client
+    ):
         """Test that response_format is correctly passed to AI provider (F011-B)."""
         # Mock AI provider from registry
         mock_provider = AsyncMock()
@@ -492,11 +504,15 @@ class TestF011BSystemPromptsAndResponseFormat:
         mock_provider.generate.assert_called_once()
         call_args = mock_provider.generate.call_args
         assert call_args[0][0] == "Test prompt"  # First positional arg is prompt
-        assert call_args[1]["response_format"] == {"type": "json_object"}  # F011-B kwarg
+        assert call_args[1]["response_format"] == {
+            "type": "json_object"
+        }  # F011-B kwarg
 
     @patch.dict(os.environ, {"CLOUDFLARE_API_TOKEN": "test_key"})
     @patch("app.application.use_cases.process_prompt.ProviderRegistry")
-    async def test_both_system_prompt_and_response_format(self, mock_registry, mock_data_api_client):
+    async def test_both_system_prompt_and_response_format(
+        self, mock_registry, mock_data_api_client
+    ):
         """Test that both system_prompt and response_format are passed together (F011-B)."""
         # Mock AI provider from registry
         mock_provider = AsyncMock()
@@ -552,9 +568,13 @@ class TestF011BSystemPromptsAndResponseFormat:
         mock_fallback_provider.generate.return_value = '{"result": "Fallback response"}'
 
         # Registry returns different providers for primary and fallback
-        mock_registry.get_provider.side_effect = [mock_primary_provider, mock_fallback_provider]
+        mock_registry.get_provider.side_effect = [
+            mock_primary_provider,
+            mock_fallback_provider,
+        ]
         mock_registry.get_api_key_env.side_effect = lambda p: {
-            "Groq": "GROQ_API_KEY", "Cerebras": "CEREBRAS_API_KEY"
+            "Groq": "GROQ_API_KEY",
+            "Cerebras": "CEREBRAS_API_KEY",
         }.get(p, "")
         mock_registry.supports_response_format.return_value = True
 
@@ -687,7 +707,9 @@ class TestF014ErrorHandlingConsolidation:
         # Verify set_availability was called (even though it failed)
         mock_data_api_client.set_availability.assert_called_once()
 
-    async def test_handle_transient_error_calls_increment_failure(self, mock_data_api_client):
+    async def test_handle_transient_error_calls_increment_failure(
+        self, mock_data_api_client
+    ):
         """Test that _handle_transient_error calls increment_failure (F014)."""
         import time
 
@@ -903,7 +925,9 @@ class TestF023Telemetry:
 
     @patch.dict(os.environ, {"HUGGINGFACE_API_KEY": "test_key"})
     @patch("app.application.use_cases.process_prompt.ProviderRegistry")
-    async def test_success_first_model_telemetry(self, mock_registry, mock_data_api_client):
+    async def test_success_first_model_telemetry(
+        self, mock_registry, mock_data_api_client
+    ):
         """TRQ-006: attempts=1, fallback_used=False при успехе первой модели."""
         mock_provider = AsyncMock()
         mock_provider.generate.return_value = "response"
@@ -942,7 +966,8 @@ class TestF023Telemetry:
 
         mock_registry.get_provider.side_effect = [mock_primary, mock_fallback]
         mock_registry.get_api_key_env.side_effect = lambda p: {
-            "Primary": "KEY1", "Fallback": "KEY2"
+            "Primary": "KEY1",
+            "Fallback": "KEY2",
         }.get(p, "")
 
         mock_data_api_client.get_all_models.return_value = [
@@ -1031,7 +1056,8 @@ class TestF024CircuitBreaker:
         mock_provider2.generate.return_value = "response from provider2"
         mock_registry.get_provider.return_value = mock_provider2
         mock_registry.get_api_key_env.side_effect = lambda p: {
-            "Provider1": "KEY1", "Provider2": "KEY2"
+            "Provider1": "KEY1",
+            "Provider2": "KEY2",
         }.get(p, "")
 
         mock_data_api_client.get_all_models.return_value = [
@@ -1118,7 +1144,8 @@ class TestF025Backpressure:
         )
         mock_registry.get_provider.return_value = mock_provider
         mock_registry.get_api_key_env.side_effect = lambda p: {
-            "Provider1": "KEY1", "Provider2": "KEY2"
+            "Provider1": "KEY1",
+            "Provider2": "KEY2",
         }.get(p, "")
 
         mock_data_api_client.get_all_models.return_value = [
@@ -1175,7 +1202,8 @@ class TestF025Backpressure:
         from app.domain.exceptions import ServiceUnavailable
 
         mock_registry.get_api_key_env.side_effect = lambda p: {
-            "Provider1": "KEY1", "Provider2": "KEY2"
+            "Provider1": "KEY1",
+            "Provider2": "KEY2",
         }.get(p, "")
 
         # Открыть CB для обоих провайдеров
@@ -1252,7 +1280,8 @@ class TestF025Backpressure:
 
         mock_registry.get_provider.side_effect = [mock_provider1, mock_provider2]
         mock_registry.get_api_key_env.side_effect = lambda p: {
-            "Provider1": "KEY1", "Provider2": "KEY2"
+            "Provider1": "KEY1",
+            "Provider2": "KEY2",
         }.get(p, "")
 
         mock_data_api_client.get_all_models.return_value = [
@@ -1346,8 +1375,22 @@ class TestTagFiltering:
 
         uc = ProcessPromptUseCase.__new__(ProcessPromptUseCase)
         models = [
-            AIModelInfo(id=1, name="M1", provider="Groq", api_endpoint="", reliability_score=0.9, is_active=True),
-            AIModelInfo(id=2, name="M2", provider="Cerebras", api_endpoint="", reliability_score=0.8, is_active=True),
+            AIModelInfo(
+                id=1,
+                name="M1",
+                provider="Groq",
+                api_endpoint="",
+                reliability_score=0.9,
+                is_active=True,
+            ),
+            AIModelInfo(
+                id=2,
+                name="M2",
+                provider="Cerebras",
+                api_endpoint="",
+                reliability_score=0.8,
+                is_active=True,
+            ),
         ]
         result = uc._filter_by_tags(models, ["fast", "json"])
         assert len(result) == 2  # Both Groq and Cerebras have fast+json
@@ -1359,8 +1402,22 @@ class TestTagFiltering:
 
         uc = ProcessPromptUseCase.__new__(ProcessPromptUseCase)
         models = [
-            AIModelInfo(id=1, name="M1", provider="Groq", api_endpoint="", reliability_score=0.9, is_active=True),
-            AIModelInfo(id=2, name="M2", provider="HuggingFace", api_endpoint="", reliability_score=0.8, is_active=True),
+            AIModelInfo(
+                id=1,
+                name="M1",
+                provider="Groq",
+                api_endpoint="",
+                reliability_score=0.9,
+                is_active=True,
+            ),
+            AIModelInfo(
+                id=2,
+                name="M2",
+                provider="HuggingFace",
+                api_endpoint="",
+                reliability_score=0.8,
+                is_active=True,
+            ),
         ]
         result = uc._filter_by_tags(models, ["json"])
         # Groq has json, HuggingFace does not
@@ -1374,22 +1431,48 @@ class TestTagFiltering:
 
         uc = ProcessPromptUseCase.__new__(ProcessPromptUseCase)
         models = [
-            AIModelInfo(id=1, name="M1", provider="Groq", api_endpoint="", reliability_score=0.9, is_active=True),
+            AIModelInfo(
+                id=1,
+                name="M1",
+                provider="Groq",
+                api_endpoint="",
+                reliability_score=0.9,
+                is_active=True,
+            ),
         ]
         result = uc._filter_by_tags(models, None)
         assert len(result) == 1
 
-    def test_filter_by_tags_fallback_when_empty(self):
-        """If no models match tags, fallback to all models."""
+    def test_filter_by_tags_hard_gate_raises_when_empty(self):
+        """bmm/ADR-0003: hard capability gate — zero match → ServiceUnavailable (no fallback-to-all)."""
         from app.application.use_cases.process_prompt import ProcessPromptUseCase
         from app.domain.models import AIModelInfo
+        from app.domain.exceptions import ServiceUnavailable
 
         uc = ProcessPromptUseCase.__new__(ProcessPromptUseCase)
         models = [
-            AIModelInfo(id=1, name="M1", provider="Groq", api_endpoint="", reliability_score=0.9, is_active=True),
+            AIModelInfo(
+                id=1,
+                name="M1",
+                provider="Groq",
+                api_endpoint="",
+                reliability_score=0.9,
+                is_active=True,
+            ),
         ]
-        result = uc._filter_by_tags(models, ["nonexistent_tag"])
-        assert len(result) == 1  # fallback to all
+        with pytest.raises(ServiceUnavailable) as exc_info:
+            uc._filter_by_tags(models, ["nonexistent_tag"])
+        assert exc_info.value.reason == "no_capable_model"
+
+    def test_backfilled_tags_route_previously_tagless_providers(self):
+        """bmm/ADR-0003: SambaNova/DeepSeek/Hyperbolic now have TAGS (were empty)."""
+        from app.infrastructure.ai_providers.registry import ProviderRegistry
+
+        assert "russian" in ProviderRegistry.get_tags("SambaNova")
+        assert "json" in ProviderRegistry.get_tags("DeepSeek")
+        assert ProviderRegistry.get_tags("Hyperbolic") == {"code", "russian"}
+        # Hyperbolic does NOT advertise json (SUPPORTS_RESPONSE_FORMAT is False)
+        assert "json" not in ProviderRegistry.get_tags("Hyperbolic")
 
 
 @pytest.mark.unit
@@ -1451,7 +1534,8 @@ class TestP7uFailoverObservability:
         mock_provider.generate.return_value = "ok"
         mock_registry.get_provider.return_value = mock_provider
         mock_registry.get_api_key_env.side_effect = lambda p: {
-            "Dead": "KEY1", "Healthy": "KEY2"
+            "Dead": "KEY1",
+            "Healthy": "KEY2",
         }.get(p, "")
 
         # Dead has the higher score but its circuit is OPEN.
@@ -1459,10 +1543,24 @@ class TestP7uFailoverObservability:
             CircuitBreakerManager.record_failure("Dead")
 
         mock_data_api_client.get_all_models.return_value = [
-            AIModelInfo(id=1, name="DeadModel", provider="Dead", api_endpoint="x",
-                        reliability_score=0.99, is_active=True, effective_reliability_score=0.99),
-            AIModelInfo(id=2, name="HealthyModel", provider="Healthy", api_endpoint="y",
-                        reliability_score=0.7, is_active=True, effective_reliability_score=0.7),
+            AIModelInfo(
+                id=1,
+                name="DeadModel",
+                provider="Dead",
+                api_endpoint="x",
+                reliability_score=0.99,
+                is_active=True,
+                effective_reliability_score=0.99,
+            ),
+            AIModelInfo(
+                id=2,
+                name="HealthyModel",
+                provider="Healthy",
+                api_endpoint="y",
+                reliability_score=0.7,
+                is_active=True,
+                effective_reliability_score=0.7,
+            ),
         ]
 
         use_case = ProcessPromptUseCase(mock_data_api_client)
@@ -1482,17 +1580,32 @@ class TestP7uFailoverObservability:
         from app.domain.exceptions import ServiceUnavailable
 
         mock_registry.get_api_key_env.side_effect = lambda p: {
-            "P1": "KEY1", "P2": "KEY2"
+            "P1": "KEY1",
+            "P2": "KEY2",
         }.get(p, "")
         for _ in range(CB_FAILURE_THRESHOLD):
             CircuitBreakerManager.record_failure("P1")
             CircuitBreakerManager.record_failure("P2")
 
         mock_data_api_client.get_all_models.return_value = [
-            AIModelInfo(id=1, name="M1", provider="P1", api_endpoint="x",
-                        reliability_score=0.9, is_active=True, effective_reliability_score=0.9),
-            AIModelInfo(id=2, name="M2", provider="P2", api_endpoint="y",
-                        reliability_score=0.8, is_active=True, effective_reliability_score=0.8),
+            AIModelInfo(
+                id=1,
+                name="M1",
+                provider="P1",
+                api_endpoint="x",
+                reliability_score=0.9,
+                is_active=True,
+                effective_reliability_score=0.9,
+            ),
+            AIModelInfo(
+                id=2,
+                name="M2",
+                provider="P2",
+                api_endpoint="y",
+                reliability_score=0.8,
+                is_active=True,
+                effective_reliability_score=0.8,
+            ),
         ]
 
         use_case = ProcessPromptUseCase(mock_data_api_client)

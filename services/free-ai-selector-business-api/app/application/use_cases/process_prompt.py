@@ -63,11 +63,15 @@ MAX_PROMPT_CHARS = int(os.getenv("MAX_PROMPT_CHARS", "6000"))
 
 # F023: Cooldown для постоянных ошибок (auth, validation)
 AUTH_ERROR_COOLDOWN_SECONDS = int(os.getenv("AUTH_ERROR_COOLDOWN_SECONDS", "86400"))
-VALIDATION_ERROR_COOLDOWN_SECONDS = int(os.getenv("VALIDATION_ERROR_COOLDOWN_SECONDS", "86400"))
+VALIDATION_ERROR_COOLDOWN_SECONDS = int(
+    os.getenv("VALIDATION_ERROR_COOLDOWN_SECONDS", "86400")
+)
 
 # F025: Default Retry-After для backpressure
 ALL_RATE_LIMITED_RETRY_AFTER = int(os.getenv("ALL_RATE_LIMITED_RETRY_AFTER", "60"))
-SERVICE_UNAVAILABLE_RETRY_AFTER = int(os.getenv("SERVICE_UNAVAILABLE_RETRY_AFTER", "30"))
+SERVICE_UNAVAILABLE_RETRY_AFTER = int(
+    os.getenv("SERVICE_UNAVAILABLE_RETRY_AFTER", "30")
+)
 
 # Fix E: Minimum quality gate — не маршрутизировать на ненадёжные модели
 MINIMUM_RELIABILITY_THRESHOLD = float(os.getenv("MINIMUM_RELIABILITY_THRESHOLD", "0.3"))
@@ -171,7 +175,9 @@ class ProcessPromptUseCase:
                 for m in json_filtered_models
             )
         ):
-            json_fallback_prompt = "You must respond with valid JSON only. No markdown, no explanation."
+            json_fallback_prompt = (
+                "You must respond with valid JSON only. No markdown, no explanation."
+            )
             original_system = request.system_prompt or ""
             request = PromptRequest(
                 user_id=request.user_id,
@@ -193,25 +199,31 @@ class ProcessPromptUseCase:
         # unavailable, keep the full list — the fallback loop + ServiceUnavailable
         # handle the all-open case.
         cb_available_models = [
-            m for m in tag_filtered_models
+            m
+            for m in tag_filtered_models
             if CircuitBreakerManager.is_available(m.provider)
         ]
         if cb_available_models:
             tag_filtered_models = cb_available_models
 
-        # Step 3: Sort by effective reliability score (F010) + tiebreaker by speed
+        # Step 3: Sort by effective reliability score. bmm/ADR-0003: effective already
+        # folds speed in multiplicatively, so average_response_time is now only a
+        # deterministic tiebreaker among equal scores — NOT an additive speed-rescue.
         sorted_models = sorted(
             tag_filtered_models,
             key=lambda m: (m.effective_reliability_score, -m.average_response_time),
             reverse=True,
         )
 
-        # Step 3.5: Minimum quality gate (Fix E)
+        # Step 3.5: Minimum quality gate (Fix E). bmm/ADR-0003: the request_count==0
+        # bypass is removed — UCB exploration is already baked into the v2 effective
+        # score (no-data ≈ 0.375 > threshold), so unproven models no longer need a
+        # special pass, and genuinely broken models can no longer sneak through.
         if MINIMUM_RELIABILITY_THRESHOLD > 0:
             quality_models = [
-                m for m in sorted_models
+                m
+                for m in sorted_models
                 if m.effective_reliability_score >= MINIMUM_RELIABILITY_THRESHOLD
-                or m.request_count == 0  # new models pass threshold (explore-first)
             ]
             if not quality_models:
                 best = sorted_models[0] if sorted_models else None
@@ -342,8 +354,12 @@ class ProcessPromptUseCase:
                     )
 
                 # Валидация JSON-ответа если запрошен response_format
-                if request.response_format and request.response_format.get("type") == "json_object":
+                if (
+                    request.response_format
+                    and request.response_format.get("type") == "json_object"
+                ):
                     from app.utils.json_validator import validate_json_response
+
                     try:
                         response_text = validate_json_response(response_text)
                     except ValueError as json_err:
@@ -362,7 +378,9 @@ class ProcessPromptUseCase:
 
                 # Success!
                 successful_model = model
-                model_duration_ms = round((time.perf_counter() - model_attempt_started) * 1000.0, 2)
+                model_duration_ms = round(
+                    (time.perf_counter() - model_attempt_started) * 1000.0, 2
+                )
                 # F024: Circuit breaker — запись успеха
                 CircuitBreakerManager.record_success(model.provider)
                 logger.info(
@@ -396,7 +414,9 @@ class ProcessPromptUseCase:
                 # F014: Rate limit - don't count as failure, set availability
                 await self._handle_rate_limit(model, e)
                 last_error_message = sanitize_error_message(e)
-                model_duration_ms = round((time.perf_counter() - model_attempt_started) * 1000.0, 2)
+                model_duration_ms = round(
+                    (time.perf_counter() - model_attempt_started) * 1000.0, 2
+                )
                 logger.warning(
                     "model_call_error",
                     attempt=attempts,
@@ -439,7 +459,9 @@ class ProcessPromptUseCase:
                 # F014: Transient errors - record as failure
                 await self._handle_transient_error(model, e, start_time)
                 last_error_message = sanitize_error_message(e)
-                model_duration_ms = round((time.perf_counter() - model_attempt_started) * 1000.0, 2)
+                model_duration_ms = round(
+                    (time.perf_counter() - model_attempt_started) * 1000.0, 2
+                )
                 logger.warning(
                     "model_call_error",
                     attempt=attempts,
@@ -483,7 +505,9 @@ class ProcessPromptUseCase:
                     # F025: трекинг типа ошибки
                     error_types.append(type(classified))
                 last_error_message = sanitize_error_message(e)
-                model_duration_ms = round((time.perf_counter() - model_attempt_started) * 1000.0, 2)
+                model_duration_ms = round(
+                    (time.perf_counter() - model_attempt_started) * 1000.0, 2
+                )
                 logger.warning(
                     "model_call_error",
                     attempt=attempts,
@@ -575,7 +599,11 @@ class ProcessPromptUseCase:
                 )
 
             if error_types and all(t == RateLimitError for t in error_types):
-                retry_after = min(retry_after_values) if retry_after_values else ALL_RATE_LIMITED_RETRY_AFTER
+                retry_after = (
+                    min(retry_after_values)
+                    if retry_after_values
+                    else ALL_RATE_LIMITED_RETRY_AFTER
+                )
                 raise AllProvidersRateLimited(
                     message=f"All {providers_tried} providers are rate limited",
                     retry_after_seconds=retry_after,
@@ -583,7 +611,9 @@ class ProcessPromptUseCase:
                     providers_tried=providers_tried,
                 )
 
-            raise Exception(f"All AI providers failed. Last error: {last_error_message}")
+            raise Exception(
+                f"All AI providers failed. Last error: {last_error_message}"
+            )
 
         # Step 5: Update success statistics
         try:
@@ -647,11 +677,16 @@ class ProcessPromptUseCase:
         if requested_model_name is None:
             return sorted_models, False
 
-        requested_model = next((model for model in sorted_models if model.name == requested_model_name), None)
+        requested_model = next(
+            (model for model in sorted_models if model.name == requested_model_name),
+            None,
+        )
         if requested_model is None:
             return sorted_models, False
 
-        remaining_models = [model for model in sorted_models if model.id != requested_model.id]
+        remaining_models = [
+            model for model in sorted_models if model.id != requested_model.id
+        ]
         return [requested_model, *remaining_models], True
 
     def _filter_json_capable_models(
@@ -664,8 +699,7 @@ class ProcessPromptUseCase:
             return models
 
         capable = [
-            m for m in models
-            if ProviderRegistry.supports_response_format(m.provider)
+            m for m in models if ProviderRegistry.supports_response_format(m.provider)
         ]
 
         if capable:
@@ -689,22 +723,34 @@ class ProcessPromptUseCase:
         models: list[AIModelInfo],
         tags: Optional[list[str]],
     ) -> list[AIModelInfo]:
-        """Filter models by provider tags. Fallback to all if none match."""
+        """Filter models by provider tags — HARD capability gate (bmm/ADR-0003).
+
+        Caller-requested tags are a hard requirement: if zero models declare all of
+        them, fail fast with ServiceUnavailable instead of silently routing the
+        request to an incapable model (the old fallback-to-all behaviour).
+        """
         if not tags:
             return models
 
         tag_set = set(tags)
         capable = [
-            m for m in models
-            if tag_set.issubset(ProviderRegistry.get_tags(m.provider))
+            m for m in models if tag_set.issubset(ProviderRegistry.get_tags(m.provider))
         ]
 
         if capable:
-            logger.info("tag_filter", total=len(models), matched=len(capable), tags=tags)
+            logger.info(
+                "tag_filter", total=len(models), matched=len(capable), tags=tags
+            )
             return capable
 
-        logger.warning("no_tag_matched_models", total=len(models), tags=tags, fallback="all")
-        return models
+        logger.warning(
+            "no_tag_matched_models", total=len(models), tags=tags, gate="hard"
+        )
+        raise ServiceUnavailable(
+            message=f"No model satisfies required capability tags: {sorted(tag_set)}",
+            retry_after_seconds=SERVICE_UNAVAILABLE_RETRY_AFTER,
+            reason="no_capable_model",
+        )
 
     def _filter_configured_models(self, models: list[AIModelInfo]) -> list[AIModelInfo]:
         """

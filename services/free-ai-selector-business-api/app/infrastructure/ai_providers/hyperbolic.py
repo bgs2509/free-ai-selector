@@ -25,3 +25,5 @@ class HyperbolicProvider(OpenAICompatibleProvider):
     DEFAULT_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
     API_KEY_ENV = "HYPERBOLIC_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = False
+    # bmm/ADR-0003: backfill TAGS (no "json" — SUPPORTS_RESPONSE_FORMAT is False).
+    TAGS = {"code", "russian"}

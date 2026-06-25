@@ -25,3 +25,5 @@ class DeepSeekProvider(OpenAICompatibleProvider):
     DEFAULT_MODEL = "deepseek-chat"
     API_KEY_ENV = "DEEPSEEK_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True  # Supports {"type": "json_object"}
+    # bmm/ADR-0003: backfill TAGS so the hard capability gate can route here.
+    TAGS = {"json", "code", "russian"}

@@ -27,3 +27,5 @@ class SambanovaProvider(OpenAICompatibleProvider):
     DEFAULT_MODEL = "Meta-Llama-3.3-70B-Instruct"
     API_KEY_ENV = "SAMBANOVA_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True  # F011-B: Supports {"type": "json_object"}
+    # bmm/ADR-0003: backfill TAGS so the hard capability gate can route here.
+    TAGS = {"json", "russian", "code"}
