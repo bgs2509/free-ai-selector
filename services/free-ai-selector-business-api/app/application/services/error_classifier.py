@@ -10,7 +10,7 @@ Classification rules:
 - 5xx → ServerError
 - Timeout → TimeoutError
 - 401, 402, 403 → AuthenticationError
-- 400, 404, 410, 422 → ValidationError
+- 400, 404, 410, 412, 422 → ValidationError
 """
 
 from email.utils import parsedate_to_datetime
@@ -43,7 +43,9 @@ def classify_error(exception: Exception) -> ProviderError:
         return exception
 
     # Timeout exceptions
-    if isinstance(exception, (httpx.TimeoutException, httpx.ConnectTimeout, httpx.ReadTimeout)):
+    if isinstance(
+        exception, (httpx.TimeoutException, httpx.ConnectTimeout, httpx.ReadTimeout)
+    ):
         return TimeoutError(
             message=str(exception),
             original_exception=exception,
@@ -107,6 +109,16 @@ def classify_error(exception: Exception) -> ProviderError:
                 original_exception=exception,
             )
 
+        # ex9: Precondition Failed (412) — empirically persistent for Fireworks
+        # (account/model precondition not met). Treat as permanent (ValidationError)
+        # so the model gets a cooldown instead of being hammered every request and
+        # falling through to generic ProviderError. Mirrors the 410 handling.
+        if status_code == 412:
+            return ValidationError(
+                message=f"Precondition failed: {str(exception)}",
+                original_exception=exception,
+            )
+
     # Unknown exceptions - wrap as generic ProviderError
     return ProviderError(
         message=str(exception),
@@ -140,6 +152,7 @@ def _parse_retry_after(headers: httpx.Headers) -> Optional[int]:
     try:
         retry_date = parsedate_to_datetime(retry_after)
         from datetime import datetime, timezone
+
         now = datetime.now(timezone.utc)
         delta = retry_date - now
         return max(0, int(delta.total_seconds()))

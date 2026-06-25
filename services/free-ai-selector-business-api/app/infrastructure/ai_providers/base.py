@@ -13,7 +13,7 @@ from typing import Any, ClassVar, Optional
 
 import httpx
 
-from app.domain.exceptions import ProviderError
+from app.domain.exceptions import ProviderError, TimeoutError
 from app.utils.logger import get_logger
 from app.utils.security import sanitize_error_message
 
@@ -188,9 +188,8 @@ class OpenAICompatibleProvider(AIProviderBase):
             # empty so process_prompt treats it as a failure and falls back to the
             # next provider instead of leaking raw reasoning to the user.
             if not content and finish_reason != "length":
-                reasoning = (
-                    message.get("reasoning_content", "")
-                    or message.get("reasoning", "")
+                reasoning = message.get("reasoning_content", "") or message.get(
+                    "reasoning", ""
                 )
                 if reasoning:
                     content = str(reasoning).strip()
@@ -202,7 +201,9 @@ class OpenAICompatibleProvider(AIProviderBase):
             return content
         else:
             err_msg = sanitize_error_message(str(result))
-            logger.error("unexpected_response", provider=self.PROVIDER_NAME, error=err_msg)
+            logger.error(
+                "unexpected_response", provider=self.PROVIDER_NAME, error=err_msg
+            )
             raise ValueError(f"Invalid response format from {self.PROVIDER_NAME}")
 
     async def generate(self, prompt: str, **kwargs: Any) -> str:
@@ -240,7 +241,27 @@ class OpenAICompatibleProvider(AIProviderBase):
             except httpx.HTTPError as e:
                 err_msg = sanitize_error_message(e)
                 logger.error("api_error", provider=self.PROVIDER_NAME, error=err_msg)
-                raise ProviderError(f"{self.PROVIDER_NAME} error: {e}") from e
+                # ex9: build a guaranteed non-empty detail. Transport errors like
+                # RemoteProtocolError / empty ReadTimeout have an empty str(e), which
+                # previously produced a useless "{Provider} error: " in the journal.
+                detail = self._describe_error(e)
+                # ConnectError / ConnectTimeout = connection never established, cheap
+                # to retry → TimeoutError (retryable). Read/protocol failures are
+                # expensive ~30s hangs → ProviderError (non-retryable, fall back).
+                if isinstance(e, (httpx.ConnectError, httpx.ConnectTimeout)):
+                    raise TimeoutError(f"{self.PROVIDER_NAME} error: {detail}") from e
+                raise ProviderError(f"{self.PROVIDER_NAME} error: {detail}") from e
+
+    @staticmethod
+    def _describe_error(exc: Exception) -> str:
+        """Build a guaranteed non-empty, sanitized error detail for surfacing (ex9).
+
+        httpx transport errors (RemoteProtocolError, empty ReadTimeout) can have an
+        empty ``str()``; without this the journal recorded a useless
+        ``"{Provider} error: "`` that hid the real failure cause.
+        """
+        detail = sanitize_error_message(str(exc)).strip()
+        return detail if detail else type(exc).__name__
 
     def _is_health_check_success(self, response: httpx.Response) -> bool:
         """Hook для кастомной проверки успеха (GitHub Models)."""
@@ -256,7 +277,9 @@ class OpenAICompatibleProvider(AIProviderBase):
                 return self._is_health_check_success(response)
             except Exception as e:
                 err_msg = sanitize_error_message(e)
-                logger.error("health_check_failed", provider=self.PROVIDER_NAME, error=err_msg)
+                logger.error(
+                    "health_check_failed", provider=self.PROVIDER_NAME, error=err_msg
+                )
                 return False
 
     def get_provider_name(self) -> str:

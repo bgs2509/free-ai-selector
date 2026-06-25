@@ -6,7 +6,11 @@ import pytest
 import httpx
 from httpx import Response, Request
 
-from app.application.services.error_classifier import classify_error, is_retryable, _parse_retry_after
+from app.application.services.error_classifier import (
+    classify_error,
+    is_retryable,
+    _parse_retry_after,
+)
 from app.domain.exceptions import (
     AuthenticationError,
     ProviderError,
@@ -47,7 +51,9 @@ class TestClassifyError:
         """Test that HTTP 429 is classified as RateLimitError (F012: FR-1)."""
         request = Request("POST", "https://api.test.com")
         response = Response(429, request=request, headers={"Retry-After": "60"})
-        exception = httpx.HTTPStatusError("Rate limited", request=request, response=response)
+        exception = httpx.HTTPStatusError(
+            "Rate limited", request=request, response=response
+        )
 
         result = classify_error(exception)
 
@@ -62,7 +68,9 @@ class TestClassifyError:
             request=request,
             content=b'{"error": "Upstream returned 429 too many requests"}',
         )
-        exception = httpx.HTTPStatusError("Server error", request=request, response=response)
+        exception = httpx.HTTPStatusError(
+            "Server error", request=request, response=response
+        )
 
         result = classify_error(exception)
 
@@ -71,8 +79,12 @@ class TestClassifyError:
     def test_classify_500_as_server_error(self):
         """Test that HTTP 500 (without 429 in body) is classified as ServerError."""
         request = Request("POST", "https://api.test.com")
-        response = Response(500, request=request, content=b'{"error": "Internal server error"}')
-        exception = httpx.HTTPStatusError("Server error", request=request, response=response)
+        response = Response(
+            500, request=request, content=b'{"error": "Internal server error"}'
+        )
+        exception = httpx.HTTPStatusError(
+            "Server error", request=request, response=response
+        )
 
         result = classify_error(exception)
 
@@ -82,7 +94,9 @@ class TestClassifyError:
         """Test that HTTP 502 is classified as ServerError."""
         request = Request("POST", "https://api.test.com")
         response = Response(502, request=request)
-        exception = httpx.HTTPStatusError("Bad gateway", request=request, response=response)
+        exception = httpx.HTTPStatusError(
+            "Bad gateway", request=request, response=response
+        )
 
         result = classify_error(exception)
 
@@ -92,7 +106,9 @@ class TestClassifyError:
         """Test that HTTP 503 is classified as ServerError."""
         request = Request("POST", "https://api.test.com")
         response = Response(503, request=request)
-        exception = httpx.HTTPStatusError("Service unavailable", request=request, response=response)
+        exception = httpx.HTTPStatusError(
+            "Service unavailable", request=request, response=response
+        )
 
         result = classify_error(exception)
 
@@ -102,7 +118,9 @@ class TestClassifyError:
         """Test that HTTP 401 is classified as AuthenticationError."""
         request = Request("POST", "https://api.test.com")
         response = Response(401, request=request)
-        exception = httpx.HTTPStatusError("Unauthorized", request=request, response=response)
+        exception = httpx.HTTPStatusError(
+            "Unauthorized", request=request, response=response
+        )
 
         result = classify_error(exception)
 
@@ -112,7 +130,9 @@ class TestClassifyError:
         """Test that HTTP 403 is classified as AuthenticationError."""
         request = Request("POST", "https://api.test.com")
         response = Response(403, request=request)
-        exception = httpx.HTTPStatusError("Forbidden", request=request, response=response)
+        exception = httpx.HTTPStatusError(
+            "Forbidden", request=request, response=response
+        )
 
         result = classify_error(exception)
 
@@ -122,7 +142,9 @@ class TestClassifyError:
         """Test that HTTP 400 is classified as ValidationError."""
         request = Request("POST", "https://api.test.com")
         response = Response(400, request=request)
-        exception = httpx.HTTPStatusError("Bad request", request=request, response=response)
+        exception = httpx.HTTPStatusError(
+            "Bad request", request=request, response=response
+        )
 
         result = classify_error(exception)
 
@@ -132,7 +154,9 @@ class TestClassifyError:
         """Test that HTTP 422 is classified as ValidationError."""
         request = Request("POST", "https://api.test.com")
         response = Response(422, request=request)
-        exception = httpx.HTTPStatusError("Unprocessable entity", request=request, response=response)
+        exception = httpx.HTTPStatusError(
+            "Unprocessable entity", request=request, response=response
+        )
 
         result = classify_error(exception)
 
@@ -168,15 +192,30 @@ class TestClassifyError:
         """v88: HTTP 410 Gone → ValidationError (permanent, NOT retried)."""
         request = Request("POST", "https://api.test.com")
         response = Response(410, request=request)
-        exception = httpx.HTTPStatusError(
-            "Gone", request=request, response=response
-        )
+        exception = httpx.HTTPStatusError("Gone", request=request, response=response)
 
         result = classify_error(exception)
 
         assert isinstance(result, ValidationError)
         assert "gone" in result.message.lower()
         # Must be treated as permanent, not retried
+        assert is_retryable(result) is False
+
+    def test_classify_412_as_validation_error(self):
+        """ex9: HTTP 412 Precondition Failed → ValidationError (permanent, NOT retried)."""
+        request = Request(
+            "POST", "https://api.fireworks.ai/inference/v1/chat/completions"
+        )
+        response = Response(412, request=request)
+        exception = httpx.HTTPStatusError(
+            "Client error '412 Precondition Failed'", request=request, response=response
+        )
+
+        result = classify_error(exception)
+
+        assert isinstance(result, ValidationError)
+        assert "412" in result.message
+        # Must be treated as permanent (→ cooldown), not retried
         assert is_retryable(result) is False
 
     def test_classify_unknown_exception_as_provider_error(self):
