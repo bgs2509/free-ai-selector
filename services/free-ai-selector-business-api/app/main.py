@@ -27,7 +27,8 @@ from app.utils.request_id import (
 from app.utils.log_helpers import log_request_started, log_request_completed
 from app.utils.security import sanitize_error_message
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
@@ -55,13 +56,6 @@ CORS_ORIGINS = os.getenv(
 # Rate limiting configuration (Level 2 requirement)
 RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
 RATE_LIMIT_PERIOD = int(os.getenv("RATE_LIMIT_PERIOD", "60"))
-
-# Root path for reverse proxy (для работы за nginx-proxy)
-# За nginx Swagger UI читает openapi_url с публичной стороны (до срезания
-# префикса проксёй), поэтому он обязан содержать префикс. Локально без
-# ROOT_PATH остаётся стандартный "/openapi.json".
-ROOT_PATH = os.getenv("ROOT_PATH", "")
-_openapi_url = f"{ROOT_PATH}/openapi.json" if ROOT_PATH else "/openapi.json"
 
 DEFAULT_RUN_ID = os.getenv("RUN_ID", "").strip() or None
 DEFAULT_RUN_SOURCE = os.getenv("RUN_SOURCE", "").strip() or None
@@ -135,19 +129,44 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 # FastAPI Application
 # =============================================================================
 
-# За nginx ROOT_PATH (например /free-ai-selector) нужен, чтобы Swagger UI
-# тянул спецификацию по /free-ai-selector/openapi.json, а не по корневому
-# /openapi.json (который прокси не маршрутизирует -> 404). Симметрично Data API.
+# Встроенные /docs и /redoc отключены: они зашивают абсолютный
+# openapi_url="/openapi.json", который за nginx (срезающим префикс
+# /free-ai-selector/) браузер тянет из корня -> 404. Вместо них ниже
+# объявлены кастомные роуты с ОТНОСИТЕЛЬНЫМ openapi_url. root_path НЕ задаём:
+# он ломает StaticFiles за прокси (см. коммит 993830c), а веб-интерфейс
+# держится на относительных путях.
 app = FastAPI(
     title="Free AI Selector - Business API",
     description="Бизнес-логика и интеграция с AI-провайдерами",
     version=SERVICE_VERSION,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url=_openapi_url,
-    root_path=ROOT_PATH,
+    docs_url=None,
+    redoc_url=None,
     lifespan=lifespan,
 )
+
+
+# START_BLOCK_PROXY_SAFE_DOCS
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html() -> HTMLResponse:
+    """Swagger UI с относительным openapi_url для работы за nginx-proxy.
+
+    Браузер на `/free-ai-selector/docs` резолвит `openapi.json` в
+    `/free-ai-selector/openapi.json`; локально — в `/openapi.json`.
+    """
+    return get_swagger_ui_html(
+        openapi_url="openapi.json",
+        title=f"{app.title} - Swagger UI",
+    )
+
+
+@app.get("/redoc", include_in_schema=False)
+async def custom_redoc_html() -> HTMLResponse:
+    """ReDoc с относительным openapi_url (та же причина, что и для Swagger)."""
+    return get_redoc_html(
+        openapi_url="openapi.json",
+        title=f"{app.title} - ReDoc",
+    )
+# END_BLOCK_PROXY_SAFE_DOCS
 
 # Add rate limiter to app state
 app.state.limiter = limiter
