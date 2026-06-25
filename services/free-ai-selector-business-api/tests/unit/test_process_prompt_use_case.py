@@ -1618,3 +1618,69 @@ class TestP7uFailoverObservability:
         assert "circuit breaker" in kwargs["error_message"].lower()
         assert kwargs["http_status"] == 503
         assert float(kwargs["response_time"]) >= 0.001
+
+
+@pytest.mark.unit
+class TestQualityThresholdGate:
+    """bmm/ADR-0003: with the request_count==0 bypass removed, the 0.3 quality gate
+    fires for genuinely-broken models, while v2 no-data (≈0.375) still passes."""
+
+    @patch.dict(os.environ, {"KEY1": "key1"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_all_below_threshold_raises_service_unavailable(
+        self, mock_registry, mock_data_api_client
+    ):
+        from app.domain.exceptions import ServiceUnavailable
+
+        mock_registry.get_api_key_env.side_effect = lambda p: {"P1": "KEY1"}.get(p, "")
+        mock_registry.get_tags.return_value = set()
+        mock_registry.supports_response_format.return_value = False
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="Broken",
+                provider="P1",
+                api_endpoint="x",
+                reliability_score=0.1,
+                is_active=True,
+                effective_reliability_score=0.1,  # below threshold (0.3)
+                request_count=500,  # has data → no bypass to rescue it
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        with pytest.raises(ServiceUnavailable) as exc_info:
+            await use_case.execute(PromptRequest(user_id="u", prompt_text="p"))
+        assert exc_info.value.reason == "all_models_below_quality_threshold"
+
+    @patch.dict(os.environ, {"KEY1": "key1"})
+    @patch("app.application.use_cases.process_prompt.ProviderRegistry")
+    async def test_no_data_model_passes_gate(self, mock_registry, mock_data_api_client):
+        """A no-data model (v2 effective ≈0.375 > 0.3) still passes the gate and is tried."""
+        provider = AsyncMock()
+        provider.generate.return_value = "ok"
+        mock_registry.get_provider.return_value = provider
+        mock_registry.get_api_key_env.side_effect = lambda p: {"P1": "KEY1"}.get(p, "")
+        mock_registry.get_tags.return_value = set()
+        mock_registry.supports_response_format.return_value = False
+
+        mock_data_api_client.get_all_models.return_value = [
+            AIModelInfo(
+                id=1,
+                name="NewModel",
+                provider="P1",
+                api_endpoint="x",
+                reliability_score=0.5,
+                is_active=True,
+                effective_reliability_score=0.375,  # v2 no-data score
+                request_count=0,
+                recent_request_count=0,
+                decision_reason="explore_ucb",
+            ),
+        ]
+
+        use_case = ProcessPromptUseCase(mock_data_api_client)
+        response = await use_case.execute(PromptRequest(user_id="u", prompt_text="p"))
+        assert response.success is True
+        mock_registry.get_provider.assert_called_with("P1")

@@ -32,7 +32,8 @@ def laplace_quality(
     b = rating_params.LAPLACE_BETA if beta is None else beta
     denom = w_success + w_fail_hard + a + b
     if denom <= 0:
-        return a / (a + b)
+        # Guard against a misconfigured zero prior (α=β=0) → neutral 0.5.
+        return 0.5 if (a + b) <= 0 else a / (a + b)
     return (w_success + a) / denom
 
 
