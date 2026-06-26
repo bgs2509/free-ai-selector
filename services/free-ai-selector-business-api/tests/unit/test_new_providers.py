@@ -11,7 +11,6 @@ F013: Обновлены тесты для OpenAICompatibleProvider.
 
 from unittest.mock import AsyncMock, patch, MagicMock
 
-import httpx
 import pytest
 
 
@@ -122,7 +121,9 @@ class TestGitHubModelsProvider:
         # F013: API key обязателен в __init__
         provider = GitHubModelsProvider(api_key="test-key")
         assert provider.model == "gpt-4o-mini"
-        assert provider.api_url == "https://models.inference.ai.azure.com/chat/completions"
+        assert (
+            provider.api_url == "https://models.inference.ai.azure.com/chat/completions"
+        )
 
     def test_get_provider_name(self):
         """Тест получения имени провайдера."""
@@ -157,7 +158,9 @@ class TestFireworksProvider:
         # F013: API key обязателен в __init__
         provider = FireworksProvider(api_key="test-key")
         assert provider.model == "accounts/fireworks/models/gpt-oss-20b"
-        assert provider.api_url == "https://api.fireworks.ai/inference/v1/chat/completions"
+        assert (
+            provider.api_url == "https://api.fireworks.ai/inference/v1/chat/completions"
+        )
 
     def test_get_provider_name(self):
         """Тест получения имени провайдера."""
@@ -265,9 +268,9 @@ class TestProvidersInheritance:
         ]
 
         for provider_class in providers:
-            assert issubclass(
-                provider_class, AIProviderBase
-            ), f"{provider_class.__name__} должен наследовать от AIProviderBase"
+            assert issubclass(provider_class, AIProviderBase), (
+                f"{provider_class.__name__} должен наследовать от AIProviderBase"
+            )
 
     def test_all_providers_implement_required_methods(self):
         """Проверка что все провайдеры реализуют обязательные методы."""
@@ -292,9 +295,9 @@ class TestProvidersInheritance:
 
         for provider in providers:
             for method in required_methods:
-                assert hasattr(
-                    provider, method
-                ), f"{provider.__class__.__name__} должен иметь метод {method}"
+                assert hasattr(provider, method), (
+                    f"{provider.__class__.__name__} должен иметь метод {method}"
+                )
 
 
 @pytest.mark.unit
@@ -307,13 +310,15 @@ class TestBaseProviderReasoningFallback:
 
         provider = GroqProvider(api_key="test-key")
         result = {
-            "choices": [{
-                "message": {
-                    "role": "assistant",
-                    "content": None,
-                    "reasoning": "The user wants hello. I should say Hello.",
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "reasoning": "The user wants hello. I should say Hello.",
+                    }
                 }
-            }]
+            ]
         }
         response = provider._parse_response(result)
         assert response == "The user wants hello. I should say Hello."
@@ -324,13 +329,15 @@ class TestBaseProviderReasoningFallback:
 
         provider = GroqProvider(api_key="test-key")
         result = {
-            "choices": [{
-                "message": {
-                    "role": "assistant",
-                    "content": None,
-                    "reasoning_content": "thinking...",
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "reasoning_content": "thinking...",
+                    }
                 }
-            }]
+            ]
         }
         response = provider._parse_response(result)
         assert response == "thinking..."
@@ -341,13 +348,15 @@ class TestBaseProviderReasoningFallback:
 
         provider = GroqProvider(api_key="test-key")
         result = {
-            "choices": [{
-                "message": {
-                    "role": "assistant",
-                    "content": "Hello!",
-                    "reasoning": "thinking...",
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": "Hello!",
+                        "reasoning": "thinking...",
+                    }
                 }
-            }]
+            ]
         }
         response = provider._parse_response(result)
         assert response == "Hello!"
@@ -363,12 +372,14 @@ class TestFireworksReasoningTags:
 
         provider = FireworksProvider(api_key="test-key")
         result = {
-            "choices": [{
-                "message": {
-                    "role": "assistant",
-                    "content": '<|channel|>analysis<|message|>Some reasoning here.<|end|><|start|>assistant Hello!',
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": "<|channel|>analysis<|message|>Some reasoning here.<|end|><|start|>assistant Hello!",
+                    }
                 }
-            }]
+            ]
         }
         response = provider._parse_response(result)
         assert response == "Hello!"
@@ -379,12 +390,14 @@ class TestFireworksReasoningTags:
 
         provider = FireworksProvider(api_key="test-key")
         result = {
-            "choices": [{
-                "message": {
-                    "role": "assistant",
-                    "content": '<|channel|>analysis<|message|>The answer is 42.<|end|>',
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": "<|channel|>analysis<|message|>The answer is 42.<|end|>",
+                    }
                 }
-            }]
+            ]
         }
         response = provider._parse_response(result)
         assert response == "The answer is 42."
@@ -394,11 +407,7 @@ class TestFireworksReasoningTags:
         from app.infrastructure.ai_providers.fireworks import FireworksProvider
 
         provider = FireworksProvider(api_key="test-key")
-        result = {
-            "choices": [{
-                "message": {"role": "assistant", "content": "Hello!"}
-            }]
-        }
+        result = {"choices": [{"message": {"role": "assistant", "content": "Hello!"}}]}
         response = provider._parse_response(result)
         assert response == "Hello!"
 
@@ -408,12 +417,14 @@ class TestFireworksReasoningTags:
 
         provider = FireworksProvider(api_key="test-key")
         result = {
-            "choices": [{
-                "message": {
-                    "role": "assistant",
-                    "content": '<|channel|>analysis<|message|>User wants hello.<|end|><|start|>assistant',
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": "<|channel|>analysis<|message|>User wants hello.<|end|><|start|>assistant",
+                    }
                 }
-            }]
+            ]
         }
         response = provider._parse_response(result)
         assert response == "User wants hello."
@@ -461,43 +472,60 @@ class TestProviderTags:
 
     def test_groq_tags(self):
         from app.infrastructure.ai_providers.groq import GroqProvider
+
         assert GroqProvider.TAGS == {"fast", "json", "code", "tools", "russian"}
 
     def test_cerebras_tags(self):
         from app.infrastructure.ai_providers.cerebras import CerebrasProvider
+
         assert CerebrasProvider.TAGS == {"fast", "json", "reasoning", "russian"}
 
     def test_huggingface_tags(self):
         from app.infrastructure.ai_providers.huggingface import HuggingFaceProvider
+
         assert HuggingFaceProvider.TAGS == {"lightweight", "russian"}
 
     def test_openrouter_tags(self):
         from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
-        assert OpenRouterProvider.TAGS == {"code", "reasoning", "russian", "tools"}
+
+        # bmm deploy-prep: +json (SUPPORTS_RESPONSE_FORMAT=True) → eligible for json+russian
+        assert OpenRouterProvider.TAGS == {
+            "json",
+            "code",
+            "reasoning",
+            "russian",
+            "tools",
+        }
 
     def test_github_tags(self):
         from app.infrastructure.ai_providers.github_models import GitHubModelsProvider
+
         assert GitHubModelsProvider.TAGS == {"fast", "json", "russian", "tools"}
 
     def test_fireworks_tags(self):
         from app.infrastructure.ai_providers.fireworks import FireworksProvider
+
         assert FireworksProvider.TAGS == {"json", "code", "russian"}
 
     def test_novita_tags(self):
         from app.infrastructure.ai_providers.novita import NovitaProvider
+
         assert NovitaProvider.TAGS == {"json", "lightweight"}
 
     def test_base_tags_empty(self):
         from app.infrastructure.ai_providers.base import OpenAICompatibleProvider
+
         assert OpenAICompatibleProvider.TAGS == set()
 
     def test_registry_get_tags(self):
         from app.infrastructure.ai_providers.registry import ProviderRegistry
+
         tags = ProviderRegistry.get_tags("Groq")
         assert tags == {"fast", "json", "code", "tools", "russian"}
 
     def test_registry_get_tags_unknown(self):
         from app.infrastructure.ai_providers.registry import ProviderRegistry
+
         tags = ProviderRegistry.get_tags("Unknown")
         assert tags == set()
 
@@ -508,34 +536,42 @@ class TestMaxOutputTokens:
 
     def test_groq_max_output_tokens(self):
         from app.infrastructure.ai_providers.groq import GroqProvider
+
         assert GroqProvider.MAX_OUTPUT_TOKENS == 8192
 
     def test_cerebras_max_output_tokens(self):
         from app.infrastructure.ai_providers.cerebras import CerebrasProvider
+
         assert CerebrasProvider.MAX_OUTPUT_TOKENS == 8192
 
     def test_huggingface_max_output_tokens(self):
         from app.infrastructure.ai_providers.huggingface import HuggingFaceProvider
+
         assert HuggingFaceProvider.MAX_OUTPUT_TOKENS == 8192
 
     def test_openrouter_max_output_tokens(self):
         from app.infrastructure.ai_providers.openrouter import OpenRouterProvider
+
         assert OpenRouterProvider.MAX_OUTPUT_TOKENS == 16384
 
     def test_github_max_output_tokens(self):
         from app.infrastructure.ai_providers.github_models import GitHubModelsProvider
+
         assert GitHubModelsProvider.MAX_OUTPUT_TOKENS == 16384
 
     def test_fireworks_max_output_tokens(self):
         from app.infrastructure.ai_providers.fireworks import FireworksProvider
+
         assert FireworksProvider.MAX_OUTPUT_TOKENS == 4096
 
     def test_novita_max_output_tokens(self):
         from app.infrastructure.ai_providers.novita import NovitaProvider
+
         assert NovitaProvider.MAX_OUTPUT_TOKENS == 16384
 
     def test_base_default(self):
         from app.infrastructure.ai_providers.base import OpenAICompatibleProvider
+
         assert OpenAICompatibleProvider.MAX_OUTPUT_TOKENS == 2048
 
     def test_payload_uses_max_output_tokens(self):
@@ -589,7 +625,11 @@ class TestReasoningParseGate:
             "choices": [
                 {
                     "finish_reason": "length",
-                    "message": {"role": "assistant", "content": "", "reasoning": "thinking..."},
+                    "message": {
+                        "role": "assistant",
+                        "content": "",
+                        "reasoning": "thinking...",
+                    },
                 }
             ]
         }
@@ -624,7 +664,9 @@ class TestReasoningParseGate:
     def test_normal_content_returned(self):
         """Real content is always returned regardless of finish_reason."""
         provider = self._provider()
-        result = {"choices": [{"finish_reason": "stop", "message": {"content": "hello"}}]}
+        result = {
+            "choices": [{"finish_reason": "stop", "message": {"content": "hello"}}]
+        }
         assert provider._parse_response(result) == "hello"
 
     def test_length_with_content_returns_content(self):
