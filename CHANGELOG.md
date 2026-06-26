@@ -17,6 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tag-based filtering: `"local"` tag for Ollama models
 - Configurable `OLLAMA_BASE_URL` for multi-environment deployment
 - Separate `ollama-docker` project for containerized Ollama with GPU
+- **Reliability rating formula v2** (ADR-0003, `bmm`): Laplace-smoothed quality (no-data → 0.5, not 1.0), normalized-median speed, multiplicative `base = quality·(0.5+0.5·speed)`, bounded+capped UCB exploration. Replaces the explore-first `effective_reliability_score=1.0` that pinned broken-but-idle providers at the top. New `decision_reason` values: `laplace_ucb` / `explore_ucb`. Hard/soft failure split via `http_status != 429` (rate-limits no longer depress quality). No DB migration.
+- **TAGS backfill**: `SambaNova`, `DeepSeek`, `Hyperbolic` (were empty → invisible to tag filter); `json` added to `OpenRouter` and `json`+`russian` to `Ollama-Gemma4-E2B` so the healthiest models serve the dominant `json+russian` traffic.
+
+### ⚠️ Changed (BREAKING)
+- **Capability tag gate is now HARD** (`bmm`/ADR-0003): a request whose `tags` match **zero** providers now returns `503 ServiceUnavailable` (`reason=no_capable_model`) instead of silently falling back to all models. JSON `response_format` stays **soft** (system-prompt degradation kept). **Impact:** verified against prod logs — current callers send only `['json','russian']` (92%) and `['json']` (8%), both satisfied by multiple healthy providers, so no live 503 expected. A caller sending an unknown/typo tag will now fail fast. (closes free-ai-selector-318)
+
+### Fixed
+- **Fireworks empty-error + transport handling** (`ex9`): provider transport errors (`RemoteProtocolError`, empty `ReadTimeout`) no longer record an empty `"{Provider} error: "` — the real status/class is surfaced. `ConnectError`/`ConnectTimeout` → retryable; read/protocol hangs → non-retryable fall-back. HTTP `412` → `ValidationError` (permanent → cooldown, mirrors `410`).
 
 ### Planned for v4.0 (April 2026)
 - **BREAKING**: Remove old command names (`/aidd-idea`, `/aidd-generate`, `/aidd-finalize`)
