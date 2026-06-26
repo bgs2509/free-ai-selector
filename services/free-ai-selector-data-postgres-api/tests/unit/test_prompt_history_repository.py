@@ -33,7 +33,9 @@ class TestF017GetStatisticsForPeriod:
         assert stats["failed_requests"] == 0
         assert stats["success_rate"] == 0.0
 
-    async def test_statistics_for_period_with_mixed_results(self, test_db: AsyncSession):
+    async def test_statistics_for_period_with_mixed_results(
+        self, test_db: AsyncSession
+    ):
         """Test statistics calculation with mixed success/failure records (F017)."""
         repository = PromptHistoryRepository(test_db)
 
@@ -182,7 +184,9 @@ class TestF017GetStatisticsForPeriod:
         assert stats["failed_requests"] == 1
         assert stats["success_rate"] == 0.75
 
-    async def test_statistics_excludes_records_outside_period(self, test_db: AsyncSession):
+    async def test_statistics_excludes_records_outside_period(
+        self, test_db: AsyncSession
+    ):
         """Test that statistics only include records within the specified period (F017)."""
         repository = PromptHistoryRepository(test_db)
 
@@ -281,7 +285,9 @@ class TestCallerPersistence:
         repository = PromptHistoryRepository(test_db)
 
         created = await repository.create(
-            _make_history(caller="health-worker", http_status=200, requested_model="qwen")
+            _make_history(
+                caller="health-worker", http_status=200, requested_model="qwen"
+            )
         )
         await test_db.commit()
 
@@ -353,7 +359,9 @@ class TestGetStatsGroupedByCaller:
         assert result[0]["caller"] == "big"
         assert result[0]["request_count"] == 3
 
-    async def test_auto_vs_pinned_requested_model_breakdown(self, test_db: AsyncSession):
+    async def test_auto_vs_pinned_requested_model_breakdown(
+        self, test_db: AsyncSession
+    ):
         """vop: auto_count (requested_model NULL) vs pinned_count (NOT NULL)."""
         repository = PromptHistoryRepository(test_db)
 
@@ -364,7 +372,11 @@ class TestGetStatsGroupedByCaller:
             await repository.create(_make_history(caller="P", requested_model="gpt-x"))
         await test_db.commit()
 
-        row = next(r for r in await repository.get_stats_grouped_by_caller(window_days=7) if r["caller"] == "P")
+        row = next(
+            r
+            for r in await repository.get_stats_grouped_by_caller(window_days=7)
+            if r["caller"] == "P"
+        )
         assert row["request_count"] == 5
         assert row["auto_count"] == 2
         assert row["pinned_count"] == 3
@@ -414,8 +426,12 @@ class TestGetFiltered:
         repository = PromptHistoryRepository(test_db)
 
         now = datetime.utcnow()
-        await repository.create(_make_history(caller="A", created_at=now - timedelta(hours=2)))
-        await repository.create(_make_history(caller="B", created_at=now - timedelta(hours=1)))
+        await repository.create(
+            _make_history(caller="A", created_at=now - timedelta(hours=2))
+        )
+        await repository.create(
+            _make_history(caller="B", created_at=now - timedelta(hours=1))
+        )
         await test_db.commit()
 
         result = await repository.get_filtered()
@@ -498,3 +514,56 @@ class TestGetFiltered:
 
         page = await repository.get_filtered(limit=2, offset=2)
         assert len(page) == 2
+
+
+@pytest.mark.unit
+class TestRecentWeightedStatsV2:
+    """bmm/ADR-0003 (j4v): exercise the v2 weighted-stats SQL on a REAL Postgres —
+    hard/soft split (429 excluded), NULL http_status treated as hard, median latency.
+    This is the test that was missing: prior tests only fed mock stat-dicts into
+    _calculate_recent_metrics; the SQL itself was never executed against a DB."""
+
+    async def test_hard_soft_split_and_median(self, test_db: AsyncSession):
+        repository = PromptHistoryRepository(test_db)
+        now = datetime.utcnow()
+
+        # model 1 rows: 3 success, 1 hard-fail(500), 1 rate-limit(429), 1 NULL-status fail
+        rows = [
+            (True, 200, "1.0"),
+            (True, 200, "2.0"),
+            (True, 200, "3.0"),
+            (False, 500, "4.0"),  # hard fail
+            (False, 429, "0.5"),  # soft (rate limit) — MUST be excluded from quality
+            (False, None, "5.0"),  # NULL status fail — treated as hard (conservative)
+        ]
+        for ok, status, rt in rows:
+            await repository.create(
+                PromptHistory(
+                    id=None,
+                    user_id="u",
+                    prompt_text="p",
+                    selected_model_id=1,
+                    response_text="r" if ok else None,
+                    response_time=Decimal(rt),
+                    success=ok,
+                    error_message=None if ok else "e",
+                    http_status=status,
+                    created_at=now,
+                )
+            )
+        await test_db.commit()
+
+        stats = await repository.get_recent_weighted_stats_for_all_models(window_days=7)
+
+        assert 1 in stats
+        s = stats[1]
+        # All 6 rows counted in the raw count (used for UCB recent_n).
+        assert s["request_count"] == 6
+        # Rows are ~now → decay weight ≈ 1, so weighted sums ≈ raw counts.
+        # 3 successes, 2 hard fails (500 + NULL); the 429 is in NEITHER.
+        assert s["w_success"] == pytest.approx(3.0, abs=0.1)
+        assert s["w_fail_hard"] == pytest.approx(2.0, abs=0.1)
+        # 429 excluded from both numerator and hard-denominator → sum ≈ 5, not 6.
+        assert s["w_success"] + s["w_fail_hard"] == pytest.approx(5.0, abs=0.2)
+        # Median latency computed over all 6 response_times [0.5,1,2,3,4,5] → 2.5.
+        assert s["median_response_time"] == pytest.approx(2.5, abs=0.6)
