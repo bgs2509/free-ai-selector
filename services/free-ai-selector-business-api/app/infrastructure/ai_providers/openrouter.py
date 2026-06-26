@@ -31,6 +31,8 @@ class OpenRouterProvider(OpenAICompatibleProvider):
         "HTTP-Referer": "https://github.com/free-ai-selector",
         "X-Title": "Free AI Selector",
     }
-    TAGS: ClassVar[set[str]] = {"code", "reasoning", "russian", "tools"}
+    # bmm: +json — SUPPORTS_RESPONSE_FORMAT is True, so this 98%-healthy model must
+    # be eligible for the dominant json+russian traffic (was tag-excluded before).
+    TAGS: ClassVar[set[str]] = {"json", "code", "reasoning", "russian", "tools"}
     MAX_OUTPUT_TOKENS: ClassVar[int] = 16384
     TIMEOUT = 180.0  # Reasoning models (R1) need 50-120s for long prompts

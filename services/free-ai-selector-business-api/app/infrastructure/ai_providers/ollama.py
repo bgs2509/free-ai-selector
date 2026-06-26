@@ -25,7 +25,9 @@ class OllamaProvider(OpenAICompatibleProvider):
     API_KEY_ENV = "OLLAMA_API_KEY"
     SUPPORTS_RESPONSE_FORMAT = True
     TIMEOUT: ClassVar[float] = 120.0
-    TAGS: ClassVar[set[str]] = {"local"}
+    # bmm: +json,+russian — SUPPORTS_RESPONSE_FORMAT is True; this 99.8%-healthy local
+    # model must be eligible for the dominant json+russian traffic.
+    TAGS: ClassVar[set[str]] = {"local", "json", "russian"}
     MAX_OUTPUT_TOKENS: ClassVar[int] = 4096
 
     def _get_base_url(self) -> str:

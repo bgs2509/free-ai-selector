@@ -1474,6 +1474,15 @@ class TestTagFiltering:
         # Hyperbolic does NOT advertise json (SUPPORTS_RESPONSE_FORMAT is False)
         assert "json" not in ProviderRegistry.get_tags("Hyperbolic")
 
+    def test_healthiest_models_serve_json_russian(self):
+        """bmm deploy-prep: the 98%/99.8% models must be eligible for json+russian
+        traffic (92% of prod). They were tag-excluded before (json tag missing)."""
+        from app.infrastructure.ai_providers.registry import ProviderRegistry
+
+        need = {"json", "russian"}
+        assert need.issubset(ProviderRegistry.get_tags("OpenRouter"))
+        assert need.issubset(ProviderRegistry.get_tags("Ollama-Gemma4-E2B"))
+
 
 @pytest.mark.unit
 class TestCallerTelemetryRecording:
