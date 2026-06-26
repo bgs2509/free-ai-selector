@@ -241,6 +241,11 @@
         /* Journal */
         .filter-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
         .filter-row input, .filter-row select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+        .pagination { display: flex; gap: 8px; align-items: center; justify-content: center; margin-top: 12px; }
+        .pagination .btn-icon { font-size: 13px; padding: 6px 12px; }
+        .pagination .page-indicator { font-size: 13px; color: #666; min-width: 56px; text-align: center; }
+        .btn-icon:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-icon:disabled:hover { border-color: var(--border); color: inherit; }
         .status-badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
         .status-2xx { background: #dcfce7; color: #166534; }
         .status-429 { background: #fef9c3; color: #854d0e; }
@@ -406,8 +411,8 @@
                             <option value="true">Успех</option>
                             <option value="false">Ошибки</option>
                         </select>
-                        <input id="journal-limit" type="number" min="1" max="500" value="50" style="width:80px;" aria-label="Лимит">
-                        <button class="btn-icon" onclick="loadJournal()" title="Применить фильтр">Фильтр</button>
+                        <input id="journal-limit" type="number" min="1" max="500" value="50" style="width:80px;" aria-label="Лимит" onchange="resetJournalAndLoad()">
+                        <button class="btn-icon" onclick="resetJournalAndLoad()" title="Применить фильтр">Фильтр</button>
                     </div>
                     <div id="journal-loader" class="loader-box hidden"><span class="loader loader-dark"></span><span>Загрузка...</span></div>
                     <div id="journal-table-container">
@@ -423,6 +428,11 @@
                             </thead>
                             <tbody id="journal-tbody"></tbody>
                         </table>
+                    </div>
+                    <div id="journal-pagination" class="pagination hidden">
+                        <button id="journal-prev" class="btn-icon" onclick="journalPrevPage()" title="Предыдущая страница">← Назад</button>
+                        <span id="journal-page-indicator" class="page-indicator">стр. 1</span>
+                        <button id="journal-next" class="btn-icon" onclick="journalNextPage()" title="Следующая страница">Вперёд →</button>
                     </div>
                     <div id="journal-detail" class="detail-box hidden"></div>
                     <div id="journal-error" class="error-box hidden"></div>
@@ -600,7 +610,7 @@
                     if (targetPane) { targetPane.classList.add('active'); targetPane.classList.remove('hidden'); }
                     if (targetId === 'stats') loadStats();
                     if (targetId === 'analytics') loadAnalytics();
-                    if (targetId === 'journal') loadJournal();
+                    if (targetId === 'journal') resetJournalAndLoad();
                 });
             });
         }
@@ -802,18 +812,48 @@
             finally { hide(loader); if (refreshBtn) refreshBtn.style.animation = ''; }
         }
 
+        // Offset of the first row on the current journal page. Page size comes from the limit field.
+        let journalOffset = 0;
+
+        function journalPageSize() {
+            return Math.min(500, Math.max(1, parseInt(document.getElementById('journal-limit').value, 10) || 50));
+        }
+
+        // Reset to the first page — used by the filter button, limit change and tab entry.
+        function resetJournalAndLoad() { journalOffset = 0; loadJournal(); }
+
+        function journalPrevPage() {
+            journalOffset = Math.max(0, journalOffset - journalPageSize());
+            loadJournal();
+        }
+
+        function journalNextPage() {
+            journalOffset += journalPageSize();
+            loadJournal();
+        }
+
+        function renderJournalPagination(hasNext) {
+            const pageSize = journalPageSize();
+            document.getElementById('journal-page-indicator').textContent = `стр. ${Math.floor(journalOffset / pageSize) + 1}`;
+            document.getElementById('journal-prev').disabled = journalOffset === 0;
+            document.getElementById('journal-next').disabled = !hasNext;
+            show(document.getElementById('journal-pagination'));
+        }
+
         async function loadJournal() {
             const tbody = document.getElementById('journal-tbody');
             const loader = document.getElementById('journal-loader');
             const errorBox = document.getElementById('journal-error');
             const detail = document.getElementById('journal-detail');
+            const pagination = document.getElementById('journal-pagination');
             const refreshBtn = document.getElementById('refresh-journal-btn');
             const caller = document.getElementById('journal-caller').value.trim();
             const success = document.getElementById('journal-success').value;
-            const limit = document.getElementById('journal-limit').value || '50';
-            show(loader); hide(errorBox); hide(detail); tbody.innerHTML = '';
+            const pageSize = journalPageSize();
+            show(loader); hide(errorBox); hide(detail); hide(pagination); tbody.innerHTML = '';
             if (refreshBtn) refreshBtn.style.animation = 'spin 0.8s linear infinite';
-            const params = new URLSearchParams({ limit });
+            // Request one extra row (limit+1) to learn whether a next page exists without a total count.
+            const params = new URLSearchParams({ limit: String(pageSize + 1), offset: String(journalOffset) });
             if (caller) params.set('caller', caller);
             if (success) params.set('success', success);
             try {
@@ -821,8 +861,19 @@
                     apiCall(`/api/v1/history?${params.toString()}`),
                     getModelNameMap(),
                 ]);
-                if (!rows || rows.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#666;">Нет записей</td></tr>'; return; }
-                rows.forEach(r => {
+                // Empty page past the first one (records pruned/deleted) → step back one page.
+                if ((!rows || rows.length === 0) && journalOffset > 0) {
+                    journalOffset = Math.max(0, journalOffset - pageSize);
+                    return loadJournal();
+                }
+                if (!rows || rows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#666;">Нет записей</td></tr>';
+                    renderJournalPagination(false);
+                    return;
+                }
+                const hasNext = rows.length > pageSize;
+                const pageRows = hasNext ? rows.slice(0, pageSize) : rows;
+                pageRows.forEach(r => {
                     const tr = document.createElement('tr');
                     tr.className = 'journal-row';
                     const model = r.selected_model_id != null ? (modelMap[r.selected_model_id] || `#${r.selected_model_id}`) : '—';
@@ -836,6 +887,7 @@
                     tr.addEventListener('click', () => openJournalDetail(r.id));
                     tbody.appendChild(tr);
                 });
+                renderJournalPagination(hasNext);
             } catch (e) { showError(errorBox, e.message); }
             finally { hide(loader); if (refreshBtn) refreshBtn.style.animation = ''; }
         }
